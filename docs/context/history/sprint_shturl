@@ -1,0 +1,29 @@
+# Sprint1 迭代快照 (2026-07-21)
+# 契约: INT-TMS-SPRINT1-001
+# 基线: context v1.0.1  |  模块: wd_tlms v1.0.39
+
+## 变更摘要
+- models/pickup_plan.py: +3 约束校验 (partner/warehouse/source_warehouse)
+- views/pickup_plan_views.xml: 完整重写 (destination_type可见、动态UI优化)
+- constraints/forbidden_change.yaml: 新建
+- history/decision_note.md: 新建 (5项决策)
+- context_version.yaml: 1.0.0 → 1.0.1
+
+## 验收状态: ✅ 全部通过
+- cargo_type双形态切换: ✅
+- destination_type四场景: ✅
+- IFFM只读锁定: ✅ (5个字段)
+- 调拨双仓库展示: ✅
+- 无违规代码: ✅
+- 认知沉淀完成: ✅
+
+## 已知存量缺口（不影响本轮迭代）
+- architecture/ 目录: 待创建 (module_map.md, dependency.yaml)
+- business/ 目录: 待创建 (stock_rule.md, inventory_flow.md)
+- history/bug_record.md: 待创建 (当前无历史Bug)
+
+## 前置认知继承
+- 流程严格二分: 计划驱动 vs 商务报价
+- 柜/托不混合: 同一需求不混装
+- IFFM来源只读: container detail fields
+- 保税调拨强制勾选: bonded warehouse constraint

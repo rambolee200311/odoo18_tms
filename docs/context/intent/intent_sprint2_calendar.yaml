@@ -1,0 +1,91 @@
+# ==============================================================
+# 【Sprint2 正式意图契约】
+# 功能：TMS 核心亮点 · 日历拖拽排期调度系统开发
+# 管控模式：意图控制 + 认知控制 双重强制约束
+# 归属：第五章+第六章双工程闭环落地案例
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT2-001
+  create_time: "2026-07-21"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint2 可视化排期调度模块"
+  contract_type: "新功能开发"
+
+goal: "完整实现TMS运输可视化日历拖拽排期系统，支持提货计划拖拽排班、时间段占用、排期状态管理，实现计划驱动流程核心可视化能力，作为TMS系统核心技术亮点。"
+
+scope:
+  allow:
+    - 新建 schedule.plan.schedule 排期核心模型
+    - 实现日历视图、拖拽调度原生功能
+    - 实现 pickup.plan 与排期模型关联绑定
+    - 时间段占用、防重叠、排期状态控制
+    - 左侧待排任务栏、右侧日历网格布局
+    - 排期/取消排期业务逻辑
+    - 适配集装箱/托件全部货型排期
+    - 适配四类目的地场景排期
+  forbid:
+    - 禁止开发报价、询价、订单生成流程（Sprint3）
+    - 禁止开发财务结算、对账、计费功能
+    - 禁止修改pickup.plan原有字段与业务约束
+    - 禁止破坏Sprint1已固化的四场景动态UI逻辑
+    - 禁止绕过模型层写数据、禁止直改库存/运输状态
+    - 禁止新增非排期无关字段与模型
+
+workflow:
+  step_1: "严格按照认知控制8步流程加载全量上下文认知资产"
+  step_2: "读取Sprint1历史决策、业务铁律、架构分层约束"
+  step_3: "新建排期模型、建立与提货计划关联关系"
+  step_4: "开发日历拖拽视图、前端交互逻辑、防重叠规则"
+  step_5: "完善排期状态流转、业务校验、场景适配"
+  step_6: "权限配置、自测全场景拖拽排期"
+  step_7: "沉淀本次迭代认知、更新sprint日志与决策笔记"
+  step_8: "升级上下文版本，固化双控迭代快照"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition"
+  ]
+  requirement_file: "docs/01_Requirement/TMS完整需求分析.md"
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "schedule.plan.schedule（新建排期模型）"
+    - "pickup.plan 新增排期关联字段"
+  view_change_list:
+    - "calendar 日历拖拽视图"
+    - "左侧待排任务列表视图"
+    - "pickup_plan 表单新增排期跳转按钮"
+  code_file_list:
+    - "models/schedule_plan.py"
+    - "views/schedule_calendar_views.xml"
+    - "models/pickup_plan.py（增量扩展不改动旧逻辑）"
+  document_update_list:
+    - "docs/context/history/sprint_log.md"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "日历拖拽功能正常，可自由排班、取消排班"
+  rule_2: "时间段防重叠校验生效"
+  rule_3: "所有货型、所有目的地场景均可正常排期"
+  rule_4: "不修改、不破坏Sprint1存量代码与逻辑"
+  rule_5: "完全符合架构分层、业务铁律、认知一致性规则"
+  rule_6: "认知资产、迭代日志、版本全部同步更新"
+
+human_gate:
+  gate1_parsing_review: "排期业务边界、模型设计审核"
+  gate2_architecture_review: "拖拽架构、分层合规性审核"
+  gate3_risk_review: "无底层高危变更，自动放行"
+
+bind_context_version: "1.0.1"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
