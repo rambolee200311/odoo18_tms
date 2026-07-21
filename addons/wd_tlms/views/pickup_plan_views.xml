@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <list string="Pickup Requirements" default_order="id desc">
                 <field name="name"/>
+                <field name="cargo_type"/>
                 <field name="source_type"/>
                 <field name="destination_type"/>
                 <field name="terminal_id" optional="show"/>
@@ -27,14 +28,12 @@
         <field name="arch" type="xml">
             <form string="Pickup Requirement">
                 <header>
-                    <!-- Plan-driven flow buttons (warehouse / warehouse_transfer) -->
                     <button name="action_open_schedule" type="object" string="Go to Schedule"
                             class="btn-primary"
                             invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
                             class="btn-primary"
                             invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
-                    <!-- Quotation-driven flow buttons (customer / self_pickup) -->
                     <button name="action_create_transport_request" type="object" string="Create Transport Request"
                             class="btn-primary"
                             invisible="destination_type not in ('customer', 'self_pickup')"/>
@@ -48,12 +47,12 @@
                             <field name="iff_requirement_ref"
                                    invisible="source_type != 'iff'"
                                    options="{'no_create': True, 'no_open': True}"/>
-                            <field name="destination_type" invisible="1"/>
+                            <field name="destination_type"/>
                         </group>
                         <group string="Destination">
                             <field name="terminal_id"
+                                   invisible="destination_type not in ('warehouse', 'customer')"
                                    options="{'no_create': True, 'no_open': True}"/>
-                            <field name="destination_type" invisible="1"/>
                             <field name="warehouse_id"
                                    invisible="destination_type not in ('warehouse', 'warehouse_transfer')"
                                    options="{'no_create': True}"/>
@@ -62,6 +61,9 @@
                                    options="{'no_create': True}"/>
                             <field name="is_bonded_transfer"
                                    invisible="destination_type != 'warehouse_transfer'"/>
+                            <field name="partner_id"
+                                   invisible="destination_type not in ('customer', 'self_pickup')"
+                                   options="{'no_create': True}"/>
                             <field name="delivery_address"
                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
                             <field name="delivery_contact"
@@ -73,7 +75,8 @@
 
                     <notebook>
                         <page string="Containers"
-                              invisible="cargo_type == 'pallet'">
+                              invisible="cargo_type == 'pallet'"
+                              name="container_tab">
                             <field name="container_line_ids">
                                 <list editable="bottom" create="1" delete="1">
                                     <field name="container_number"
@@ -91,7 +94,8 @@
                             </field>
                         </page>
                         <page string="Cargo Details"
-                              invisible="cargo_type == 'container'">
+                              invisible="cargo_type == 'container'"
+                              name="cargo_tab">
                             <group>
                                 <field name="pallet_count"/>
                                 <field name="package_count"/>
@@ -100,22 +104,20 @@
                                 <field name="cargo_description"/>
                             </group>
                         </page>
-                        <page string="Scheduling">
+                        <page string="Scheduling" name="scheduling_tab">
                             <group>
                                 <field name="carrier_id"
                                        options="{'no_create': True, 'no_open': True}"/>
                                 <field name="planned_pickup_date"/>
-                                <field name="scheduled_date"/>
+                                <field name="scheduled_date"
+                                       invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
                                 <field name="driver_name"/>
                                 <field name="driver_phone"/>
                                 <field name="vehicle_plate"/>
                             </group>
                         </page>
-                        <page string="Flow">
+                        <page string="Flow" name="flow_tab">
                             <group>
-                                <field name="partner_id"
-                                       invisible="destination_type == 'warehouse'"
-                                       options="{'no_create': True}"/>
                                 <field name="transport_request_id"
                                        options="{'no_open': False, 'no_create': True}"/>
                                 <field name="inquiry_id"
@@ -124,7 +126,7 @@
                                        options="{'no_open': False, 'no_create': True}"/>
                             </group>
                         </page>
-                        <page string="Notes">
+                        <page string="Notes" name="notes_tab">
                             <field name="notes"/>
                         </page>
                     </notebook>
@@ -151,6 +153,13 @@
                         domain="[('destination_type', '=', 'customer')]"/>
                 <filter string="Self Pickup" name="self_pickup"
                         domain="[('destination_type', '=', 'self_pickup')]"/>
+                <filter string="Warehouse Transfer" name="warehouse_transfer"
+                        domain="[('destination_type', '=', 'warehouse_transfer')]"/>
+                <separator/>
+                <filter string="Container" name="container"
+                        domain="[('cargo_type', '=', 'container')]"/>
+                <filter string="Pallet / Piece" name="pallet"
+                        domain="[('cargo_type', '=', 'pallet')]"/>
                 <separator/>
                 <filter string="From IFF" name="from_iff"
                         domain="[('source_type', '=', 'iff')]"/>
@@ -164,6 +173,8 @@
                 <group expand="0" string="Group By">
                     <filter string="Destination" name="group_dest"
                             context="{'group_by': 'destination_type'}"/>
+                    <filter string="Cargo Type" name="group_cargo"
+                            context="{'group_by': 'cargo_type'}"/>
                     <filter string="Source" name="group_source"
                             context="{'group_by': 'source_type'}"/>
                     <filter string="Trucking Company" name="group_carrier"

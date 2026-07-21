@@ -1,0 +1,79 @@
+# 禁止修改清单（forbidden_change.yaml）
+# 发布: 2026-07-21
+# 适配: Sprint1
+# AI Agent 必须严格遵守，触碰即违规
+
+version: 1.0.0
+
+# ========== 架构层约束 ==========
+architecture:
+  - target: "Odoo 底层 ORM"
+    rule: "禁止修改 odoo/orm 任何代码"
+    risk: "破坏所有模型基础行为"
+
+  - target: "原生 stock 模块"
+    rule: "禁止修改 addons/stock 任何代码"
+    risk: "库存模块是全局基础设施"
+
+  - target: "原生 account 模块"
+    rule: "禁止修改 addons/account 任何代码"
+    risk: "财务模块是全局基础设施"
+
+  - target: "wd_iffm 模块"
+    rule: "禁止反向修改 wd_iffm 任何数据字段"
+    risk: "TMS 仅做只读引用，绝不反向写 IFFM"
+
+  - target: "wd_bonded_wms 模块"
+    rule: "禁止在 TMS 内操作库存/账册数据"
+    risk: "库存归属 WMS 模块管，TMS 只做运输轨迹留痕"
+
+  - target: "视图层直接读写数据库"
+    rule: "禁止在 XML 视图/JS/Controller 中执行 SQL 或 bypass ORM"
+    risk: "违反 Odoo 三层架构"
+
+# ========== 数据层约束 ==========
+data:
+  - target: "费用字段"
+    rule: "禁止在 pickup.plan 新增任何金额/费用/财务字段"
+    risk: "财务相关字段由 Sprint3 询价报价订单页处理"
+
+  - target: "结算账单字段"
+    rule: "禁止在 pickup.plan 新增结算账单关联"
+    risk: "结算由 bill/settlement 模型独立处理"
+
+  - target: "数据库直连"
+    rule: "禁止使用 self.env.cr.execute 绕过 ORM 写数据"
+    risk: "违反 Odoo 模型层规范"
+
+# ========== 功能层约束 ==========
+feature:
+  - target: "排期日历拖拽功能"
+    rule: "Sprint1 不允许开发"
+    risk: "属于 Sprint2 排期日历功能范围"
+
+  - target: "询价/报价/运输订单流程"
+    rule: "Sprint1 不允许开发"
+    risk: "属于 Sprint3 流程链路范围"
+
+  - target: "金融结算功能"
+    rule: "Sprint1 不允许开发"
+    risk: "属于 Sprint3+ 结算模块范围"
+
+# ========== 安全层约束 ==========
+security:
+  - target: "group 配置"
+    rule: "禁止删除或停用已有 security group"
+    risk: "影响多用户访问权限"
+
+  - target: "portal 权限"
+    rule: "Sprint1 暂不涉及 portal_access 修改"
+    risk: "portal 属于后续迭代"
+
+# ========== 审计规则 ==========
+audit:
+  check_before_commit:
+    - "确认无 Scope forbid 中任何违规项"
+    - "确认无 Odoo 底层/原生模块代码修改"
+    - "确认无直连 SQL 规避 ORM"
+    - "确认所有新增字段在 intent scope allow 范围内"
+    - "确认视图字段显隐规则正确无误"
