@@ -1,0 +1,31 @@
+# ==============================================
+# 上下文资产版本管理中心（AI Agent 认知控制工程）
+# 适配：Odoo18 TMS 物流项目
+# 用途：流水线自动识别、AI迭代读取基线、实验对照版本锁定
+# ==============================================
+
+context_version: 1.0.0
+update_time: 2026-07-21
+adapt_sprint: Sprint1
+update_author: AI-Engineering-Team
+
+version_log:
+  1.0.0:
+    update_content: 初始化四层上下文资产 + 意图契约体系完整落地
+    update_type: 全量新建
+    effect_scope: 所有AI迭代、代码生成、约束校验、实验基线
+
+# 上下文有效性强制规则（AI不可绕过）
+valid_rule:
+  - 每次迭代必须同步更新本版本文件
+  - 禁止人工擅自删除/修改 forbidden_change.yaml 刚性约束
+  - 意图契约变更必须升级小版本号
+  - 架构/业务规则变更必须升级次版本号
+
+# 绑定资产目录
+bind_asset_folder:
+  - architecture
+  - business
+  - history
+  - constraints
+  - intent

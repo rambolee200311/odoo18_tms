@@ -1,0 +1,84 @@
+# ==============================================================
+# 【Sprint1 正式意图契约】
+# 功能：pickup.plan 提货需求核心模型全套开发
+# 归属：第五章 意图控制工程 标准落地案例
+# 适配：TMS 八大业务场景、计划驱动/商务双流程底层基座
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT1-001
+  create_time: "2026-07-21"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint1 基础底座搭建"
+  contract_type: "新功能开发"
+
+goal: "完整实现 pickup.plan 提货需求核心模型、字段体系、货物类型双分支（集装箱/托件）、目的地类型分支，搭建TMS所有运输场景的底层需求基座，支撑计划驱动、商务报价双流程。"
+
+scope:
+  allow:
+    - 新建 pickup.plan 主模型完整字段
+    - 新建 pickup.plan.container.line 集装箱明细子模型
+    - 实现 cargo_type 双形态切换（container / pallet）
+    - 实现 destination_type 多场景分支（仓库/调拨/客户/自提）
+    - 搭建基础表单视图、列表视图
+    - 实现 IFFM 上游引用只读机制
+    - 实现调拨场景双仓库字段展示逻辑
+  forbid:
+    - 不允许开发排期日历拖拽功能（Sprint2）
+    - 不允许开发询价/报价/运输订单流程（Sprint3）
+    - 不允许修改Odoo底层ORM、原生stock模块
+    - 不允许新增任何财务、结算、账单相关字段
+    - 禁止直连数据库、禁止绕过模型层写数据
+
+workflow:
+  step_1: "读取全局四层上下文约束资产"
+  step_2: "对照TMS需求文档8大业务场景梳理字段结构"
+  step_3: "搭建 pickup.plan 主模型+明细模型"
+  step_4: "编写视图动态显示规则（货物类型/目的地类型动态UI）"
+  step_5: "配置只读规则、权限基础配置"
+  step_6: "自测多场景字段展示、数据存储、分支逻辑"
+  step_7: "更新sprint_log、decision_note迭代资产"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints"
+  ]
+  requirement_file: "docs/01_Requirement/TMS完整需求分析.md"
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list: 
+    - "pickup.plan（主模型）"
+    - "pickup.plan.container.line（明细模型）"
+  view_change_list:
+    - "pickup_plan_form.xml"
+    - "pickup_plan_list.xml"
+  code_file_list:
+    - "models/pickup_plan.py"
+    - "models/__init__.py"
+    - "views/pickup_plan_views.xml"
+  document_update_list:
+    - "docs/context/history/sprint_log.md"
+    - "docs/context/history/decision_note.md"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "集装箱、托件双形态切换正常，字段动态显隐无误"
+  rule_2: "四种目的地场景字段展示完全符合需求"
+  rule_3: "IFFM导入来源字段只读锁定生效"
+  rule_4: "调拨场景双仓库字段正常展示"
+  rule_5: "无违规代码、无越界功能、无底层篡改"
+  rule_6: "迭代日志与决策笔记同步更新"
+
+human_gate:
+  gate1_parsing_review: "确认双流程、双货型、多目的地边界无误"
+  gate2_architecture_review: "确认模型分层、字段设计符合TMS架构规范"
+  gate3_risk_review: "本迭代无底层高危变更，自动放行"
+
+bind_context_version: "1.0.0"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
