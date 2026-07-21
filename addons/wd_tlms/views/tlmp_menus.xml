@@ -1,0 +1,83 @@
+<odoo>
+    <!-- Top Menu -->
+    <menuitem id="menu_tlmp_root" name="Transport" sequence="10"
+              web_icon="transport_logistics_management,static/description/icon.png"/>
+
+    <!-- Transport Operations (3-group menu) -->
+    <menuitem id="menu_tlmp_operations" name="Operations" parent="menu_tlmp_root" sequence="10"/>
+
+    <!-- Group 1: Pickup &amp; Service -->
+    <menuitem id="menu_tlmp_pickup_group" name="Pickup &amp; Service" parent="menu_tlmp_operations" sequence="10"/>
+    <menuitem id="menu_tlmp_pickup_plans" name="Pickup Requirements" parent="menu_tlmp_pickup_group"
+              action="action_pickup_plan" sequence="10"/>
+    <menuitem id="menu_tlmp_container_service" name="Container Service"
+              parent="menu_tlmp_pickup_group"
+              action="action_container_service_request" sequence="20"/>
+
+    <!-- Group 2: Quotation Process -->
+
+
+    <menuitem id="menu_tlmp_quote_group" name="Quotation Process" parent="menu_tlmp_operations" sequence="20"/>
+    <menuitem id="menu_tlmp_requests" name="Transport Requests" parent="menu_tlmp_quote_group"
+              action="action_tlmp_request" sequence="10"/>
+    <menuitem id="menu_tlmp_inquiries" name="Inquiries" parent="menu_tlmp_quote_group"
+              action="action_tlmp_inquiry" sequence="20"/>
+    <menuitem id="menu_tlmp_quotes" name="Quotes" parent="menu_tlmp_quote_group"
+              action="action_tlmp_quote" sequence="30"/>
+
+    <!-- Group 3: Transport Execution -->
+    <menuitem id="menu_tlmp_exec_group" name="Transport Execution" parent="menu_tlmp_operations" sequence="30"/>
+    <menuitem id="menu_tlmp_orders" name="Orders" parent="menu_tlmp_exec_group"
+              action="action_tlmp_order" sequence="20"/>
+    <menuitem id="menu_tlmp_tracking" name="Tracking" parent="menu_tlmp_exec_group"
+              action="action_tlmp_tracking" sequence="30"/>
+
+    <!-- Finance -->
+    <menuitem id="menu_tlmp_finance" name="Finance" parent="menu_tlmp_root" sequence="20"/>
+    <menuitem id="menu_tlmp_bills" name="Customer Bills" parent="menu_tlmp_finance"
+              action="action_tlmp_bill" sequence="10"/>
+    <menuitem id="menu_tlmp_settlements" name="Carrier Settlements" parent="menu_tlmp_finance"
+              action="action_tlmp_settlement" sequence="20"/>
+    <menuitem id="menu_tlmp_surcharges" name="Surcharges" parent="menu_tlmp_finance"
+              action="action_tlmp_surcharge" sequence="30"/>
+
+    <!-- Documents -->
+    <menuitem id="menu_tlmp_docs" name="Documents" parent="menu_tlmp_root" sequence="30"/>
+    <menuitem id="menu_tlmp_cmr" name="CMR Waybills" parent="menu_tlmp_docs"
+              action="action_tlmp_cmr" sequence="10"/>
+    <menuitem id="menu_tlmp_pod" name="PODs" parent="menu_tlmp_docs"
+              action="action_tlmp_pod" sequence="20"/>
+
+    <!-- Container Master -->
+    <menuitem id="menu_tlmp_container_master" name="Containers" parent="menu_tlmp_root" sequence="35"
+              action="action_container_master"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_tlmp_config" name="Configuration" parent="menu_tlmp_root" sequence="90"/>
+    <menuitem id="menu_tlmp_pricing" name="Pricing Rules" parent="menu_tlmp_config"
+              action="action_tlmp_pricing_rule" sequence="10"/>
+    <menuitem id="menu_tlmp_surcharge_type" name="Surcharge Types" parent="menu_tlmp_config"
+              action="action_tlmp_surcharge_type" sequence="20"/>
+
+
+    <!-- 运输计划独立菜单 -->
+    <menuitem id="menu_transportation_root"
+              name="运输计划"
+              sequence="100"
+              parent="menu_tlmp_root"/>
+    <menuitem id="menu_transport_plan_schedule"
+              name="排期管理"
+              parent="menu_transportation_root"
+              action="action_transport_plan_schedule"
+              sequence="10"/>            
+    <menuitem id="menu_transport_plan_records"
+              name="排期记录"
+              parent="menu_transportation_root"
+              action="action_container_transport_plan"
+              sequence="20"/>
+    <menuitem id="menu_bl_containers"
+              name="集装箱"
+              parent="menu_transportation_root"
+              action="action_bl_container"
+              sequence="30"/>
+</odoo>

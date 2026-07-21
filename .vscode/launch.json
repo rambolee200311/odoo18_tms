@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [      
+        {
+            "name": "Odoo 18 Debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/odoo-bin",
+            "args": [
+                "-c",
+                "${workspaceFolder}/odoo.conf",
+                "-u",
+                "wd_tlms"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

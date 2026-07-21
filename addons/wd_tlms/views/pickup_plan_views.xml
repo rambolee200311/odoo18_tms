@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pickup_plan_list" model="ir.ui.view">
+        <field name="name">pickup.plan.list</field>
+        <field name="model">pickup.plan</field>
+        <field name="arch" type="xml">
+            <list string="Pickup Requirements" default_order="id desc">
+                <field name="name"/>
+                <field name="source_type"/>
+                <field name="destination_type"/>
+                <field name="terminal_id" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="carrier_id" optional="show"/>
+                <field name="planned_pickup_date" optional="show"/>
+                <field name="container_line_ids" string="Containers"
+                       widget="many2many_tags" optional="show"/>
+                <field name="transport_request_id" optional="show"/>
+                <field name="transport_order_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pickup_plan_form" model="ir.ui.view">
+        <field name="name">pickup.plan.form</field>
+        <field name="model">pickup.plan</field>
+        <field name="arch" type="xml">
+            <form string="Pickup Requirement">
+                <header>
+                    <!-- Plan-driven flow buttons (warehouse / warehouse_transfer) -->
+                    <button name="action_open_schedule" type="object" string="Go to Schedule"
+                            class="btn-primary"
+                            invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
+                    <button name="action_create_transport_order" type="object" string="Create Transport Order"
+                            class="btn-primary"
+                            invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
+                    <!-- Quotation-driven flow buttons (customer / self_pickup) -->
+                    <button name="action_create_transport_request" type="object" string="Create Transport Request"
+                            class="btn-primary"
+                            invisible="destination_type not in ('customer', 'self_pickup')"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Base Info">
+                            <field name="name" readonly="1"/>
+                            <field name="cargo_type"/>
+                            <field name="source_type"/>
+                            <field name="iff_requirement_ref"
+                                   invisible="source_type != 'iff'"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="destination_type" invisible="1"/>
+                        </group>
+                        <group string="Destination">
+                            <field name="terminal_id"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="destination_type" invisible="1"/>
+                            <field name="warehouse_id"
+                                   invisible="destination_type not in ('warehouse', 'warehouse_transfer')"
+                                   options="{'no_create': True}"/>
+                            <field name="source_warehouse_id"
+                                   invisible="destination_type != 'warehouse_transfer'"
+                                   options="{'no_create': True}"/>
+                            <field name="is_bonded_transfer"
+                                   invisible="destination_type != 'warehouse_transfer'"/>
+                            <field name="delivery_address"
+                                   invisible="destination_type not in ('customer', 'self_pickup')"/>
+                            <field name="delivery_contact"
+                                   invisible="destination_type not in ('customer', 'self_pickup')"/>
+                            <field name="delivery_phone"
+                                   invisible="destination_type not in ('customer', 'self_pickup')"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Containers"
+                              invisible="cargo_type == 'pallet'">
+                            <field name="container_line_ids">
+                                <list editable="bottom" create="1" delete="1">
+                                    <field name="container_number"
+                                           readonly="parent.source_type == 'iff'"/>
+                                    <field name="container_type"
+                                           readonly="parent.source_type == 'iff'"/>
+                                    <field name="weight"
+                                           readonly="parent.source_type == 'iff'"/>
+                                    <field name="bl_number"
+                                           readonly="parent.source_type == 'iff'"/>
+                                    <field name="seal_number"
+                                           readonly="parent.source_type == 'iff'"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Cargo Details"
+                              invisible="cargo_type == 'container'">
+                            <group>
+                                <field name="pallet_count"/>
+                                <field name="package_count"/>
+                                <field name="cargo_weight"/>
+                                <field name="cargo_volume"/>
+                                <field name="cargo_description"/>
+                            </group>
+                        </page>
+                        <page string="Scheduling">
+                            <group>
+                                <field name="carrier_id"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                                <field name="planned_pickup_date"/>
+                                <field name="scheduled_date"/>
+                                <field name="driver_name"/>
+                                <field name="driver_phone"/>
+                                <field name="vehicle_plate"/>
+                            </group>
+                        </page>
+                        <page string="Flow">
+                            <group>
+                                <field name="partner_id"
+                                       invisible="destination_type == 'warehouse'"
+                                       options="{'no_create': True}"/>
+                                <field name="transport_request_id"
+                                       options="{'no_open': False, 'no_create': True}"/>
+                                <field name="inquiry_id"
+                                       options="{'no_open': False, 'no_create': True}"/>
+                                <field name="transport_order_id"
+                                       options="{'no_open': False, 'no_create': True}"/>
+                            </group>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pickup_plan_search" model="ir.ui.view">
+        <field name="name">pickup.plan.search</field>
+        <field name="model">pickup.plan</field>
+        <field name="arch" type="xml">
+            <search string="Pickup Requirements">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="carrier_id"/>
+                <field name="terminal_id"/>
+                <field name="container_line_ids"/>
+                <separator/>
+                <filter string="Warehouse" name="to_warehouse"
+                        domain="[('destination_type', '=', 'warehouse')]"/>
+                <filter string="To Customer" name="to_customer"
+                        domain="[('destination_type', '=', 'customer')]"/>
+                <filter string="Self Pickup" name="self_pickup"
+                        domain="[('destination_type', '=', 'self_pickup')]"/>
+                <separator/>
+                <filter string="From IFF" name="from_iff"
+                        domain="[('source_type', '=', 'iff')]"/>
+                <filter string="Manual" name="manual"
+                        domain="[('source_type', '=', 'manual')]"/>
+                <separator/>
+                <filter string="Scheduled" name="scheduled"
+                        domain="[('scheduled_date', '!=', False)]"/>
+                <filter string="Not Scheduled" name="not_scheduled"
+                        domain="[('scheduled_date', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Destination" name="group_dest"
+                            context="{'group_by': 'destination_type'}"/>
+                    <filter string="Source" name="group_source"
+                            context="{'group_by': 'source_type'}"/>
+                    <filter string="Trucking Company" name="group_carrier"
+                            context="{'group_by': 'carrier_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pickup_plan" model="ir.actions.act_window">
+        <field name="name">Pickup Requirements</field>
+        <field name="res_model">pickup.plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pickup_plan_search"/>
+    </record>
+
+</odoo>

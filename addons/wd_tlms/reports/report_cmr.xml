@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <report id="report_cmr" string="CMR Waybill" model="tlmp.cmr" report_type="qweb-pdf"
+        file="transport_logistics_management.report_cmr_document"
+        name="transport_logistics_management.report_cmr_document"/>
+    <record id="paperformat_cmr" model="report.paperformat">
+        <field name="name">CMR A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">7</field>
+        <field name="margin_bottom">7</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="dpi">90</field>
+    </record>
+    <template id="report_cmr_document">
+        <t t-call="web.html_container">
+            <t t-foreach="['1','2','3','4']" t-as="doc_copy">
+                <div class="page"><h3>CMR Copy <t t-esc="doc_copy"/></h3>
+                <p>No: <span t-field="o.cmr_number"/></p>
+                <p>Sender: <span t-field="o.sender_id.display_name"/></p>
+                <p>Consignee: <span t-field="o.consignee_id.display_name"/></p>
+                <p>Carrier: <span t-field="o.carrier_id.display_name"/></p></div>
+            </t>
+        </t>
+    </template>
+</odoo>

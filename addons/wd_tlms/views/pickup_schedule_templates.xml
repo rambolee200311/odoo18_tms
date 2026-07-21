@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="pickup_schedule_template" name="Pickup Schedule Calendar">
+            <t t-call="web.basic_layout">
+                <div id="pickup_schedule_app" class="pickup_schedule_container">
+                    <div class="ps_header">
+                        <h2>Pickup Schedule</h2>
+                    </div>
+                    <div class="ps_body">
+                        <!-- Left Panel: Unplanned Plans -->
+                        <div class="ps_left_panel">
+                            <div class="ps_panel_title">Containers &amp; Pallets</div>
+                            <div class="ps_filters">
+                                <select id="ps_filter_destination" class="form-select form-select-sm">
+                                    <option value="">All Destinations</option>
+                                </select>
+                                <select id="ps_filter_warehouse" class="form-select form-select-sm" style="display:none;">
+                                    <option value="">All Warehouses</option>
+                                </select>
+                            </div>
+                            <div id="ps_unplanned_list" class="ps_unplanned_list">
+                                <div class="text-center text-muted py-4">Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Calendar -->
+                        <div class="ps_calendar_panel">
+                            <div class="ps_month_nav">
+                                <button id="ps_prev_month" class="btn btn-sm btn-outline-secondary">&laquo; Prev</button>
+                                <span id="ps_month_title" class="ps_month_title"></span>
+                                <button id="ps_next_month" class="btn btn-sm btn-outline-secondary">Next &raquo;</button>
+                            </div>
+                            <div class="ps_weekdays">
+                                <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                            </div>
+                            <div id="ps_calendar_grid" class="ps_calendar_grid"></div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <link rel="stylesheet" href="/transport_logistics_management/static/src/css/pickup_schedule.css"/>
+        </template>
+    </data>
+</odoo>

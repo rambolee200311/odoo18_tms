@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tlmp_transport_tracking_tree" model="ir.ui.view">
+        <field name="name">tlmp.transport.tracking.tree</field>
+        <field name="model">tlmp.transport.tracking</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="event_name"/>
+                <field name="timestamp"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_tlmp_transport_tracking_form" model="ir.ui.view">
+        <field name="name">tlmp.transport.tracking.form</field>
+        <field name="model">tlmp.transport.tracking</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="event_name"/>
+                        <field name="timestamp"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tlmp_transport_tracking_search" model="ir.ui.view">
+        <field name="name">tlmp.transport.tracking.search</field>
+        <field name="model">tlmp.transport.tracking</field>
+        <field name="arch" type="xml">
+            <search/>
+        </field>
+    </record>
+
+    <record id="action_tlmp_tracking" model="ir.actions.act_window">
+        <field name="name"></field>
+        <field name="res_model">tlmp.transport.tracking</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
