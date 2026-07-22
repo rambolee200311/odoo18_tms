@@ -130,6 +130,7 @@
 旧版 `colors`/`fonts` 属性             → 0 处
 旧版 `decimals` 属性                   → 0 处
 旧版 `widget="state_selection"`         → 0 处
+旧版 `states=` / `attrs=` 属性       → ✅ 0 处（BUG-008 已修复，verify.py check_5 已覆盖）
 `widget="monetary"` 无 `currency_field` → 需确认（已满足模型默认关联）
 `options=` 格式                        → 已验证正确
 `sum=` 属性                            → 使用正确
@@ -193,6 +194,7 @@ depends: base, mail, stock, account, portal, contacts, product, fleet, worlddepo
 | `attrs=""` | ✅ | ✅ | ✅ | ✅ |
 | `states=""` | ✅ | ✅ | ✅ | ✅ |
 | `invisible=""` | ✅ | ✅ | ✅ | ✅ |
+| `states=""` / `attrs=""` | ✅ | ✅ | ❌ 废弃 | ❌ 移除 |
 | `readonly=""` | ✅ | ✅ | ✅ | ✅ |
 | `colspan=""` | ✅ | ✅ | ❌ 废弃 | ❌ 废弃 |
 
