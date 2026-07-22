@@ -113,6 +113,14 @@ check_steps:
     command: grep -rnP '	' --include='*.py' --include='*.xml'
     fail_on: "任何 Tab 字符"
     rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
+
+  check_7_view_model:
+    name: View-Model 字段存在性交叉校验
+    scope: "所有视图 XML → 对应模型 Python"
+    command: python3 docs/context/governance/check_view_fields.py
+    fail_on: "视图引用了模型中不存在的字段"
+    note: "防 BUG-007 类型错误。脚本在 check_view_fields.py，每次增量开发后手动运行"
+
 # ==============================================
 # 执行时机
 
