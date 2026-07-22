@@ -9,8 +9,7 @@
             "args": [
                 "-c",
                 "${workspaceFolder}/odoo.conf",
-                "-u",
-                "wd_tlms"
+                "--dev=all"
             ],
             "console": "integratedTerminal",
             "justMyCode": true

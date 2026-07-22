@@ -1,0 +1,115 @@
+# ==============================================
+# Bug 修复标准工作流
+# 归属：运行治理 —— 异常修复闭环
+# 功能：补全双控体系的 Bug 发现→登记→修复→验证→关闭 全链路
+# 生效范围：所有 AI Codex 迭代中的 Bug 修复
+# ==============================================
+
+bug_workflow_version: 1.0.0
+
+# ==============================================
+# Bug 严重等级定义（与 risk_level 对齐）
+# ==============================================
+severity_level:
+  LEVEL1:
+    name: 语法/格式错误
+    desc: 文件写入格式错误、缩进、拼写，无业务逻辑影响
+    auto_fix: true
+    example: BUG-001 transport_request.py 前导空格
+
+  LEVEL2:
+    name: 业务逻辑 Bug（不影响数据完整性）
+    desc: 视图显隐错误、按钮行为偏差、关联跳转失效
+    auto_fix: false
+    human_review: 简单复核
+
+  LEVEL3:
+    name: 业务逻辑 Bug（影响数据完整性）
+    desc: 约束校验失效、状态机错乱、费用计算错误、单据生成错误
+    auto_fix: false
+    human_review: 必须审核
+
+  LEVEL4:
+    name: 架构级缺陷
+    desc: 分层错误、依赖冲突、模型关联断裂、数据丢失风险
+    auto_fix: false
+    forbid_execute: true
+
+# ==============================================
+# 修复标准流程（7步）
+# ==============================================
+fix_workflow:
+  step_1:
+    name: 错误登记
+    action: 创建/更新 bug_record.md
+    required_field:
+      - 错误现象（Odoo error traceback 全文）
+      - 根因分析（哪次 sprint、什么操作导致的）
+      - 影响范围（哪些功能不可用）
+      - 状态: 🔴 待修复
+
+  step_2:
+    name: 风险定级
+    action: 按 severity_level 判定等级
+    rule: |
+      LEVEL1: 自动修复，无需卡点
+      LEVEL2: 简单复核后修复
+      LEVEL3: 人工审核后修复
+      LEVEL4: 禁止自动执行，需技术负责人审批
+
+  step_3:
+    name: 修复设计
+    action: 描述修复方案
+    output: "修复方案描述（几句话，不需要详细设计）"
+    example: "sed -i '' 's/^ //' transport_request.py"
+
+  step_4:
+    name: 执行修复
+    action: 修改代码
+    post_check: |
+      Python 语法验证: python3 -c "compile(open(f).read(), f, 'exec')"
+      XML 格式验证: python3 -c "from xml.etree import ElementTree; ElementTree.parse(f)"
+
+  step_5:
+    name: 回归验证
+    action: odoo-bin -u wd_tlms 确认模块加载无报错
+    note: "如无法启动 Odoo，至少验证 Python 语法 + XML 结构无误"
+
+  step_6:
+    name: 状态闭环
+    action: |
+      更新 bug_record.md:
+      - 状态改为 ✅ 已修复
+      - 记录修复 commit hash
+      - 如涉及架构/业务认知变更 → 更新 decision_note.md
+
+  step_7:
+    name: 提交固化
+    action: git_commit.sh
+
+# ==============================================
+# Bug 记录文件规范
+# ==============================================
+record_format:
+  location: "docs/context/history/bug_record.md"
+  mandatory_sections:
+    - "Bug ID（自增编号）"
+    - "发现时间"
+    - "发现场景"
+    - "根因文件"
+    - "错误类型"
+    - "错误现象（含 traceback）"
+    - "根因分析"
+    - "发生 Sprint"
+    - "影响范围"
+    - "修复方案（修复后填写）"
+    - "状态（🔴 待修复 → 🟡 修复中 → ✅ 已修复）"
+
+# ==============================================
+# Bugs 闭环审计
+# ==============================================
+audit_rule:
+  - 所有修复必须更新 bug_record.md
+  - 不允许跳过步骤直接改代码
+  - 修复后必须验证语法无误
+  - LEVEL3+ 的修复必须留有人工审核记录

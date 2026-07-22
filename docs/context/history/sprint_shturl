@@ -165,3 +165,6 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 - 前端统一 orm.call / orm.searchRead
 
 ## 验收: 全部通过
+## Bug修复工作流 & BUG-001
+# 新增 governance/bug_fix_workflow.yaml — Bug修复标准7步流程
+# 新建 history/bug_record.md — BUG-001 transport_request.py前导空格

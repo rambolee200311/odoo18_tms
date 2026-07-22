@@ -10,7 +10,7 @@
     'author': 'TLM Team',
     'depends': [
         'base', 'mail', 'stock', 'account',
-        'portal', 'contacts', 'product', 'fleet', 'worlddepot',
+        'portal', 'contacts', 'product', 'fleet',
     ],
     'data': [
         'security/security.xml',
