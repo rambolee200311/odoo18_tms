@@ -214,3 +214,32 @@ verify.py check_5 之前未包含这两项检查。
 - verify.py check_5 新增 attrs= 和 states= 扫描
 
 ### 状态: 已修复
+
+
+---
+
+## BUG-009: transport.order 视图引用 customs_declaration_ref 但模型未定义
+
+**发现时间**: 2026-07-22  
+**根因文件**: models/transport_order.py, views/transport_order_views.xml  
+**严重等级**: LEVEL3 — 模块加载失败  
+**根因分类**: 字段名不一致（视图引用模型不存在的字段）
+
+### 错误现象
+```
+Field "customs_declaration_ref" does not exist in model "tlmp.transport.order"
+```
+
+### 根因
+transport_order_views.xml 的 Customs tab 引用了 `customs_declaration_ref` 字段，
+但 transport.order 模型未定义此字段（模型只有 `customs_transit_ref`）。
+transport.request 模型有 `customs_declaration_ref`，transport.order 漏了。
+
+### 修复
+- transport_order.py 新增 `customs_declaration_ref = fields.Char(string='Customs Decl. Ref.')`
+
+### 预防
+- check_7（View-Model 字段交叉校验）理论上应能检测到此问题，
+  但其 64 个误报淹没了这个真实错误。待 check_7 精确度提升后可自动拦截。
+
+### 状态: 已修复
