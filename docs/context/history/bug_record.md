@@ -60,3 +60,19 @@ Sprint3 — `transport_request.py` 整文件重构。apply_patch add-file 写入
 - 修复 commit: 待提交
 - 修复内容: sed 删除每行前导空格 + 修复 action_create_orders_from_quotes 方法缩进(3→4空格)
 - 验证结果: python3 compile() 语法验证通过 ✅
+
+## BUG-002: pickup_plan_fix.py 前导空格 + 缩进不一致
+
+**发现时间**: 2026-07-22
+**根因文件**: pickup_plan_fix.py
+**错误类型**: 全文件前导空格 + Python 插入的 fee_code 块缩进不一致
+
+### 修复
+- sed 删除前导空格
+- 修正 fee_code 块缩进 7 -> 8 空格
+- compile() 语法验证通过
+
+### 状态: 已修复
+
+---
+* 修复记录: BUG-001 同根因，同修复方案
