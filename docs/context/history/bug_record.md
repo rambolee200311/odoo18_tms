@@ -52,4 +52,11 @@ Sprint3 — `transport_request.py` 整文件重构。apply_patch add-file 写入
 
 ### 状态
 
-🟡 待修复
+✅ 已修复
+
+
+### 修复记录
+- 修复时间: 2026-07-22
+- 修复 commit: 待提交
+- 修复内容: sed 删除每行前导空格 + 修复 action_create_orders_from_quotes 方法缩进(3→4空格)
+- 验证结果: python3 compile() 语法验证通过 ✅
