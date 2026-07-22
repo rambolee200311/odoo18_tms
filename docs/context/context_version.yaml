@@ -3,7 +3,7 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.10
+context_version: 1.0.11
 update_time: 2026-07-22
 adapt_sprint: BUG-010
 update_author: AI-Engineering-Team
@@ -69,6 +69,14 @@ valid_rule:
       工程能力升级: odoo_check.py venv路径修正，避免pytz模块未找到
     update_type: Bug修复 + 治理流程升级
     effect_scope: transport.order模型字段 + Bug修复工作流
+
+  1.0.11:
+    update_content: |
+      BUG-011 修复: tlmp_menus.xml 父菜单后置引用—menu_tlmp_config移至子菜单前
+      BUG-012 修复: schedule_calendar_views.xml view_mode"tree"→"list"
+      工程能力: verify.py check_7误报63→0修复 + check_8 menuitem顺序校验 + check_5 view_mode扩展
+    update_type: Bug修复 + 工程能力升级
+    effect_scope: verify.py 8门禁体系
 
 bind_asset_folder:
   - architecture
