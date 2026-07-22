@@ -90,21 +90,48 @@ def c6():
     return True
 check('Tab 字符', c6)
 
-# c7: View-Model（启发式，仅警告）
+# c7: View-Model 字段存在性校验（v3）
 def c7():
     import subprocess
     r = subprocess.run([sys.executable, os.path.join(BASE, 'docs/context/governance/check_view_fields.py')],
                       capture_output=True, text=True)
-    out = r.stdout.strip()
-    if out:
-        n = sum(1 for l in out.split('\n') if 'NOT in model' in l)
-        if n > 50:
-            print(f'\n  ⚠ {n} fields reported (heuristic, may be false positives)')
-        return True
+    if r.returncode != 0:
+        print()
+        for l in r.stdout.strip().split('\n'): print(f'  {l}')
+        return False
+    print('  ... OK')
     return True
 check('View-Model', c7)
 
+
+# c8: Menuitem 父菜单顺序校验（防 BUG-011）
+def c8():
+    import glob, re
+    errs = []
+    for f in sorted(glob.glob(os.path.join(BASE, 'addons/wd_tlms/views', '*.xml'))):
+        with open(f) as fh:
+            lines = fh.readlines()
+        defined = {}  # id -> line_number
+        referenced = []  # [(parent_id, child_id, line_number)]
+        for i, line in enumerate(lines, 1):
+            mid = re.search(r'\bid="(\w+)"', line)
+            parent = re.search(r'\bparent="(\w+)"', line)
+            if mid:
+                defined[mid.group(1)] = i
+            if parent:
+                referenced.append((parent.group(1), mid.group(1) if mid else '?', i))
+        for parent_id, child_id, ln in referenced:
+            if parent_id not in defined:
+                errs.append(f'{os.path.basename(f)}:{ln} parent="{parent_id}" never defined in file')
+            elif defined[parent_id] > ln:
+                errs.append(f'{os.path.basename(f)}:{ln} parent="{parent_id}" defined at line {defined[parent_id]} AFTER child')
+    if errs:
+        for e in errs: print(f'\n  {e}')
+        return False
+    return True
+check('Menuitem顺序', c8)
+
 print(f'\n========== 结果: {passed} pass, {failed} fail ==========')
-if failed == 0: print('  ALL CHECKS PASSED ✅')
-else: print(f'  {failed} checks failed ❌')
+if failed == 0: print('  ALL CHECKS PASSED \U0001f7e2')
+else: print(f'  {failed} checks failed \u274c')
 sys.exit(failed)
