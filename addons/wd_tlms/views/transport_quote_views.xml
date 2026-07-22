@@ -24,13 +24,13 @@
             <form string="Quote">
                 <header>
                     <button name="action_send" type="object" string="Send to Customer"
-                            states="draft" class="btn-primary"/>
+                            invisible="state != 'draft'" class="btn-primary"/>
                     <button name="action_accept" type="object" string="Accept Quote"
-                            states="sent" class="btn-success"/>
+                            invisible="state != 'sent'" class="btn-success"/>
                     <button name="action_reject" type="object" string="Reject"
-                            states="sent"/>
+                            invisible="state != 'sent'"/>
                     <button name="action_cancel" type="object" string="Cancel"
-                            states="draft,sent"/>
+                            invisible="state not in ('draft', 'sent')"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>

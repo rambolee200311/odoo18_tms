@@ -23,13 +23,13 @@
             <form string="Inquiry">
                 <header>
                     <button name="action_send" type="object" string="Send to Carrier"
-                            states="draft" class="btn-primary"/>
+                            invisible="state != 'draft'" class="btn-primary"/>
                     <button name="action_respond" type="object" string="Record Response"
-                            states="sent"/>
+                            invisible="state != 'sent'"/>
                     <button name="action_accept" type="object" string="Accept Quote"
-                            states="responded" class="btn-primary"/>
+                            invisible="state != 'responded'" class="btn-primary"/>
                     <button name="action_reject" type="object" string="Reject Quote"
-                            states="responded"/>
+                            invisible="state != 'responded'"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>

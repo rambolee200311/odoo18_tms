@@ -30,18 +30,18 @@
              <form string="Transport Order">
                  <header>
                      <field name="source_type" widget="badge" class="mx-2"/>
-                     <button name="action_confirm" type="object" string="Confirm" states="draft"
+                     <button name="action_confirm" type="object" string="Confirm" invisible="state != 'draft'"
                              class="btn-primary"/>
-                     <button name="action_assign" type="object" string="Assign Carrier" states="confirmed"/>
+                     <button name="action_assign" type="object" string="Assign Carrier" invisible="state != 'confirmed'"/>
                      <button name="action_start_transit" type="object" string="Start Transit"
-                             states="assigned"/>
-                     <button name="action_deliver" type="object" string="Mark Delivered" states="in_transit"/>
-                     <button name="action_confirm_pod" type="object" string="Confirm POD" states="delivered"/>
-                     <button name="action_bill" type="object" string="Bill" states="signed"/>
-                     <button name="action_settle" type="object" string="Settle" states="billed"/>
-                     <button name="action_close" type="object" string="Close" states="settled"/>
+                             invisible="state != 'assigned'"/>
+                     <button name="action_deliver" type="object" string="Mark Delivered" invisible="state != 'in_transit'"/>
+                     <button name="action_confirm_pod" type="object" string="Confirm POD" invisible="state != 'delivered'"/>
+                     <button name="action_bill" type="object" string="Bill" invisible="state != 'signed'"/>
+                     <button name="action_settle" type="object" string="Settle" invisible="state != 'billed'"/>
+                     <button name="action_close" type="object" string="Close" invisible="state != 'settled'"/>
                      <button name="action_cancel" type="object" string="Cancel"
-                             states="draft,confirmed,assigned"/>
+                             invisible="state not in ('draft', 'confirmed', 'assigned')"/>
                      <field name="state" widget="statusbar"
                             statusbar_visible="draft,confirmed,assigned,in_transit,delivered,signed,billed,settled,closed"/>
                  </header>
@@ -56,13 +56,13 @@
                          </group>
                          <group string="Source Documents">
                              <field name="request_id" options="{'no_open': False, 'no_create': True}"
-                                    attrs="{'invisible': [('request_id', '=', False)]}"/>
+                                    invisible="not request_id"/>
                              <field name="pickup_plan_id" options="{'no_open': False, 'no_create': True}"
-                                    attrs="{'invisible': [('pickup_plan_id', '=', False)]}"/>
+                                    invisible="not pickup_plan_id"/>
                              <field name="inquiry_id" options="{'no_open': False, 'no_create': True}"
-                                    attrs="{'invisible': [('inquiry_id', '=', False)]}"/>
+                                    invisible="not inquiry_id"/>
                              <field name="quote_id" options="{'no_open': False, 'no_create': True}"
-                                    attrs="{'invisible': [('quote_id', '=', False)]}"/>
+                                    invisible="not quote_id"/>
                          </group>
                      </group>
                      <group string="Schedule &amp; Execution">

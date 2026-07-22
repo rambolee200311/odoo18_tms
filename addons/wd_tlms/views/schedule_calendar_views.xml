@@ -54,14 +54,14 @@
                 <header>
                     <button name="action_schedule" type="object" string="Confirm Schedule"
                             class="btn-primary"
-                            states="draft"/>
+                            invisible="state != 'draft'"/>
                     <button name="action_complete" type="object" string="Mark Completed"
-                            states="scheduled"/>
+                            invisible="state != 'scheduled'"/>
                     <button name="action_cancel" type="object" string="Cancel Schedule"
-                            states="draft,scheduled"
+                            invisible="state not in ('draft', 'scheduled')"
                             confirm="Are you sure you want to cancel this schedule?"/>
                     <button name="action_draft" type="object" string="Reset to Draft"
-                            states="cancelled"/>
+                            invisible="state != 'cancelled'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,completed"/>
                 </header>
                 <sheet>

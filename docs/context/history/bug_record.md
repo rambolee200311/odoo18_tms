@@ -187,3 +187,30 @@ sed -i '' '1s/^ //' 作用于 3 个文件。
 ### 修复
 - 移除视图中 Schedule Plans 整段（模型无对应字段，pickup_plan_ids 已足够）
 - expand -t 4 展开 TAB 为 4 空格
+
+
+---
+
+## BUG-008: attrs/states 属性 Odoo 17+ 已废弃
+
+**发现时间**: 2026-07-22
+**发现场景**: odoodb -u wd_tlms（BUG-001~007 修复后暴露）
+**根因文件**: transport_request/inquiry/quote/order/schedule_calendar_views.xml
+**严重等级**: LEVEL2 — 视图语法错误
+**根因分类**: 版本兼容缺陷
+
+### 错误现象
+```
+Since 17.0, the "attrs" and "states" attributes are no longer used.
+```
+
+### 根因
+Odoo 17+ 移除了 states= 和 attrs= 属性，需用 invisible="..." 字符串表达式替代。
+verify.py check_5 之前未包含这两项检查。
+
+### 修复
+- 27 处 states= → invisible= 替换
+- 5 处 attrs= → invisible= 替换
+- verify.py check_5 新增 attrs= 和 states= 扫描
+
+### 状态: 已修复

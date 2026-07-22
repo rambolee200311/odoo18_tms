@@ -36,8 +36,8 @@
                      <button name="action_start_inquiry" type="object" string="Start Inquiry"
                              class="btn-primary"
                              invisible="request_type != 'commercial'"/>
-                     <button name="action_confirm" type="object" string="Confirm" states="draft"/>
-                     <button name="action_cancel" type="object" string="Cancel" states="draft,confirmed"/>
+                     <button name="action_confirm" type="object" string="Confirm" invisible="state != 'draft'"/>
+                     <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('draft', 'confirmed')"/>
                      <field name="state" widget="statusbar"/>
                  </header>
                  <sheet>
@@ -109,7 +109,7 @@
                          <page string="Inquiry &amp; Quote" invisible="request_type != 'commercial'" name="inquiry_page">
                              <button name="action_create_orders_from_quotes" type="object" string="Create Orders from Accepted Quotes"
                                      class="btn-primary"
-                                     attrs="{'invisible': [('quote_ids', '=', [])]}"/>
+                                     invisible="not quote_ids"/>
                              <group string="Inquiries">
                                  <field name="inquiry_ids" readonly="1">
                                      <list>

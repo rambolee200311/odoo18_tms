@@ -68,7 +68,7 @@ check('模块名称', c4)
 
 # c5: Odoo18 兼容
 def c5():
-    patterns = ['<tree', 'decoration-bf', 'decoration-it', 'state_selection', 'colors=', 'fonts=']
+    patterns = ['<tree', 'decoration-bf', 'decoration-it', 'state_selection', 'colors=', 'fonts=', 'attrs=', 'states=']
     for pat in patterns:
         for root, dirs, files in os.walk(VIEWS):
             for fn in files:
