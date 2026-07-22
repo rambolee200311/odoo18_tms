@@ -76,3 +76,25 @@ Sprint3 — `transport_request.py` 整文件重构。apply_patch add-file 写入
 
 ---
 * 修复记录: BUG-001 同根因，同修复方案
+
+## BUG-003: ir.model.access.csv 模块前缀错误 — group_tlm_manager 找不到
+
+**发现时间**: 2026-07-22
+**发现场景**: BUG-001/002 修复后 odoodb -u wd_tlms
+**根因文件**: security/ir.model.access.csv
+**错误类型**: CSV 中 group_id 使用旧模块前缀 transport_logistics_management. 而非当前模块名 wd_tlms.
+
+### 错误现象
+```
+No matching record found for external id 'transport_logistics_management.group_tlm_manager'
+```
+
+### 根因
+Odoo 模块名 = 目录名 = wd_tlms。但 CSV 中的 group_id 前缀残留旧模块名 transport_logistics_management。
+security.xml 定义的 group 外部 ID 为 wd_tlms.group_tlm_manager，CSV 引用了不存在的 transport_logistics_management.group_tlm_manager。
+
+### 修复
+sed -i '' 's/transport_logistics_management\\.group/wd_tlms.group/g' ir.model.access.csv
+共 ~55 行受影响。
+
+### 状态: 已修复
