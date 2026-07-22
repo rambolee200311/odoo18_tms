@@ -92,3 +92,19 @@ soft_reference_allow:
   - target: "transport.fee.type（Sprint5 新建）"
     rule: "如 Sprint6 改用 world.depot.charge.item 作为费用主数据，允许移除 transport.fee.type 模型"
     rationale: "fee.type 是 Sprint5 预建的 TMS 内部副本，若改用全局 charge.item 则副本不再需要"
+
+
+# ========== 新增技术红线（Sprint8 确认） ==========
+controller_bypass:
+  - target: "不必要的 Controller JSON 路由"
+    rule: "禁止为了给前端 JS 提供数据而新增 Controller HTTP/JSON 路由"
+    rationale: >
+      Odoo OWL 前端通过 useService("orm") 可直接调用 search_read、read、call 等标准 ORM API，
+      无需 Controller 层中转。新增 Controller 路由增加了维护面、绕过了 ORM 的权限和安全校验。
+      模型层方法应被设计为可供 orm.call() 调用，而非通过 Controller 暴露。
+    exception: "QWeb 页面渲染路由（type='http' 返回模板）、文件下载等 ORM 无法覆盖的场景"
+    effect: "前端交互统一走 orm.searchRead / orm.call / orm.create，不新增 JSON Controller"
+
+  - target: "现有 pickup_schedule.py Controller API"
+    rule: "存量 API 保留不动，Sprint8 新增功能不扩展 Controller，改为模型方法 + JS 直接 orm.call"
+    rationale: "Sprint2 遗留的 Controller 模式已存在。新代码应遵循上述红线，不继续沿用旧模式。"

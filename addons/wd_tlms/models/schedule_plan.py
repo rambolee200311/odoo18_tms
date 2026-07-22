@@ -21,6 +21,11 @@ class SchedulePlanSchedule(models.Model):
     plan_id = fields.Many2one(
         'pickup.plan', string='Pickup Plan',
         required=True, ondelete='cascade', index=True)
+    pickup_plan_id = fields.Many2one(
+        'pickup.plan', string='Pickup Plan',
+        ondelete='set null', index=True,
+        help='Pickup plan created from this schedule record.')
+
     container_line_id = fields.Many2one(
         'pickup.plan.container.line', string='Container Line',
         ondelete='set null', index=True,

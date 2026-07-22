@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.8
+context_version: 1.0.9
 update_time: 2026-07-22
-adapt_sprint: Sprint7
+adapt_sprint: Sprint8
 update_author: AI-Engineering-Team
 
 version_log:

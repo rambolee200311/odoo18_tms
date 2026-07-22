@@ -259,3 +259,32 @@
 - quote 表单完整可用: ✅ margin/cost + 状态流转
 - quote accepted → fee.line: ✅ customer_charge + carrier_cost
 - 不破坏 S1-S6: ✅ 纯增量
+
+
+---
+
+## Sprint8: 计划驱动链路端到端闭环 — Schedule→pickup.plan→order+fee
+
+**时间**: 2026-07-22
+**契约**: INT-TMS-SPRINT8-001
+**状态**: 已完成
+
+### 迭代目标
+对标Sprint7商业报价链路，完善计划驱动链路闭环：transport.request → schedule.plan.schedule → pickup.plan → transport.order + fee.line。
+
+### 完成成果
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| models/schedule_plan.py | 增量 | +pickup_plan_id（排期记录 → pickup.plan 关联） |
+| models/pickup_plan_fix.py | 增量 | action_create_transport_order 创建后自动生成 fee.line (carrier_cost) |
+| views/transport_request_views.xml | 增量 | Scheduling tab 新增 schedule.plan.schedule 子列表 |
+
+### 技术约束新增
+- forbidden_change.yaml 追加 controller_bypass 规则：禁止新增 Controller JSON 路由，前端统一走 orm.call
+- Sprint8 零新增 Controller，所有交互通过模型方法 + JS orm.call 完成
+
+### 验收
+- schedule.plan.schedule 可关联 pickup.plan: ✅
+- pickup.plan → order 自动创建 fee.line: ✅
+- transport.request 可见 schedule 列表: ✅
+- 不破坏 S1-S7: ✅

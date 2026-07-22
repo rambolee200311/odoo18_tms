@@ -133,3 +133,35 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 - 双向计费: ✅ (customer_charge / carrier_cost)
 - 对手方字段: ✅
 - 零侵入 S1-S5 存量: ✅
+
+
+## Sprint7 迭代快照 (2026-07-22)
+# 契约: INT-TMS-SPRINT7-001
+# 基线: context v1.0.8  |  模块: wd_tlms
+
+## 变更摘要
+- models/transport_quote.py: +carrier_cost, margin_amount, margin_rate, fee_line_ids
+- models/transport_quote.py: +action_accept, _auto_create_order 创建 fee.line
+- views/transport_inquiry_views.xml: 完整重写
+- views/transport_quote_views.xml: 完整重写 + margin/fees tab
+
+## 验收状态: 全部通过
+- inquiry 完整表单: ✅
+- quote margin/cost: ✅
+- accepted 自动创建 fee.line: ✅
+- 不破坏存量: ✅
+
+## Sprint8 迭代快照 (2026-07-22)
+# 契约: INT-TMS-SPRINT8-001
+# 基线: context v1.0.9
+
+## 变更摘要
+- schedule_plan.py: +pickup_plan_id
+- pickup_plan_fix.py: action_create_transport_order +fee.line
+- transport_request_views.xml: Scheduling tab +schedule plans
+
+## 技术约束
+- forbidden_change.yaml: 禁止新增Controller JSON路由
+- 前端统一 orm.call / orm.searchRead
+
+## 验收: 全部通过

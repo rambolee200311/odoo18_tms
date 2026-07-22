@@ -238,3 +238,36 @@
 
 **商业流程确认**:
 承运商报价（市场价）→ TMS 加价报客户 → 客户接受则创建订单 → 客户拒绝则重新询价或暂停
+
+
+---
+
+### 决策11（Sprint7）：quote margin 手工录入 + auto-create fee.line
+
+**决策**: quote 上新增 carrier_cost / margin_amount / margin_rate 字段，用于追踪成本与加价。
+accepted 后 _auto_create_order 自动创建 transport.order 和 2 条 fee.line。
+
+**业务确认**:
+| 字段 | 来源 | 说明 |
+|------|------|------|
+| carrier_cost | 用户从 inquiry 结果手动填入 | 承运商报价，非自动计算 |
+| margin_amount | 运营人员手工输入 | 加价额，无预设 margin rate |
+| margin_rate | computed = margin / cost × 100 | 仅统计用途，可计算每单 margin 和平均 margin |
+
+**fee.line 自动创建**:
+- customer_charge: party_type=customer_charge, total=quote.total_amount, partner=customer
+- carrier_cost: party_type=carrier_cost, total=carrier_cost, partner=inquiry partner (carrier)
+- fee_type_id = 第一个可用的 world.depot.charge.item
+
+---
+
+### 决策12（Sprint8）：计划链路端到端闭环 + controller_bypass 红线
+
+**决策**: 对标 Sprint7 商业报价链路，完善计划驱动链路闭环。
+
+**关键设计**:
+- schedule.plan.schedule 新增 pickup_plan_id 字段，建立 schedule→pickup.plan 关联
+- pickup.plan → transport.order 时，自动创建一条 fee.line（carrier_cost）
+- fee.line 的 fee_type_id 使用第一个可用的 world.depot.charge.item
+
+**技术红线**: 禁止新增 Controller JSON 路由，前端 OWL 统一使用 orm.call / orm.searchRead

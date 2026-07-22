@@ -1,0 +1,112 @@
+# ==============================================================
+# 【Sprint8 正式意图契约】
+# 功能：计划驱动链路端到端闭环 — Schedule→pickup.plan→order + fee
+# 前置基线：Sprint7 完成商业报价链路，Sprint8 对标完善计划链路
+# 基线版本：context_version:1.0.8
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT8-001
+  create_time: "2026-07-22"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint8 计划驱动链路端到端闭环"
+  contract_type: "业务功能完善"
+
+goal: >
+  对标 Sprint7 商业报价链路，完善计划驱动链路端到端闭环：
+  transport.request (plan_driven)
+    → Schedule 日历（接入 schedule.plan.schedule 模型）
+    → pickup.plan 自动创建
+    → transport.order 创建 + fee.line 记录
+  打通现有两套排期系统（日历 UI 使用 container.transport.plan vs 业务链路使用 schedule.plan.schedule/pickup.plan），
+  让 plan_driven 流程从 request 到 order 到 fee 顺畅衔接。
+
+scope:
+  allow:
+    # ---- 排期日历集成 schedule.plan.schedule ----
+    - "Schedule 日历 API 支持创建 schedule.plan.schedule 记录"
+    - "schedule.plan.schedule 记录在日历上可视化展示"
+    - "拖拽排期 → 创建 pickup.plan 子单据（自动填充 cargo/warehouse 信息）"
+    - "取消排期 → 清理对应 schedule + pickup.plan"
+
+    # ---- 视图层完善 ----
+    - "transport.request (plan_driven) 表单 Scheduling tab 增强"
+    - "transport.request Scheduling tab 显示 schedule.plan.schedule 子列表"
+    - "pickup.plan 列表/表单显示其 transport.request 来源"
+    - "transport.request → pickup.plan → transport.order 路径可跳转"
+
+    # ---- 成本费用 ----
+    - "从 pickup.plan 创建 transport.order 时自动创建 fee.line"
+    - "plan_driven 的 fee.line: party_type=carrier_cost（承运商成本）"
+    - "fee.line 的 quantity/unit_amount 从 pickup.plan 货物数据推算"
+
+    # ---- 存量兼容 ----
+    - "纯增量扩展，不改动现有 container.transport.plan / bl.container 逻辑"
+    - "不改动已有日历 OWL 组件核心逻辑"
+
+  forbid:
+    - 禁止修改 Sprint1-Sprint7 任何存量模型核心字段与业务逻辑
+    - 禁止修改 container.transport.plan / bl.container 存量逻辑
+    - 禁止改动 transport.inquiry / transport.quote 商业链路
+    - 禁止开发财务结算、对账、发票、核销
+    - 禁止视图层写业务逻辑、禁止绕过 ORM
+
+workflow:
+  step_1: "加载 v1.0.8 基线 + 现有排期日历代码分析"
+  step_2: "增强 schedule.plan.schedule 模型（新增 pickup_plan_id 字段）"
+  step_3: "增强 pickup.plan create 方法（从 schedule 自动预填）"
+  step_4: "更新日历 API（v3）支持 schedule.plan.schedule"
+  step_5: "增强 transport.request Scheduling tab 视图"
+  step_6: "pickup.plan → order 时自动创建 fee.line（carrier_cost）"
+  step_7: "全链路自测：request → schedule → plan → order → fee"
+  step_8: "沉淀决策资产，版本升级"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "schedule.plan.schedule（新增 pickup_plan_id 字段）"
+    - "pickup.plan（增强 create_from_schedule 工厂方法）"
+  view_change_list:
+    - "transport_request_views.xml（Scheduling tab 增强）"
+    - "pickup_plan_views.xml（上下游跳转增强）"
+  code_file_list:
+    - "models/schedule_plan.py（增量）"
+    - "models/pickup_plan.py（增量）"
+    - "models/pickup_plan_fix.py（extend action_create_transport_order + fee）"
+    - "controllers/pickup_schedule.py（v3 API）"
+    - "views/transport_request_views.xml（增量）"
+    - "views/pickup_plan_views.xml（增量）"
+  document_update_list:
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "Schedule 日历可创建 schedule.plan.schedule 记录"
+  rule_2: "排期后自动创建 pickup.plan 子单据"
+  rule_3: "transport.request → schedule → pickup.plan 路径可跳转查看"
+  rule_4: "pickup.plan → transport.order + fee.line 自动创建"
+  rule_5: "container.transport.plan / bl.container 存量不受影响"
+  rule_6: "不破坏 S1-S7 任何存量功能"
+  rule_7: "认知资产、版本基线同步更新"
+
+human_gate:
+  gate1_parsing_review: "计划链路端到端设计审核"
+  gate2_architecture_review: "两套排期系统共存合规审核"
+  gate3_risk_review: "存量资产兼容，低风险自动放行"
+
+bind_context_version: "1.0.8"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
