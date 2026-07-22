@@ -4,9 +4,14 @@
         <field name="name">tlmp.transport.inquiry.tree</field>
         <field name="model">tlmp.transport.inquiry</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Inquiries" default_order="id desc">
                 <field name="name"/>
-                <field name="state"/>
+                <field name="partner_id"/>
+                <field name="total_amount" widget="monetary" sum="Total"/>
+                <field name="carrier_notes" optional="show"/>
+                <field name="state" widget="badge"/>
+                <field name="validity_date" optional="show"/>
+                <field name="response_date" optional="show"/>
             </list>
         </field>
     </record>
@@ -15,13 +20,57 @@
         <field name="name">tlmp.transport.inquiry.form</field>
         <field name="model">tlmp.transport.inquiry</field>
         <field name="arch" type="xml">
-            <form>
+            <form string="Inquiry">
+                <header>
+                    <button name="action_send" type="object" string="Send to Carrier"
+                            states="draft" class="btn-primary"/>
+                    <button name="action_respond" type="object" string="Record Response"
+                            states="sent"/>
+                    <button name="action_accept" type="object" string="Accept Quote"
+                            states="responded" class="btn-primary"/>
+                    <button name="action_reject" type="object" string="Reject Quote"
+                            states="responded"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="state"/>
+                        <group string="Inquiry Info">
+                            <field name="name" readonly="1"/>
+                            <field name="request_id" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="partner_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Route &amp; Cargo">
+                            <field name="from_location_text"/>
+                            <field name="to_location_text"/>
+                            <field name="cargo_summary"/>
+                            <field name="weight_kg"/>
+                            <field name="volume_m3"/>
+                            <field name="pickup_date"/>
+                            <field name="delivery_deadline"/>
+                        </group>
                     </group>
+                    <notebook>
+                        <page string="Carrier Quotes" name="lines_page">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="description"/>
+                                    <field name="unit_price" widget="monetary"/>
+                                    <field name="quantity"/>
+                                    <field name="subtotal" widget="monetary" sum="Total"/>
+                                </list>
+                            </field>
+                            <group>
+                                <field name="total_amount" widget="monetary"/>
+                                <field name="validity_date"/>
+                                <field name="carrier_notes"/>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes_page">
+                            <field name="carrier_notes"/>
+                        </page>
+                    </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -30,13 +79,28 @@
         <field name="name">tlmp.transport.inquiry.search</field>
         <field name="model">tlmp.transport.inquiry</field>
         <field name="arch" type="xml">
-            <search/>
+            <search string="Search Inquiries">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="request_id"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Sent" name="sent" domain="[('state', '=', 'sent')]"/>
+                <filter string="Responded" name="responded" domain="[('state', '=', 'responded')]"/>
+                <filter string="Accepted" name="accepted" domain="[('state', '=', 'accepted')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Carrier" name="group_carrier" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
     <record id="action_tlmp_inquiry" model="ir.actions.act_window">
-        <field name="name"></field>
+        <field name="name">Inquiries</field>
         <field name="res_model">tlmp.transport.inquiry</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_tlmp_transport_inquiry_search"/>
     </record>
 </odoo>

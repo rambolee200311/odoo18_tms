@@ -1,0 +1,114 @@
+# ==============================================================
+# 【Sprint7 正式意图契约】
+# 功能：商业报价流程完善 — inquiry→quote→order 全链路 + fee.line 集成
+# 前置基线：Sprint6 费用模型重构 + 决策9/10 业务认知纠正
+# 基线版本：context_version:1.0.8
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT7-001
+  create_time: "2026-07-22"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint7 商业报价流程完善"
+  contract_type: "业务功能完善"
+
+goal: >
+  完善 transport.request → inquiry → quote → transport.order 商业报价全链路，
+  实现 inquiry 表单完整字段与状态流转、quote 表单完整字段与加价逻辑、
+  inquiry 结果到 quote 的数据同步（承运商报价作为成本价自动预填 quote）、
+  quote 接受后自动创建 transport.order 并生成两条 fee.line
+  （customer_charge 按 quote 金额 + carrier_cost 按 inquiry 金额）。
+
+scope:
+  allow:
+    # 模型层：inquiry 完善
+    - "inquiry 表单预填 transport.request 信息（路线、货物）"
+    - "inquiry 支持多家承运商独立报价、多轮询价"
+    - "inquiry 状态：draft → sent → responded → accepted → rejected"
+    - "inquiry 结果（承运商报价金额）可标记 accepted 并同步到 quote"
+
+    # 模型层：quote 完善
+    - "quote 从 accepted inquiry 自动预填成本价（carrier_cost）"
+    - "quote 支持在成本价上手工加价报客户"
+    - "quote 状态：draft → sent → accepted → rejected → cancelled"
+    - "quote accepted → 自动创建 transport.order（已有 _auto_create_order）"
+
+    # 模型层：fee.line 集成
+    - "quote accepted 时自动创建两条 fee.line"
+    - "fee.line1: customer_charge = quote 金额，partner_id = 客户"
+    - "fee.line2: carrier_cost = inquiry 金额，partner_id = 承运商"
+
+    # 视图层
+    - "inquiry 完整表单（路线/货物/承运商/报价金额/状态）"
+    - "quote 完整表单（成本价/加价后金额/客户/状态/有效期）"
+    - "transport.request 表单 inquiry 页 / quote 页增强"
+
+    # 存量兼容
+    - "纯增量扩展，不改动 S1-S6 任何存量模型与视图"
+
+  forbid:
+    - 禁止修改 pickup.plan / schedule 计划链路
+    - 禁止修改 transport.order 闭环底座
+    - 禁止修改 fee.type / rate.base / fee.line 核心结构
+    - 禁止开发财务结算、对账、发票、核销
+    - 禁止视图层写业务逻辑、禁止绕过 ORM
+
+workflow:
+  step_1: "加载 v1.0.8 基线 + 决策9/10"
+  step_2: "增强 inquiry 表单（预填 transport.request + 多承运商报价）"
+  step_3: "增强 quote 表单（成本价预填 + 加价 + 状态流转）"
+  step_4: "实现 inquiry.accepted → quote 数据同步"
+  step_5: "实现 quote.accepted → fee.line 自动创建（customer_charge + carrier_cost）"
+  step_6: "全链路自测：request → inquiry → quote → order + fee.line"
+  step_7: "沉淀决策资产，版本升级"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "inquiry 表单增强（纯视图，无模型层修改）"
+    - "quote 增强：accepted 后自动创建 fee.line"
+    - "transport.order 创建时同步 fee.line"
+  view_change_list:
+    - "transport_inquiry_views.xml（完整表单）"
+    - "transport_quote_views.xml（完整表单 + fee tab）"
+    - "transport_request_views.xml（增强 inquiry/quote 子列表）"
+  code_file_list:
+    - "models/transport_quote.py（fee.line 自动创建逻辑）"
+    - "models/transport_inquiry.py（无修改）"
+    - "views/transport_inquiry_views.xml"
+    - "views/transport_quote_views.xml"
+    - "views/transport_request_views.xml"
+  document_update_list:
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "inquiry 表单完整可用：预填 transport.request 信息、多承运商报价、状态流转"
+  rule_2: "quote 表单完整可用：从 inquiry 预填成本价、手工加价、状态流转"
+  rule_3: "quote accepted → 自动创建 transport.order + 2条 fee.line"
+  rule_4: "fee.line1: customer_charge = quote 金额 → 客户"
+  rule_5: "fee.line2: carrier_cost = inquiry 金额 → 承运商"
+  rule_6: "不破坏 S1-S6 任何存量功能"
+  rule_7: "认知资产、版本基线同步更新"
+
+human_gate:
+  gate1_parsing_review: "商业报价流程设计审核"
+  gate2_architecture_review: "fee.line 自动创建逻辑合规审核"
+  gate3_risk_review: "完善性迭代，低风险自动放行"
+
+bind_context_version: "1.0.7"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"

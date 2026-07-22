@@ -34,6 +34,15 @@ class TransportQuote(models.Model):
     ], string='Status', default='draft', tracking=True)
     notes = fields.Text(string='Notes')
 
+    carrier_cost = fields.Monetary(string='Carrier Cost',
+        help='Cost from the carrier (from accepted inquiry).')
+    margin_amount = fields.Monetary(string='Margin Amount (markup)',
+        help='Manual markup on top of carrier cost.')
+    margin_rate = fields.Float(string='Margin Rate (%)', compute='_compute_margin_rate', store=True,
+        help='Calculated as margin_amount / carrier_cost * 100.')
+    fee_line_ids = fields.One2many('transport.fee.line', 'source_quote_id',
+        string='Fee Lines', copy=False)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -47,6 +56,23 @@ class TransportQuote(models.Model):
             r.total_base_fee = sum(r.line_ids.mapped('subtotal'))
             r.total_surcharge = 0.0
             r.total_amount = r.total_base_fee + r.total_surcharge
+
+    @api.depends('carrier_cost', 'margin_amount')
+    def _compute_margin_rate(self):
+        for r in self:
+            r.margin_rate = (r.margin_amount / r.carrier_cost * 100) if r.carrier_cost else 0.0
+        for r in self:
+            r.total_base_fee = sum(r.line_ids.mapped('subtotal'))
+            r.total_surcharge = 0.0
+            r.total_amount = r.total_base_fee + r.total_surcharge
+
+    def action_accept(self):
+        self.ensure_one()
+        if self.state != 'sent':
+            raise UserError(_('Only sent quotes can be accepted.'))
+        self.write({'state': 'accepted'})
+        self._auto_create_order()
+        return True
 
     def action_send(self):
         self.write({'state': 'sent'})
@@ -87,6 +113,25 @@ class TransportQuote(models.Model):
             'source_amount_customer': self.total_amount,
             'price_source': 'quote',
         })
+        # Auto-create fee lines
+        charge_item = self.env['world.depot.charge.item'].search([], limit=1)
+        if charge_item:
+            FeeLine = self.env['transport.fee.line']
+            if self.partner_id:
+                FeeLine.create({
+                    'fee_type_id': charge_item.id, 'source_type': 'commercial',
+                    'source_quote_id': self.id, 'party_type': 'customer_charge',
+                    'partner_id': self.partner_id.id,
+                    'unit_amount': self.total_amount, 'quantity': 1.0,
+                    'description': self.name or 'Transport charge'})
+            inquiry_partner = self.inquiry_id.partner_id if self.inquiry_id else False
+            if inquiry_partner and (self.carrier_cost or 0.0) > 0:
+                FeeLine.create({
+                    'fee_type_id': charge_item.id, 'source_type': 'commercial',
+                    'source_quote_id': self.id, 'party_type': 'carrier_cost',
+                    'partner_id': inquiry_partner.id,
+                    'unit_amount': self.carrier_cost, 'quantity': 1.0,
+                    'description': (self.name or '') + ' (carrier)'})
         return order
 
     def _cron_expire(self):

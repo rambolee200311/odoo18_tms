@@ -29,12 +29,13 @@ transport.request 创建（商务报价型）
   │  request_type = commercial
   │  指定客户、货物信息
   ▼
-承运商询价（多轮）
+承运商询价（按路线报价，市场价，非公式计算）
   │  tlmp.transport.inquiry: draft → sent → responded → accepted/rejected
   ▼
-客户报价
+客户报价（在承运商报价上加价）
   │  tlmp.transport.quote: draft → sent → accepted → (auto create order)
-  │  rejected → 退回 inquiry.sent
+  │  rejected → 退回 inquiry.sent → 重新询价
+  │         → 客户或暂停需求
   │  cancelled → 归档
   ▼
 tlmp.transport.order 创建（报价接受时自动触发）

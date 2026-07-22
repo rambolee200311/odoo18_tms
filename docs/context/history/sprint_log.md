@@ -234,3 +234,28 @@
 - rate_base 同步修正: ✅
 - worlddepot 基础依赖: ✅
 - 不破坏 S1-S5: ✅ 纯重构 Sprint5 增量
+
+
+---
+
+## Sprint7: 商业报价流程完善 — inquiry→quote→order 全链路 + fee.line 集成
+
+**时间**: 2026-07-22
+**契约**: INT-TMS-SPRINT7-001
+**状态**: 已完成
+
+### 迭代目标
+完善 commercial flow 全链路视图与业务逻辑：inquiry 完整表单、quote margin/cost 字段、accepted 后自动创建 fee.line。
+
+### 完成成果
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| models/transport_quote.py | 增强 | +carrier_cost, margin_amount, margin_rate, fee_line_ids; +action_accept; _auto_create_order 创建2条 fee.line |
+| views/transport_inquiry_views.xml | 重写 | 完整表单：request/partner/cargo/lines/total/state |
+| views/transport_quote_views.xml | 重写 | 完整表单：request/inquiry/carrier_cost/margin/total + Fee Lines tab |
+
+### 验收
+- inquiry 表单完整可用: ✅ 所有字段 + 状态流转
+- quote 表单完整可用: ✅ margin/cost + 状态流转
+- quote accepted → fee.line: ✅ customer_charge + carrier_cost
+- 不破坏 S1-S6: ✅ 纯增量

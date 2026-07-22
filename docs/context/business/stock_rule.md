@@ -110,6 +110,25 @@ TMS 系统存在两个对等的 transport.request 模型：
 - 卡车公司通过 `res.partner.is_carrier = True` 标记
 - 卡车公司选择默认值来自系统参数 `tlmp.default_pickup_carrier_id`
 
+
+
+## 7. 费用记录铁律
+
+### 7.1 费用不由系统自动计算
+- 运费由承运商根据路线和货物情况独立报价，无标准费率公式
+- rate.base 仅作为历史价格参考线，不用于自动报价决策
+- 询价阶段的费用以承运商回复为准，系统不做任何计价
+
+### 7.2 fee.line 是记录层，不是计算层
+- fee.line 在 transport.order 确认后手动录入或从 inquiry/quote 同步
+- 同一笔运输有两笔费用行：一笔 customer_charge（向客户收），一笔 carrier_cost（向承运商付）
+- 两笔费用数据独立录入，金额无自动关联关系
+
+### 7.3 报价流程
+- inquiry（承运商报价）→ quote（TMS 加价后报客户）
+- 客户接受 → transport.order 创建 → fee.line 记录实际费用
+- 客户不接受 → 重新 inquiry 或 暂停需求
+
 ## 6. 状态约束
 - `pickup.plan` 无独立状态机，生命周期由下游单据派生：
   - `scheduled_date` 有值 = 已排期
