@@ -40,7 +40,7 @@
                 </div>
             </t>
 
-            <link rel="stylesheet" href="/transport_logistics_management/static/src/css/pickup_schedule.css"/>
+            <link rel="stylesheet" href="/wd_tlms/static/src/css/pickup_schedule.css"/>
         </template>
     </data>
 </odoo>

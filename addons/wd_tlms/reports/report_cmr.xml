@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <report id="report_cmr" string="CMR Waybill" model="tlmp.cmr" report_type="qweb-pdf"
-        file="transport_logistics_management.report_cmr_document"
-        name="transport_logistics_management.report_cmr_document"/>
+        file="wd_tlms.report_cmr_document"
+        name="wd_tlms.report_cmr_document"/>
     <record id="paperformat_cmr" model="report.paperformat">
         <field name="name">CMR A4</field>
         <field name="format">A4</field>

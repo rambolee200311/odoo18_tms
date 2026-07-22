@@ -22,7 +22,7 @@ class PickupScheduleController(http.Controller):
     @http.route('/pickup_schedule', type='http', auth='user', website=False)
     def pickup_schedule_page(self, **kwargs):
         """Render the schedule calendar page."""
-        return request.render('transport_logistics_management.pickup_schedule_template')
+        return request.render('wd_tlms.pickup_schedule_template')
 
     @http.route('/pickup_schedule/api/schedules', type='http', auth='user',
                 methods=['GET'], csrf=False)

@@ -72,7 +72,7 @@ class CMR(models.Model):
         return super().create(vals_list)
 
     def action_print_cmr(self):
-        return self.env.ref('transport_logistics_management.report_cmr').report_action(self)
+        return self.env.ref('wd_tlms.report_cmr').report_action(self)
 
     def action_confirm_signature(self):
         self.write({'state': 'signed', 'is_pod_confirmed': True})

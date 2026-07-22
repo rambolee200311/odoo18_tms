@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="transport_logistics_management.TransportPlanTemplate" owl="1">
+    <t t-name="wd_tlms.TransportPlanTemplate" owl="1">
         <div class="o_transport_plan_container">
             <div class="o_transport_plan_header"><h2>运输计划排期</h2></div>
             <div class="o_transport_plan_content">

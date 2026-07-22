@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 export class TransportPlan extends Component {
-    static template = "transport_logistics_management.TransportPlanTemplate";
+    static template = "wd_tlms.TransportPlanTemplate";
 
     setup() {
         this.orm = useService("orm");
@@ -37,7 +37,7 @@ export class TransportPlan extends Component {
         });
 
         this.openContainerForm = () => {
-            this.action.doAction("transport_logistics_management.action_bl_container");
+            this.action.doAction("wd_tlms.action_bl_container");
         };
 
         this.onDragStart = (ev, containerId) => {

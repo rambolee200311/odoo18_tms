@@ -119,3 +119,29 @@ sed -i '' 's/transport_logistics_management\\.group/wd_tlms.group/g' ir.model.ac
 2. sed 修正 ir.model.access.xml 中 transport_logistics_management.group → wd_tlms.group
 
 ### 状态: 已修复
+
+
+---
+
+## BUG-005: transport_logistics_management 旧模块名残留 12 处
+
+**发现时间**: 2026-07-22
+**发现场景**: 全量代码扫描 — 对照 odoo_version.md 版本兼容性检查
+**根因文件**: 9 个文件（models/cmr.py, controllers/pickup_schedule.py, static/src/xml/transport_plan.xml, static/src/js/pickup_schedule.js, views/pickup_schedule_templates.xml, views/tlmp_menus.xml, reports/report_cmr.xml, reports/report_bill.xml, reports/report_adr.xml）
+**严重等级**: LEVEL3 — 模块名错误导致运行时错误
+
+### 错误现象
+模块目录名为 wd_tlms，但代码中大量使用旧模块名 transport_logistics_management 作为：
+- XML 外部 ID 前缀（report_cmr, report_bill, report_adr）
+- QWeb 模板名称（TransportPlanTemplate, pickup_schedule_template）
+- OWL JS 组件模板引用
+- 静态资源 URL 路径（CSS href, icon）
+- web_icon 声明
+
+### 根因
+模块从 transport_logistics_management 重命名为 wd_tlms 后，代码文件未同步更新。
+
+### 修复
+sed -i '' 's/transport_logistics_management/wd_tlms/g' 应用至 9 个文件，共 12 处替换。
+
+### 状态: 已修复

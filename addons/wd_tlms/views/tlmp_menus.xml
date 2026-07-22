@@ -1,7 +1,7 @@
 <odoo>
     <!-- Top Menu -->
     <menuitem id="menu_tlmp_root" name="Transport" sequence="10"
-              web_icon="transport_logistics_management,static/description/icon.png"/>
+              web_icon="wd_tlms,static/description/icon.png"/>
 
     <!-- Transport Operations (3-group menu) -->
     <menuitem id="menu_tlmp_operations" name="Operations" parent="menu_tlmp_root" sequence="10"/>
