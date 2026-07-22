@@ -1,0 +1,103 @@
+# ==============================================
+# 流水线产出验证门禁（Post-Generation Quality Gate）
+# 根因：BUG-001~006 均因生成代码未经验证直接提交
+# 作用：每次代码生成后自动执行语法/结构/命名一致性校验
+# ==============================================
+
+pipeline_version: 1.0.0
+enable_post_generation_gate: true
+
+# ==============================================
+# 校验步骤（每次代码生成/修改后强制执行）
+# ==============================================
+check_steps:
+
+  check_1_python_syntax:
+    name: Python 语法校验
+    scope: "所有新增/修改的 .py 文件"
+    command: |
+      python3 -c "
+      import sys, glob
+      for f in sys.argv[1:]:
+          with open(f) as fh:
+              try:
+                  compile(fh.read(), f, 'exec')
+              except SyntaxError as e:
+                  print(f'SYNTAX ERROR: {f}: {e}')
+                  sys.exit(1)
+      "
+    fail_on: "任何 SyntaxError"
+    blocked_by: BUG-001, BUG-002
+
+  check_2_xml_syntax:
+    name: XML 结构校验
+    scope: "所有新增/修改的 .xml 文件"
+    command: |
+      python3 -c "
+      import sys, xml.etree.ElementTree as ET
+      for f in sys.argv[1:]:
+          try:
+              ET.parse(f)
+          except ET.ParseError as e:
+              print(f'XML ERROR: {f}: {e}')
+              sys.exit(1)
+      "
+    fail_on: "任何 ParseError"
+    blocked_by: BUG-006
+
+  check_3_leading_space:
+    name: 文件首字符空格检查
+    scope: "所有新增/修改的 .py, .xml 文件"
+    method: |
+      读取文件第一行：
+        len(line) - len(line.strip()) > 1  → 有前导空格
+    fail_on: "首行存在前导空格"
+    blocked_by: BUG-001, BUG-002, BUG-006
+
+  check_4_module_name:
+    name: 模块名一致性检查
+    scope: "addons/wd_tlms/ 下的 .py, .xml, .js, .csv 文件"
+    method: |
+      grep -rn "transport_logistics_management" addons/wd_tlms/
+    fail_on: "任何引用旧模块名 transport_logistics_management"
+    blocked_by: BUG-003, BUG-005
+
+  check_5_odoo18_compat:
+    name: Odoo 18 版本兼容检查
+    scope: "addons/wd_tlms/views/ 下的 .xml 文件"
+    checks:
+      - pattern: '<tree'
+        message: "Odoo 18 已移除 <tree>，应使用 <list>"
+      - pattern: 'decoration-bf'
+        message: "应使用 decoration-bold"
+      - pattern: 'decoration-it'
+        message: "应使用 decoration-italic"
+      - pattern: 'widget="state_selection"'
+        message: "应使用 widget='badge'"
+      - pattern: 'colors='
+        message: "Odoo 18 已移除 colors 属性"
+    fail_on: "任何上述旧模式"
+
+# ==============================================
+# 执行时机
+# ==============================================
+execution_timing:
+  - after_every_code_generation: true
+  - before_git_commit: true
+  - on_create_pull_request: true
+
+# ==============================================
+# 熔断策略
+# ==============================================
+fuse:
+  - check_1 ~ check_5 任一失败 → 拒绝提交
+  - 修复后重新运行校验，通过后方可提交
+  - 跳过校验需人工审批（LEVEL2/3 风险）
+
+# ==============================================
+# 与现有治理文件的关系
+# ==============================================
+integration:
+  - "workflow_risk.yaml → pipeline_check_step 追加此文件中的 check_steps"
+  - "tool_governance.yaml → tool_pre_check 追加本门禁"
+  - "bug_fix_workflow.yaml → 修复完成后追加预防复发步骤"
