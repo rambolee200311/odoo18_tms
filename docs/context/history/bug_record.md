@@ -145,3 +145,24 @@ sed -i '' 's/transport_logistics_management\\.group/wd_tlms.group/g' ir.model.ac
 sed -i '' 's/transport_logistics_management/wd_tlms/g' 应用至 9 个文件，共 12 处替换。
 
 ### 状态: 已修复
+
+
+---
+
+## BUG-006: 3个XML视图文件首行前导空格 — XMLSyntaxError
+
+**发现时间**: 2026-07-22
+**发现场景**: BUG-005 修复后 odoodb -u wd_tlms
+**根因文件**: transport_request_views.xml, transport_order_views.xml, transport_fee_views.xml
+**严重等级**: LEVEL1 语法错误（自动修复）
+
+### 错误现象
+
+
+### 根因
+apply_patch add-file 写入时  后保留了前导空格。与 BUG-001/002 同根因。
+
+### 修复
+sed -i '' '1s/^ //' 作用于 3 个文件。
+
+### 状态: 已修复
