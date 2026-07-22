@@ -1,181 +1,105 @@
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 流水线产出验证门禁（Post-Generation Quality Gate）
 # 根因：BUG-001~006 均因生成代码未经验证直接提交
 # 作用：每次代码生成后自动执行语法/结构/命名一致性校验
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
+# 执行入口：execution/scripts/verify.py（将本文件中的规则转化为可执行检查）
 # ==============================================
 
-pipeline_version: 1.0.0
+pipeline_version: 2.0.0
 enable_post_generation_gate: true
 
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 校验步骤（每次代码生成/修改后强制执行）
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 check_steps:
 
   check_1_python_syntax:
-    name: Python 语法校验
-    scope: "所有新增/修改的 .py 文件"
-    command: |
-      python3 -c "
-      import sys, glob
-      for f in sys.argv[1:]:
-          with open(f) as fh:
-              try:
-                  compile(fh.read(), f, 'exec')
-              except SyntaxError as e:
-                  print(f'SYNTAX ERROR: {f}: {e}')
-                  sys.exit(1)
-      "
+    name: "Python 语法校验"
+    scope: "所有 .py 文件"
+    execute: "python3 -c \"compile(open(f).read(), f, 'exec')\""
     fail_on: "任何 SyntaxError"
-    blocked_by: BUG-001, BUG-002
+    verify_py: true
+    blocked_by: "BUG-001, BUG-002"
 
   check_2_xml_syntax:
-    name: XML 结构校验
-    scope: "所有新增/修改的 .xml 文件"
-    command: |
-      python3 -c "
-      import sys, xml.etree.ElementTree as ET
-      for f in sys.argv[1:]:
-          try:
-              ET.parse(f)
-          except ET.ParseError as e:
-              print(f'XML ERROR: {f}: {e}')
-              sys.exit(1)
-      "
+    name: "XML 结构校验"
+    scope: "所有 .xml 文件"
+    execute: "xml.etree.ElementTree.parse(f)"
     fail_on: "任何 ParseError"
-    blocked_by: BUG-006
+    verify_py: true
+    blocked_by: "BUG-006"
 
   check_3_leading_space:
-    name: 文件首字符空格检查
-    scope: "所有新增/修改的 .py, .xml 文件"
-    method: |
-      读取文件第一行：
-        len(line) - len(line.strip()) > 1  → 有前导空格
+    name: "文件首字符空格检查"
+    scope: "所有 .py, .xml 文件"
+    method: "第一行 len(line) - len(line.strip()) > 1 → 有前导空格"
     fail_on: "首行存在前导空格"
-    blocked_by: BUG-001, BUG-002, BUG-006
+    verify_py: true
+    blocked_by: "BUG-001, BUG-002, BUG-006"
 
   check_4_module_name:
-    name: 模块名一致性检查
+    name: "模块名一致性检查"
     scope: "addons/wd_tlms/ 下的 .py, .xml, .js, .csv 文件"
-    method: |
-      grep -rn "transport_logistics_management" addons/wd_tlms/
-    fail_on: "任何引用旧模块名 transport_logistics_management"
-    blocked_by: BUG-003, BUG-005
+    method: "扫描 transport_logistics_management 旧模块名"
+    fail_on: "任何引用旧模块名"
+    verify_py: true
+    blocked_by: "BUG-003, BUG-005"
 
   check_5_odoo18_compat:
-    name: Odoo 18 版本兼容检查
+    name: "Odoo 18 版本兼容检查"
     scope: "addons/wd_tlms/views/ 下的 .xml 文件"
-    checks:
-      - pattern: '<tree'
+    patterns:
+      - pattern: "<tree"
         message: "Odoo 18 已移除 <tree>，应使用 <list>"
-      - pattern: 'decoration-bf'
+      - pattern: "decoration-bf"
         message: "应使用 decoration-bold"
-      - pattern: 'decoration-it'
+      - pattern: "decoration-it"
         message: "应使用 decoration-italic"
       - pattern: 'widget="state_selection"'
         message: "应使用 widget='badge'"
-      - pattern: 'colors='
+      - pattern: "colors="
         message: "Odoo 18 已移除 colors 属性"
     fail_on: "任何上述旧模式"
-
+    verify_py: true
+    blocked_by: "Odoo 18 migration"
 
   check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    name: "Tab 字符校验"
+    scope: "所有 .py, .xml 文件（JS 允许 tab，除外）"
+    method: "逐行扫描 \\t 字符"
     fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
+    verify_py: true
+    blocked_by: "BUG-007 (TabError)"
 
   check_7_view_model:
-    name: View-Model 字段存在性交叉校验
-    scope: "所有视图 XML → 对应模型 Python"
-    command: python3 execution/scripts/verify.py (check_7)
-    fail_on: "视图引用了模型中不存在的字段"
-    note: "防 BUG-007 类型错误。脚本在 check_view_fields.py，每次增量开发后手动运行"
+    name: "View-Model 字段存在性交叉校验"
+    scope: "视图 XML → 对应模型 Python"
+    script: "execution/scripts/verify.py (check_7)"
+    note: "启发式检查，64 个已知误报。仅用于辅助排查，不阻塞提交"
+    blocked_by: "BUG-007 (schedule_ids)"
 
 # ==============================================
 # 执行时机
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 execution_timing:
   - after_every_code_generation: true
   - before_git_commit: true
   - on_create_pull_request: true
 
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 熔断策略
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 fuse:
-  - check_1 ~ check_5 任一失败 → 拒绝提交
-  - 修复后重新运行校验，通过后方可提交
-  - 跳过校验需人工审批（LEVEL2/3 风险）
+  - "check_1 ~ check_6 任一失败 → 拒绝提交"
+  - "check_7 仅警告，不阻塞（启发式）"
+  - "修复后重新运行 verify.py，通过后方可提交"
+  - "跳过校验需人工审批（LEVEL2/3 风险），并在 bug_record.md 记录"
 
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 与现有治理文件的关系
-
-  check_6_tab_chars:
-    name: Tab 字符校验
-    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
-    command: grep -rnP '	' --include='*.py' --include='*.xml'
-    fail_on: "任何 Tab 字符"
-    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 integration:
-  - "workflow_risk.yaml → pipeline_check_step 追加此文件中的 check_steps"
-  - "tool_governance.yaml → tool_pre_check 追加本门禁"
-  - "bug_fix_workflow.yaml → 修复完成后追加预防复发步骤"
+  - "execution/scripts/verify.py → 本文件的 check_steps 可执行实现"
+  - "workflow_risk.yaml → pipeline_check_step 引用本文件"
+  - "tool_governance.yaml → tool_pre_check 引用本文件"
+  - "bug_fix_workflow.yaml → Step 8 预防复发引用本文件"
