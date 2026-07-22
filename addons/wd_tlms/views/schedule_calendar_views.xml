@@ -146,7 +146,7 @@
     <record id="action_schedule_plan_schedule" model="ir.actions.act_window">
         <field name="name">Schedule Plans</field>
         <field name="res_model">schedule.plan.schedule</field>
-        <field name="view_mode">calendar,tree,form</field>
+        <field name="view_mode">calendar,list,form</field>
         <field name="search_view_id" ref="view_schedule_plan_schedule_search"/>
         <field name="help" type="html">
             <p>Schedule your pick-up plans here. Drag tasks onto calendar dates to create schedules.</p>

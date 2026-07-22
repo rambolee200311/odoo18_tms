@@ -76,6 +76,14 @@ def c5():
                 for i, line in enumerate(open(os.path.join(root, fn)), 1):
                     if pat in line:
                         print(f'\n  {fn}:{i}: {pat}'); return False
+    # view_mode 中包含 tree（Odoo 18 需改为 list）
+    import re
+    for root, dirs, files in os.walk(VIEWS):
+        for fn in files:
+            if not fn.endswith('.xml'): continue
+            for i, line in enumerate(open(os.path.join(root, fn)), 1):
+                if re.search(r'view_mode\s*=\s*"[^"]*\btree\b[^"]*"', line):
+                    print(f'\n  {fn}:{i}: view_mode contains "tree" (use "list" in Odoo 18)'); return False
     return True
 check('Odoo18 兼容', c5)
 
