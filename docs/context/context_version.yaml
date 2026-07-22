@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.9
+context_version: 1.0.10
 update_time: 2026-07-22
-adapt_sprint: Sprint8
+adapt_sprint: BUG-010
 update_author: AI-Engineering-Team
 
 version_log:
@@ -61,6 +61,14 @@ valid_rule:
     • forbidden_change.yaml 追加 soft_reference_allow 例外
   update_type: 架构修正 + 功能完善
   effect_scope: 全局费用主数据引用策略 + 双向计费模型
+
+  1.0.10:
+    update_content: |
+      BUG-010 修复: BUG-009修复代码未落地—customs_declaration_ref字段实际补入transport_order.py
+      治理流程升级: bug_fix_workflow.yaml v2.1—新增step_4_5修复代码落地验证+step_6 pre_check
+      工程能力升级: odoo_check.py venv路径修正，避免pytz模块未找到
+    update_type: Bug修复 + 治理流程升级
+    effect_scope: transport.order模型字段 + Bug修复工作流
 
 bind_asset_folder:
   - architecture

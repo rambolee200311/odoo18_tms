@@ -5,7 +5,7 @@
 # 更新：v2 基于 BUG-001~006 经验，追加 Step 8 预防复发
 # ==============================================
 
-bug_workflow_version: 2.0.0
+bug_workflow_version: 2.1.0
 
 # ==============================================
 # Bug 严重等级定义（与 risk_level 对齐）
@@ -82,6 +82,17 @@ fix_workflow:
       Python 语法验证: python3 -c "compile(open(f).read(), f, 'exec')"
       XML 格式验证:   python3 -c "from xml.etree import ElementTree; ElementTree.parse(f)"
       前导空格检查:   python3 -c "with open(f) as fh: l=fh.readline(); assert len(l)-len(l.strip())<=1"
+      代码文件变更验证: git diff --cached --name-only | grep -qE "\.py$|\.xml$" || echo "WARNING: 仅文档更新，未修改代码"
+
+  step_4_5:
+    name: 修复代码落地验证（v2.1 新增）
+    action: |
+      验证本次修复确实修改了目标 .py/.xml 代码文件，而非仅更新文档。
+      执行: git diff --cached --name-only
+      若仅包含 bug_record.md 等文档文件 → 禁止标记已修复。
+    rationale: |
+      BUG-009「修复」仅写入了 bug_record.md，未实际修改 transport_order.py，
+      造成完全相同的 BUG-010 复发。这是「只记不修」模式。
 
   step_5:
     name: 回归验证
@@ -90,6 +101,9 @@ fix_workflow:
 
   step_6:
     name: 状态闭环
+    pre_check: |
+      先验证 step_4_5 已通过（代码文件确实变更），再标记已修复。
+      防止「只记不修」模式复发。
     action: |
       更新 bug_record.md:
       - 状态改为 ✅ 已修复
@@ -137,6 +151,7 @@ record_format:
 # ==============================================
 audit_rule:
   - 所有修复必须更新 bug_record.md
+  - 修复必须真实修改代码文件（.py/.xml），禁止仅更新 bug_record.md 就标记已修复
   - 不允许跳过步骤直接改代码
   - 修复后必须验证语法无误（check_1 + check_2）
   - LEVEL3+ 的修复必须留有人工审核记录
