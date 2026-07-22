@@ -1,34 +1,68 @@
 # ==============================================
-# 认知刷新与迭代沉淀机制
-# 属于：第六章 认知控制工程核心资产
-# 作用：保证代码迭代 → 认知同步更新
+# 认知沉淀与上下文更新规则
+# 基于实践提炼：什么该更新上下文、什么只进bug_record
 # ==============================================
 
-refresh_trigger:
-  # 每一次git提交必须触发认知更新
-  - 新功能开发完成
-  - 业务规则新增/修改
-  - 架构设计调整
-  - 历史Bug修复
-  - 新增开发决策
-  - 模型/视图结构变更
+cognition_refresh_version: 1.1.0
 
-# 每次迭代必须更新的认知资产清单
-refresh_asset_list:
-  - history/sprint_shturl
-  - history/decision_note.md
-  - history/bug_record.md
-  - context_version.yaml
+# ==============================================
+# 必须更新上下文的场景
+# ==============================================
+must_update:
+  - trigger: "新架构决策"
+    example: "transport.order 必须双来源"
+    update: "architecture/ + history/decision_note.md"
 
-# 认知沉淀四要素（每次迭代必须产出）
+  - trigger: "新业务规则"
+    example: "费用必须来源隔离 plan_driven/commercial"
+    update: "business/"
+
+  - trigger: "新永久约束"
+    example: "禁止 controller 绕过 ORM"
+    update: "constraints/"
+
+  - trigger: "新工程能力"
+    example: "新增 Odoo18 XML 检查"
+    update: "governance/ + cognition_asset_map.md"
+
+  - trigger: "版本基线变更"
+    example: "Odoo 18 → 19"
+    update: "architecture/odoo_version.md + context_version.yaml"
+
+# ==============================================
+# 不需要更新上下文的场景
+# ==============================================
+no_update:
+  - trigger: "语法错误（前导空格、拼写）"
+    action: "只进 bug_record.md + verify.py"
+    reason: "工具缺陷，非知识缺失"
+
+  - trigger: "模块名遗留引用"
+    action: "只进 bug_record.md + verify.py"
+    reason: "历史债务，非新知识"
+
+  - trigger: "第三方兼容问题"
+    action: "只进 bug_record.md + verify.py"
+    reason: "环境问题，非架构设计"
+
+  - trigger: "测试未覆盖"
+    action: "只进 bug_record.md + verify.py"
+    reason: "验证缺失，非规则遗漏"
+
+# ==============================================
+# 每次迭代必须更新的资产
+# ==============================================
+sprint_mandatory:
+  - history/sprint_log.md        # 迭代日志
+  - history/decision_note.md     # 决策记录（如有）
+  - context_version.yaml         # 版本升级
+  - bug_record.md                # Bug记录（如有）
+
+# ==============================================
+# 认知沉淀四要素
+# ==============================================
 precipitation_elements:
   1: "本次迭代新增业务认知"
   2: "本次迭代架构认知加固"
   3: "本次迭代规避的风险认知"
-  4: "本次迭代新增决策认知"
-
-# 禁止行为
-forbidden:
-  - 只改代码、不更新认知资产
-  - 迭代升级、版本不升级
-  - 新增规则、不沉淀决策
+  4: "本次迭代新增工程决策认知"
