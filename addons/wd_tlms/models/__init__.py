@@ -17,3 +17,8 @@ from . import container_service
 from . import container_master
 from . import transport_plan
 from . import schedule_plan
+from . import transport_fee_type
+from . import transport_rate_base
+from . import transport_fee_line
+from . import fee_base_inherit
+

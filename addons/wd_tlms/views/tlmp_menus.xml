@@ -55,6 +55,13 @@
               action="action_container_master"/>
 
     <!-- Configuration -->
+    <menuitem id="menu_tlmp_fee_types" name="Fee Types" parent="menu_tlmp_config"
+              action="action_transport_fee_type" sequence="30"/>
+    <menuitem id="menu_tlmp_rate_bases" name="Rate Bases" parent="menu_tlmp_config"
+              action="action_transport_rate_base" sequence="40"/>
+    <menuitem id="menu_tlmp_fee_lines" name="Fee Lines" parent="menu_tlmp_config"
+              action="action_transport_fee_line" sequence="50"/>
+
     <menuitem id="menu_tlmp_config" name="Configuration" parent="menu_tlmp_root" sequence="90"/>
     <menuitem id="menu_tlmp_pricing" name="Pricing Rules" parent="menu_tlmp_config"
               action="action_tlmp_pricing_rule" sequence="10"/>

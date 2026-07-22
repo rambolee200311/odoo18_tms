@@ -1,0 +1,120 @@
+# ==============================================================
+# 【Sprint5 正式意图契约】
+# 功能：TMS 全局费用/费率底层底座搭建（全链路计费前置模型）
+# 前置基线：S1-S4 完整双链路架构 + 统一订单收敛
+# 管控模式：意图控制 + 认知控制 + 运行治理 三重管控
+# 基线版本：context_version:1.0.5
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT5-001
+  create_time: "2026-07-22"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint5 费用费率底层底座模块"
+  contract_type: "底层基础底座开发"
+
+goal: >
+  搭建 TMS 全局统一费用/费率底层模型体系，
+  构建运输费用项、费用明细、基础费率结构，
+  为商务报价链路、计划调度链路提供统一计费底座，
+  实现全业务链路费用数据标准化、可追溯、可叠加计算，
+  仅做底层数据底座，不实现最终结算与财务出库逻辑。
+
+scope:
+  allow:
+    # 核心底层费用模型（全局通用）
+    - "新建 transport.fee.type 费用类型字典模型（基础费用项）"
+    - "新建 transport.fee.line 费用明细行模型"
+    - "新建 transport.rate.base 基础费率规则底座"
+    # 双链路挂载关联
+    - "quote 报价单挂载费用明细行（商务报价费用）"
+    - "transport.order 订单挂载费用明细行（最终落地费用）"
+    # 基础字段体系
+    - "费用名称、费用类型、单价、数量、金额、备注、费用来源"
+    - "费用来源区分：commercial / plan_driven"
+    # 视图层
+    - "费用类型配置视图、费率基础配置视图"
+    - "quote/order 表单费用明细Tab页面"
+    # 基础数据能力
+    - "支持多费用行叠加、费用来源溯源、基础金额汇总"
+
+  forbid:
+    # 架构红线：禁止改动已固化四层核心链路
+    - 禁止修改 transport.request 统一入口架构
+    - 禁止修改 inquiry / quote 商务流转
+    - 禁止修改 pickup.plan / schedule 计划调度链路
+    - 禁止修改 transport.order 订单闭环底层结构
+    # 功能边界：只做底座，不做上层财务
+    - 禁止开发结算、对账、发票、核销、财务凭证
+    - 禁止开发客户账、司机账、月结账单
+    # 技术红线
+    - 禁止侵入wd_iffm模块
+    - 禁止视图层写业务计算逻辑
+    - 禁止绕过ORM直改数据
+    - 禁止新增车辆/司机/调度业务模块（后置迭代）
+
+workflow:
+  step_1: "加载v1.0.5完整上下文基线，加载架构/业务/认知/治理全量资产"
+  step_2: "确认双链路架构，设计全局通用费用底层模型"
+  step_3: "开发 fee.type / fee.line / rate.base 三层费用底座模型"
+  step_4: "实现 quote、order 费用明细挂载与溯源"
+  step_5: "开发费用配置视图、业务表单费用Tab视图"
+  step_6: "基础费用汇总、来源区分、明细展示能力"
+  step_7: "双链路适配自测（商务/计划费用隔离兼容）"
+  step_8: "沉淀费用底座架构决策、更新认知资产、升级版本基线"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "transport.fee.type（费用类型字典）"
+    - "transport.fee.line（费用明细行）"
+    - "transport.rate.base（基础费率底座）"
+    - "transport.quote 增量关联费用行"
+    - "transport.order 增量关联费用行"
+  view_change_list:
+    - "fee 配置视图、明细视图"
+    - "quote 费用Tab视图"
+    - "order 费用Tab视图"
+  code_file_list:
+    - "models/transport_fee_type.py"
+    - "models/transport_fee_line.py"
+    - "models/transport_rate_base.py"
+    - "models/transport_quote.py（增量）"
+    - "models/transport_order.py（增量）"
+    - "views/transport_fee_views.xml"
+  document_update_list:
+    - "docs/context/history/sprint_shturl"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "费用三层底座模型搭建完成，结构规范、可扩展"
+  rule_2: "商务报价链路可挂载费用明细，来源标识commercial"
+  rule_3: "订单链路可承载最终费用明细，来源可追溯"
+  rule_4: "计划/商务双链路费用隔离、互不冲突、正常兼容"
+  rule_5: "仅底座能力，无越界财务结算功能"
+  rule_6: "不破坏S1-S4所有存量架构与业务逻辑"
+  rule_7: "认知资产、迭代日志、版本基线同步更新完成"
+
+human_gate:
+  gate1_parsing_review: "费用底座边界与模型架构审核"
+  gate2_architecture_review: "通用底层底座设计合规审核"
+  gate3_risk_review: "底层新增模块，低风险自动放行"
+
+bind_context_version: "1.0.5"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+bind_governance_rule: "docs/context/governance/"

@@ -1,0 +1,50 @@
+<odoo>
+
+    <!-- Tree View for APILog -->
+    <record id="view_api_log_tree" model="ir.ui.view">
+        <field name="name">api.log.tree</field>
+        <field name="model">world.depot.api.log</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="request_time"/>
+                <field name="project_id"/>
+                <field name="request_source" optional="show"/>
+                <field name="request_path"/>
+                <field name="request_data"/>
+                <field name="response_data"/>
+                <field name="success" optional="show"/>
+                <field name="code" optional="show"/>
+                <field name="msg"/>
+                <field name="data" optional="show"/>
+                <field name="exception_details" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View for APILog -->
+    <record id="view_api_log_search" model="ir.ui.view">
+        <field name="name">api.log.search</field>
+        <field name="model">world.depot.api.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="project_id"/>
+                <field name="request_time"/>
+                <field name="request_source"/>
+                <field name="request_path"/>
+                <field name="request_data"/>
+                <field name="response_data"/>
+                <field name="exception_details"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for APILog -->
+    <record id="action_api_log" model="ir.actions.act_window">
+        <field name="name">API Logs</field>
+        <field name="res_model">world.depot.api.log</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_api_log_tree"/>
+        <field name="search_view_id" ref="view_api_log_search"/>
+    </record>
+
+</odoo>

@@ -40,6 +40,7 @@
         'views/container_master_views.xml',
         'views/transport_plan_views.xml',
         'views/schedule_calendar_views.xml',
+        'views/transport_fee_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {
