@@ -176,3 +176,61 @@
 - 上游溯源精准可跳转: ✅ 表单 Source Documents 组
 - 状态流转正常 + 联动回写: ✅ 10 状态 + _sync_upstream_status
 - 不破坏 S1/S2/S3 存量: ✅ 仅增量扩展
+
+
+---
+
+## Sprint5: 全局费用费率底层底座
+
+**时间**: 2026-07-22
+**契约**: INT-TMS-SPRINT5-001
+**状态**: 已完成
+
+### 迭代目标
+搭建 TMS 全局统一费用/费率底层模型体系，为双链路提供计费底座。
+
+### 完成成果
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| models/transport_fee_type.py | 新建 | FeeType 费用类型字典（5类 + code唯一） |
+| models/transport_rate_base.py | 新建 | RateBase 费率底座（6种rate_type + valid_period） |
+| models/transport_fee_line.py | 新建 | FeeLine 费用明细行（source_type 双链路 + qty x amount compute） |
+| models/fee_base_inherit.py | 新建 | quote + order 增量挂载 fee_line_ids |
+| views/transport_fee_views.xml | 新建 | FeeType/RateBase/FeeLine 全套视图 + window action |
+
+### 验收状态
+- 三层费用底座完整: ✅ FeeType + RateBase + FeeLine
+- quote 挂载费用: ✅ fee_line_ids(source_quote_id)
+- order 挂载费用: ✅ fee_line_ids(source_order_id)
+- 双链路费用隔离: ✅ source_type = commercial / plan_driven
+- 纯增量不破坏存量: ✅ 零侵入 S1-S4
+
+
+---
+
+## Sprint6: 费用模型重构 — fee_type 指向全局 charge.item + 双向计费
+
+**时间**: 2026-07-22
+**契约**: INT-TMS-SPRINT6-001
+**状态**: 已完成
+
+### 迭代目标
+修正 Sprint5 费用底座架构：fee_type_id 从 TMS 自建 transport.fee.type 改为指向全局费用主数据 world.depot.charge.item，新增 party_type（customer_charge / carrier_cost）实现双向计费隔离。
+
+### 完成成果
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| models/transport_fee_type.py | 移除 | 被 world.depot.charge.item 替代 |
+| models/transport_fee_line.py | 重写 | fee_type_id → world.depot.charge.item; 新增 party_type / partner_id |
+| models/transport_rate_base.py | 修正 | fee_type_id → world.depot.charge.item |
+| views/transport_fee_views.xml | 重写 | 移除 fee.type 视图; fee.line 新增 party_type + partner_id 字段 |
+| __manifest__.py | 修正 | depends 追加 worlddepot |
+| forbidden_change.yaml | 追加 | soft_reference_allow 例外: 允许引用 charge.item |
+
+### 验收状态
+- fee_type_id 指向全局 charge.item: ✅ world.depot.charge.item
+- party_type 双向区分: ✅ customer_charge / carrier_cost
+- partner_id 对手方: ✅
+- rate_base 同步修正: ✅
+- worlddepot 基础依赖: ✅
+- 不破坏 S1-S5: ✅ 纯重构 Sprint5 增量

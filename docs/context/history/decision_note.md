@@ -172,3 +172,50 @@
 | 商务报价 | commercial | quote_id + inquiry_id | quote._auto_create_order() |
 
 **影响**: 全系统三轮闭环完成（Sprint1 pickup.plan → Sprint2 schedule → Sprint3 request 入口 → Sprint4 order 出口）。
+
+
+---
+
+### 决策8（Sprint5）：全局通用费用底座独立于业务单据
+
+**背景**: TMS 缺少统一的费用数据结构，quote 和 order 的费用计算分散在各业务逻辑中。
+
+**决策**: 新建三层独立费用底座模型（FeeType / RateBase / FeeLine），通过 _inherit 增量挂载到 quote 和 order，不修改任何存量模型。
+
+**架构**:
+| 层 | 模型 | 职责 |
+|---|------|------|
+| 字典层 | transport.fee.type | 费用类型定义（transport/handling/storage/customs/other） |
+| 费率层 | transport.rate.base | 预设计费费率（固定/按km/按kg/按柜/按托/百分比） |
+| 明细层 | transport.fee.line | 实际费用行（多源挂载、qty×price、双链路区分） |
+
+**设计依据**:
+- 参考 worlddepot 四层计费架构（ChargeItem → ChargeModule → OrderCharge → ChargeSummary）
+- 简化到三层（去掉 ChargeModule 模板层，由 RateBase 替代）
+- quote/order 通过 _inherit 纯增量关联，零侵入存量
+
+
+---
+
+### 决策9（Sprint5 反思 → Sprint6 执行）：world.depot.charge.item 是全局费用主数据
+
+**背景**: Sprint5 新建了 TMS 自有的 transport.fee.type 作为费用类型主数据，但实际业务中费用项目是整个 Odoo 生态公用的。
+一笔运输业务有两笔费用：向客户收 €50 运输费（应收/收入）、向承运商付 €10 等待费（应付/成本），
+两笔费用引用同一个费用项目「运输费」。
+
+**反思**: transport.fee.type 不应该是一个 TMS 私有模型。world.depot.charge.item 是全局基础主数据
+（与 res.partner、product.product 同类），TMS 应该直接引用它，而不是建副本。
+
+**决策**: Sprint6 执行以下修正：
+1. forbidden_change.yaml 追加例外：允许 TMS Many2one 引用 world.depot.charge.item（全局主数据，不视为侵入）
+2. transport.fee.line.fee_type_id 改为 Many2one → world.depot.charge.item
+3. transport.fee.line 新增 party_type（customer_charge / carrier_cost）区分应收/应付
+4. transport.fee.line 新增 partner_id 指向对手方（客户或承运商）
+5. 移除 transport.fee.type（不再需要）
+6. __manifest__.py depends 追加 worlddepot（基础模块依赖，不视为侵入）
+
+**双向计费模型**:
+| 方向 | party_type | fee_type | 金额 | 对手方 | 来源单据 |
+|------|-----------|----------|------|--------|---------|
+| 客户收费 | customer_charge | 运输费 | €50 | Customer A | quote/order |
+| 承运商付费 | carrier_cost | 等待费 | €10 | Carrier B | quote/order |

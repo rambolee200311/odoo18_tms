@@ -77,9 +77,6 @@ access_transport_plan_all,container.transport.plan.all,model_container_transport
 access_schedule_plan_manager,schedule.plan.schedule.manager,model_schedule_plan_schedule,transport_logistics_management.group_tlm_manager,1,1,1,1
 access_schedule_plan_operator,schedule.plan.schedule.operator,model_schedule_plan_schedule,transport_logistics_management.group_tlm_operator,1,1,1,0
 access_schedule_plan_all,schedule.plan.schedule.all,model_schedule_plan_schedule,base.group_user,1,0,0,0
-access_transport_fee_type_manager,transport.fee.type.manager,model_transport_fee_type,transport_logistics_management.group_tlm_manager,1,1,1,1
-access_transport_fee_type_operator,transport.fee.type.operator,model_transport_fee_type,transport_logistics_management.group_tlm_operator,1,0,0,0
-access_transport_fee_type_all,transport.fee.type.all,model_transport_fee_type,base.group_user,1,0,0,0
 access_transport_rate_base_manager,transport.rate.base.manager,model_transport_rate_base,transport_logistics_management.group_tlm_manager,1,1,1,1
 access_transport_rate_base_operator,transport.rate.base.operator,model_transport_rate_base,transport_logistics_management.group_tlm_operator,1,0,0,0
 access_transport_rate_base_all,transport.rate.base.all,model_transport_rate_base,base.group_user,1,0,0,0

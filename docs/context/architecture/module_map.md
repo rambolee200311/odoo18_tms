@@ -26,6 +26,10 @@ wd_tlms/
 │   ├── pod.py                        # 签收凭证
 │   ├── pricing_rule.py               # 定价规则
 │   ├── res_partner.py                # 伙伴扩展（承运商标记）
+│   ├── transport_fee_type.py          # 费用类型字典（Sprint5）
+│   ├── transport_rate_base.py         # 费率底座（Sprint5）
+│   ├── transport_fee_line.py          # 费用明细行（Sprint5）
+│   ├── fee_base_inherit.py            # quote/order 费用挂载（Sprint5）
 │   ├── surcharge.py                  # 附加费
 │   ├── transport_container.py        # 运输订单集装箱明细
 │   ├── transport_inquiry.py          # 承运商询价

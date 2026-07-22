@@ -8,7 +8,7 @@ class RateBase(models.Model):
     _rec_name = 'name'
 
     name = fields.Char(string='Rate Name', required=True, index=True)
-    fee_type_id = fields.Many2one('transport.fee.type', string='Fee Type', required=True)
+    fee_type_id = fields.Many2one('world.depot.charge.item', string='Fee Type', required=True)
     transport_type = fields.Selection([
         ('port_to_warehouse', 'Port to Warehouse'),
         ('to_customer', 'To Customer'),

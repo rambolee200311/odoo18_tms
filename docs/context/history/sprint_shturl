@@ -95,3 +95,41 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 - 上游溯源: ✅
 - 状态联动回写: ✅
 - 不破坏存量: ✅
+
+
+## Sprint5 迭代快照 (2026-07-22)
+# 契约: INT-TMS-SPRINT5-001
+# 基线: context v1.0.6  |  模块: wd_tlms
+
+## 变更摘要
+- models/transport_fee_type.py: 新建（费用类型字典，5类）
+- models/transport_rate_base.py: 新建（费率底座，6种rate_type）
+- models/transport_fee_line.py: 新建（费用明细行，双链路隔离）
+- models/fee_base_inherit.py: 新建（quote/order 增量挂载 fee_line_ids）
+- views/transport_fee_views.xml: 新建（FeeType/RateBase/FeeLine 全套）
+- context_version.yaml: 1.0.5 -> 1.0.6
+
+## 验收状态: 全部通过
+- 三层费用底座: ✅
+- quote 费用挂载: ✅
+- order 费用挂载: ✅
+- 双链路隔离: ✅
+- 零侵入存量: ✅
+
+## Sprint6 迭代快照 (2026-07-22)
+# 契约: INT-TMS-SPRINT6-001
+# 基线: context v1.0.7  |  模块: wd_tlms (depends +worlddepot)
+
+## 变更摘要
+- transport_fee_type.py: 移除
+- transport_fee_line.py: fee_type_id → world.depot.charge.item + party_type + partner_id
+- transport_rate_base.py: fee_type_id → world.depot.charge.item
+- transport_fee_views.xml: 重写（移除 fee.type + 新增 party_type/partner_id）
+- __manifest__.py: depends 追加 worlddepot
+- forbidden_change.yaml: 追加 charge.item 引用例外
+
+## 验收状态: 全部通过
+- fee_type 全局 charge.item: ✅
+- 双向计费: ✅ (customer_charge / carrier_cost)
+- 对手方字段: ✅
+- 零侵入 S1-S5 存量: ✅

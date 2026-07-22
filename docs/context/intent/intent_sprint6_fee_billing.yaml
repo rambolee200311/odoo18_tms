@@ -1,0 +1,97 @@
+# ==============================================================
+# 【Sprint6 正式意图契约】
+# 功能：费用模型重构 — fee_type 指向全局 charge.item + 双向计费
+# 前置基线：Sprint5 fee 底座 + 决策9 charge.item 全局主数据确认
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT6-001
+  create_time: "2026-07-22"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint6 费用模型重构 + 双向计费"
+  contract_type: "架构修正 + 功能完善"
+
+goal: >
+  修正 Sprint5 费用底座架构：fee_type_id 从 TMS 自建 transport.fee.type
+  改为指向全局费用主数据 world.depot.charge.item。
+  新增 party_type（customer_charge / carrier_cost）实现双向计费隔离，
+  新增 partner_id 指向对手方（客户/承运商），
+  使 TMS 费用底座对齐 3PL 真实业务：向客户收费（应收）、向承运商付费（应付）。
+
+scope:
+  allow:
+    # 模型修正
+    - "transport.fee.line.fee_type_id → Many2one world.depot.charge.item（替代 transport.fee.type）"
+    - "transport.fee.line 新增 party_type（customer_charge / carrier_cost）"
+    - "transport.fee.line 新增 partner_id（Many2one → res.partner，对手方）"
+    - "移除 transport.fee.type 模型（不再需要，被 charge.item 替代）"
+    # 依赖变更
+    - "__manifest__.py depends 追加 worlddepot（全局主数据依赖，非模块侵入）"
+    # 视图更新
+    - "fee.line 视图新增 party_type 字段 + partner_id"
+    - "移除 fee.type 配置视图及菜单"
+    # 安全配置
+    - "更新安全权限，移除 fee.type 访问行"
+
+  forbid:
+    - 禁止改动 S1-S4 任意存量模型与逻辑
+    - 禁止改动 fee.line 以外的 Sprint5 增量代码
+    - 禁止开发财务结算、对账、发票、核销
+    - 禁止视图层写业务逻辑
+    - 禁止绕过 ORM
+
+workflow:
+  step_1: "加载 v1.0.7 基线 + 决策9"
+  step_2: "修改 fee.line：fee_type_id 换为 Many2one world.depot.charge.item"
+  step_3: "新增 party_type + partner_id 字段"
+  step_4: "移除 transport.fee.type 模型及视图"
+  step_5: "更新 fee.line 视图（双向计费 Tab）"
+  step_6: "更新 __manifest__.py depends"
+  step_7: "全场景自测（客户收费 + 承运商付费两条线）"
+  step_8: "沉淀决策资产，版本升级"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "transport.fee.line（fee_type_id 改指向 + party_type + partner_id）"
+    - "transport.fee.type（移除）"
+  view_change_list:
+    - "transport_fee_views.xml（修正 fee.line 视图 + 移除 fee.type）"
+  code_file_list:
+    - "models/transport_fee_line.py"
+    - "views/transport_fee_views.xml"
+    - "__manifest__.py"
+  document_update_list:
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "fee.line.fee_type_id → world.depot.charge.item，旧 transport.fee.type 已移除"
+  rule_2: "party_type 正常区分 customer_charge / carrier_cost"
+  rule_3: "partner_id 正确指向对手方（客户/承运商）"
+  rule_4: "双向计费数据隔离、归类正确"
+  rule_5: "worlddepot 作为基础依赖加入 manifest，不视为侵入"
+  rule_6: "不破坏 S1-S5 任何存量功能"
+  rule_7: "全部 context 认知资产同步更新"
+
+human_gate:
+  gate1_parsing_review: "费用模型重构 + 双向计费设计审核"
+  gate2_architecture_review: "worlddepot 依赖引入合规审核"
+  gate3_risk_review: "涉及 Sprint5 增量重构，非存量，低风险自动放行"
+
+bind_context_version: "1.0.7"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"

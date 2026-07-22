@@ -6,12 +6,27 @@ class FeeLine(models.Model):
     _description = 'Fee Line'
     _order = 'id'
 
+    # ---- Fee Type (global master data from worlddepot) ----
     fee_type_id = fields.Many2one(
-        'transport.fee.type', string='Fee Type', required=True)
+        'world.depot.charge.item', string='Fee Type', required=True,
+        help='Global fee type master data from world.depot.charge.item.')
+
     rate_base_id = fields.Many2one(
         'transport.rate.base', string='Rate Base',
         help='Optional reference to the rate used to calculate this fee.')
 
+    # ---- Dual Direction: Customer Charge (应收) vs Carrier Cost (应付) ----
+    party_type = fields.Selection([
+        ('customer_charge', 'Customer Charge (应收)'),
+        ('carrier_cost', 'Carrier Cost (应付)'),
+    ], string='Direction', required=True, default='customer_charge',
+        help='customer_charge = charge to customer (income). carrier_cost = cost paid to carrier (expense).')
+
+    partner_id = fields.Many2one(
+        'res.partner', string='Counterparty',
+        help='The customer (for customer_charge) or carrier (for carrier_cost).')
+
+    # ---- Source traceability ----
     source_type = fields.Selection([
         ('commercial', 'Commercial'),
         ('plan_driven', 'Plan-Driven'),
@@ -26,6 +41,7 @@ class FeeLine(models.Model):
         index=True, ondelete='cascade',
         help='Order this fee belongs to (plan-driven or final order).')
 
+    # ---- Quantity & Amount ----
     quantity = fields.Float(string='Quantity', default=1.0)
     unit_amount = fields.Monetary(string='Unit Amount', default=0.0)
     total_amount = fields.Monetary(

@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.5
+context_version: 1.0.7
 update_time: 2026-07-22
-adapt_sprint: Sprint4
+adapt_sprint: Sprint6
 update_author: AI-Engineering-Team
 
 version_log:
@@ -34,6 +34,26 @@ version_log:
     update_type: 核心业务闭环开发
     effect_scope: 运输执行层底座
 
+  1.0.7:
+    update_content: |
+      Sprint6 完成：费用模型重构 — fee_type 指向全局 charge.item + 双向计费
+      • transport.fee.type 移除，fee.line.fee_type_id → world.depot.charge.item（全局费用主数据）
+      • transport.rate.base.fee_type_id 同步指向 world.depot.charge.item
+      • transport.fee.line 新增 party_type（customer_charge / carrier_cost）双向计费隔离
+      • transport.fee.line 新增 partner_id 对手方字段
+      • __manifest__.py depends 追加 worlddepot（基础主数据模块）
+      • forbidden_change.yaml 追加 soft_reference_allow 例外
+    update_type: 架构修正 + 功能完善
+    effect_scope: 全局费用主数据引用策略 + 双向计费模型
+  1.0.6:
+    update_content: |
+      Sprint5 完成：全局费用/费率底层底座
+      新建三层费用模型：FeeType（费用类型字典）+ RateBase（费率底座）+ FeeLine（费用明细行）
+      quote / order 通过 _inherit 增量挂载 fee_line_ids
+      双链路费用隔离：source_type = commercial / plan_driven
+      纯增量底座，零侵入 S1-S4 存量代码
+    update_type: 底层基础底座开发
+    effect_scope: 费用费率标准底座层
 valid_rule:
   - 每次迭代必须同步更新本版本文件
   - 禁止人工擅自删除/修改 forbidden_change.yaml 刚性约束
