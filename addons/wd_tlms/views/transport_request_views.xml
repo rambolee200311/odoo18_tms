@@ -96,18 +96,7 @@
                                  <field name="driver_phone"/>
                                  <field name="vehicle_plate"/>
                              </group>
-                             <group string="Schedule Plans" colspan="2">
-                                <field name="schedule_ids" readonly="1">
-                                    <list>
-                                        <field name="plan_id"/>
-                                        <field name="scheduled_date"/>
-                                        <field name="cargo_type"/>
-                                        <field name="container_line_id"/>
-                                        <field name="state" widget="badge"/>
-                                    </list>
-                                </field>
-                            </group>
-                            <group string="Pickup Plans">
+                             <group string="Pickup Plans">
                                  <field name="pickup_plan_ids" readonly="1">
                                      <list>
                                          <field name="name"/>
