@@ -13,6 +13,10 @@ audit_field:
   - 违规记录
   - 熔断记录
   - 迭代时间戳
+  - bug_id（如有Bug修复场景必填）
+  - bug_severity_level
+  - fix_commit_hash
+  - bug_fix_review_record
 
 # 审计覆盖范围
 audit_scope:

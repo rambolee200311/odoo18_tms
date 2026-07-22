@@ -3,113 +3,134 @@
 # 归属：运行治理 —— 异常修复闭环
 # 功能：补全双控体系的 Bug 发现→登记→修复→验证→关闭 全链路
 # 生效范围：所有 AI Codex 迭代中的 Bug 修复
+# 联动依赖：risk_level.yaml、human_loop.yaml、workflow_risk.yaml、audit_spec.yaml
 # ==============================================
-
 bug_workflow_version: 1.0.0
 
 # ==============================================
-# Bug 严重等级定义（与 risk_level 对齐）
+# Bug 严重等级定义（严格与 risk_level 五级体系一一对齐映射）
 # ==============================================
 severity_level:
   LEVEL1:
+    mapping_risk: LEVEL1
     name: 语法/格式错误
     desc: 文件写入格式错误、缩进、拼写，无业务逻辑影响
     auto_fix: true
+    human_review: false
     example: BUG-001 transport_request.py 前导空格
 
   LEVEL2:
+    mapping_risk: LEVEL2
     name: 业务逻辑 Bug（不影响数据完整性）
     desc: 视图显隐错误、按钮行为偏差、关联跳转失效
     auto_fix: false
     human_review: 简单复核
 
   LEVEL3:
+    mapping_risk: LEVEL3
     name: 业务逻辑 Bug（影响数据完整性）
     desc: 约束校验失效、状态机错乱、费用计算错误、单据生成错误
     auto_fix: false
     human_review: 必须审核
 
   LEVEL4:
+    mapping_risk: LEVEL4
     name: 架构级缺陷
     desc: 分层错误、依赖冲突、模型关联断裂、数据丢失风险
     auto_fix: false
     forbid_execute: true
+    human_review: 技术负责人专项审批
+
+  LEVEL5:
+    mapping_risk: LEVEL5
+    name: 系统致命故障
+    desc: 整体模块无法加载、数据库破坏、链路整体瘫痪
+    auto_fix: false
+    forbid_execute: true
+    human_review: 最高级别审批 + 版本冻结
 
 # ==============================================
-# 修复标准流程（7步）
+# 修复标准7步闭环流程（强制执行，不可跳过任一节点）
 # ==============================================
 fix_workflow:
   step_1:
     name: 错误登记
-    action: 创建/更新 bug_record.md
+    action: 创建/更新 docs/context/history/bug_record.md
     required_field:
-      - 错误现象（Odoo error traceback 全文）
-      - 根因分析（哪次 sprint、什么操作导致的）
-      - 影响范围（哪些功能不可用）
-      - 状态: 🔴 待修复
+      - Bug唯一自增ID
+      - 错误现象（完整Odoo error traceback）
+      - 根因分析（归属Sprint编号、本次修改文件）
+      - 功能影响范围清单
+      - 初始状态: 🔴 待修复
+    governance_check: 未登记Bug禁止进入修复步骤
 
   step_2:
-    name: 风险定级
-    action: 按 severity_level 判定等级
+    name: 风险定级匹配
+    action: 匹配severity_level，映射全局risk等级，载入对应人机卡点规则
     rule: |
-      LEVEL1: 自动修复，无需卡点
-      LEVEL2: 简单复核后修复
-      LEVEL3: 人工审核后修复
-      LEVEL4: 禁止自动执行，需技术负责人审批
+      LEVEL1：自动放行修复，无需人工卡点
+      LEVEL2：GATE1简易复核即可执行修复
+      LEVEL3：必须通过GATE2架构卡点审核后方可修复
+      LEVEL4/LEVEL5：直接阻断执行，提交审批后方可启动方案设计
 
   step_3:
-    name: 修复设计
-    action: 描述修复方案
-    output: "修复方案描述（几句话，不需要详细设计）"
-    example: "sed -i '' 's/^ //' transport_request.py"
+    name: 修复方案设计
+    action: 书面描述修复方案、修改范围、校验手段
+    output: 简短可落地修复方案文本，归档至bug_record.md
 
   step_4:
-    name: 执行修复
-    action: 修改代码
-    post_check: |
-      Python 语法验证: python3 -c "compile(open(f).read(), f, 'exec')"
-      XML 格式验证: python3 -c "from xml.etree import ElementTree; ElementTree.parse(f)"
+    name: 执行代码修复
+    action: 执行代码改动
+    mandatory_post_check:
+      python_syntax_check: python3 -c "compile(open(file_path).read(), file_path, 'exec')"
+      xml_format_check: python3 -c "from xml.etree import ElementTree; ElementTree.parse(file_path)"
 
   step_5:
     name: 回归验证
-    action: odoo-bin -u wd_tlms 确认模块加载无报错
-    note: "如无法启动 Odoo，至少验证 Python 语法 + XML 结构无误"
+    action: 执行 odoo-bin -u wd_tlms 重载模块校验启动状态
+    fallback_rule: Odoo无法启动时，必须保证Python语法、XML结构双校验通过
+    record_verify_result: 验证结果写入bug_record.md
 
   step_6:
-    name: 状态闭环
+    name: 单据状态闭环更新
     action: |
-      更新 bug_record.md:
-      - 状态改为 ✅ 已修复
-      - 记录修复 commit hash
-      - 如涉及架构/业务认知变更 → 更新 decision_note.md
+      1、bug_record.md状态更新为 ✅ 已修复，填入本次commit hash值
+      2、架构/业务规则发生变更时，同步补充内容至 decision_note.md
+      3、同步写入本次修复审计日志
+    link_asset: history/bug_record.md + history/decision_note.md
 
   step_7:
-    name: 提交固化
-    action: git_commit.sh
+    name: 资产版本固化提交
+    action: 执行标准化 ./git_commit.sh 完成版本固化
 
 # ==============================================
-# Bug 记录文件规范
+# Bug 记录文件强制格式规范
 # ==============================================
-record_format:
-  location: "docs/context/history/bug_record.md"
-  mandatory_sections:
-    - "Bug ID（自增编号）"
-    - "发现时间"
-    - "发现场景"
-    - "根因文件"
-    - "错误类型"
-    - "错误现象（含 traceback）"
-    - "根因分析"
-    - "发生 Sprint"
-    - "影响范围"
-    - "修复方案（修复后填写）"
-    - "状态（🔴 待修复 → 🟡 修复中 → ✅ 已修复）"
+record_location: "docs/context/history/bug_record.md"
+mandatory_record_fields:
+  - Bug ID（全局自增编号）
+  - 发现时间戳
+  - 复现操作场景
+  - 出错目标文件路径
+  - 错误分级 & 对应risk等级
+  - 原始报错堆栈traceback
+  - 根因定位分析
+  - 产生问题归属Sprint版本
+  - 业务/系统影响范围
+  - 正式修复方案内容
+  - 生命周期状态：🔴待修复 / 🟡修复中 / ✅已修复
+  - 修复commit哈希、审核人、审核时间
 
 # ==============================================
-# Bugs 闭环审计
+# 全局审计&熔断绑定规则
 # ==============================================
-audit_rule:
-  - 所有修复必须更新 bug_record.md
-  - 不允许跳过步骤直接改代码
-  - 修复后必须验证语法无误
-  - LEVEL3+ 的修复必须留有人工审核记录
+audit_binding_rule:
+  1、所有Bug修复全流程节点必须留痕归档，纳入全链路审计范围
+  2、禁止省略登记、跳过校验、直接修改代码提交
+  3、LEVEL3及以上缺陷修复，强制留存人工审核凭证至审计日志
+  4、audit_spec.yaml审计字段统一新增：bug_id、bug_severity、fix_commit_id
+
+fuse_trigger_rule:
+  1、未执行语法/XML校验直接提交修复 → 流水线自动熔断
+  2、LEVEL4/LEVEL5缺陷无审批强行修复 → 熔断+锁定当前开发基线
+  3、修复完成未更新bug_record.md资产 → 拒绝git提交动作

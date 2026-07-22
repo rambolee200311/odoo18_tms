@@ -9,6 +9,9 @@ fuse_trigger:
   - 高危变更无人工审批
   - 出现历史已规避Bug类型
   - 无单据业务逻辑
+  - 修复操作未遵循bug_workflow标准化流程
+  - LEVEL4/LEVEL5架构级Bug未经审批强行执行修改
+  - Bug修复无语法校验、无回归验证直接提交代码
 
 # 熔断策略
 fuse_strategy:
