@@ -1,14 +1,42 @@
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 流水线产出验证门禁（Post-Generation Quality Gate）
 # 根因：BUG-001~006 均因生成代码未经验证直接提交
 # 作用：每次代码生成后自动执行语法/结构/命名一致性校验
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 
 pipeline_version: 1.0.0
 enable_post_generation_gate: true
 
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 校验步骤（每次代码生成/修改后强制执行）
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 check_steps:
 
@@ -78,24 +106,66 @@ check_steps:
         message: "Odoo 18 已移除 colors 属性"
     fail_on: "任何上述旧模式"
 
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 执行时机
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 execution_timing:
   - after_every_code_generation: true
   - before_git_commit: true
   - on_create_pull_request: true
 
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 熔断策略
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 fuse:
   - check_1 ~ check_5 任一失败 → 拒绝提交
   - 修复后重新运行校验，通过后方可提交
   - 跳过校验需人工审批（LEVEL2/3 风险）
 
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 # 与现有治理文件的关系
+
+  check_6_tab_chars:
+    name: Tab 字符校验
+    scope: "所有 .py, .xml 文件（JS 除外，JS 允许 tab）"
+    command: grep -rnP '	' --include='*.py' --include='*.xml'
+    fail_on: "任何 Tab 字符"
+    rationale: Python TabError 发生在 TAB 与空格混用时（BUG-007）
 # ==============================================
 integration:
   - "workflow_risk.yaml → pipeline_check_step 追加此文件中的 check_steps"
