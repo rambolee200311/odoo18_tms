@@ -111,6 +111,7 @@ class TransportOrder(models.Model):
         ('B/D', 'B/D'), ('C/D', 'C/D'), ('D/E', 'D/E'),
     ], string='Tunnel Code')
     customs_transit_ref = fields.Char(string='T1 MRN')
+    customs_declaration_ref = fields.Char(string="Customs Decl. Ref.")
     t1_state = fields.Selection([
         ('none', 'None'),
         ('declared', 'Declared'),
