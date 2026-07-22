@@ -29,7 +29,7 @@ def extract_model_fields():
     for f in sorted(glob.glob(os.path.join(MODELS_DIR, '*.py'))):
         with open(f) as fh:
             for line in fh:
-                m = re.match(r'^\s*_name\s*=\s*'([^']+)'' , line)
+                m = re.match(r"    _name\s*=\s*'([^']+)'", line)
                 if m:
                     current_model = m.group(1)
                     models.setdefault(current_model, {})
