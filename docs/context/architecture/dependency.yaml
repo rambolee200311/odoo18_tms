@@ -1,0 +1,78 @@
+# 模块依赖与调用关系图
+
+version: 1.0.0
+
+# ==============================================
+# 模块外部 dependencies
+# ==============================================
+external_dependencies:
+  hard_depends:
+    base: "Odoo 核心"
+    mail: "消息/日志/关注"
+    stock: "仓库主数据 (stock.warehouse)"
+    account: "财务账户关联"
+    portal: "客户/承运商门户"
+    contacts: "伙伴管理"
+    product: "产品数据"
+    fleet: "车队管理（可选）"
+
+  soft_reference:
+    wd_iffm:
+      model: "import.pickup.requirement"
+      type: "Reference 字段引用，无硬 depends"
+      direction: "TMS → IFFM, TMS 只读引用，不反向写"
+
+  explicit_forbidden:
+    wd_bonded_wms: "禁止模块依赖。仅通过 is_bonded_transfer 布尔信号联动"
+
+# ==============================================
+# 模型间调用关系
+# ==============================================
+model_call_graph:
+  tlmp.transport.request:
+    creates: ["pickup.plan", "schedule.plan.schedule", "tlmp.transport.inquiry"]
+    reads: ["res.partner"]
+    constrained_by: ["res.company"]
+
+  pickup.plan:
+    creates: ["tlmp.transport.order"]
+    reads: ["pickup.plan.container.line", "stock.warehouse", "res.partner", "tlmp.transport.request"]
+
+  schedule.plan.schedule:
+    reads: ["pickup.plan", "pickup.plan.container.line"]
+    constrained_by: ["res.company"]
+
+  tlmp.transport.request:
+    creates: ["tlmp.transport.inquiry"]
+    reads: ["pickup.plan", "res.partner"]
+
+  tlmp.transport.inquiry:
+    creates: ["tlmp.transport.quote"]
+    reads: ["tlmp.transport.request"]
+
+  tlmp.transport.quote:
+    creates: ["tlmp.transport.order"]
+    reads: ["tlmp.transport.inquiry"]
+
+  container.service.request:
+    creates: ["tlmp.transport.order"]
+
+# ==============================================
+# 调用方向约束
+# ==============================================
+direction_constraints:
+  - from: "任何模型"
+    to: "wd_iffm"
+    rule: "只读引用，绝不反向写"
+
+  - from: "任何模型"
+    to: "wd_bonded_wms"
+    rule: "不直接调用，仅通过信号触发"
+
+  - from: "视图层"
+    to: "数据库"
+    rule: "禁止直写"
+
+  - from: "JS/Controller"
+    to: "数据库"
+    rule: "必须通过 ORM 模型层写入"

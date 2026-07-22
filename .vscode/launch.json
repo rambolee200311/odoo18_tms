@@ -13,8 +13,7 @@
                 "wd_tlms"
             ],
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "envFile": "${workspaceFolder}/.env"
+            "justMyCode": true
         }
     ]
 }

@@ -102,6 +102,10 @@ class PickupPlan(models.Model):
     notes = fields.Text(string='Notes')
     scheduled_date = fields.Date(string='Scheduled Date', index=True,
         help='Date assigned via Schedule calendar. Used for warehouse / warehouse_transfer destinations.')
+    schedule_ids = fields.One2many(
+        'schedule.plan.schedule', 'plan_id',
+        string='Schedules', copy=False,
+        help='Schedule records associated with this pick-up plan. Each record represents a container or pallet scheduled on a specific date.')
 
     company_id = fields.Many2one(
         'res.company', string='Company',

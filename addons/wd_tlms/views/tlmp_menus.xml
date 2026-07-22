@@ -6,10 +6,14 @@
     <!-- Transport Operations (3-group menu) -->
     <menuitem id="menu_tlmp_operations" name="Operations" parent="menu_tlmp_root" sequence="10"/>
 
+    <menuitem id="menu_tlmp_transport_requests_top" name="Transport Requests" parent="menu_tlmp_operations"
+              action="action_tlmp_request" sequence="5"/>
     <!-- Group 1: Pickup &amp; Service -->
     <menuitem id="menu_tlmp_pickup_group" name="Pickup &amp; Service" parent="menu_tlmp_operations" sequence="10"/>
     <menuitem id="menu_tlmp_pickup_plans" name="Pickup Requirements" parent="menu_tlmp_pickup_group"
               action="action_pickup_plan" sequence="10"/>
+    <menuitem id="menu_tlmp_schedule_plans" name="Schedule Plans" parent="menu_tlmp_pickup_group"
+              action="action_schedule_plan_schedule" sequence="15"/>
     <menuitem id="menu_tlmp_container_service" name="Container Service"
               parent="menu_tlmp_pickup_group"
               action="action_container_service_request" sequence="20"/>
@@ -18,8 +22,6 @@
 
 
     <menuitem id="menu_tlmp_quote_group" name="Quotation Process" parent="menu_tlmp_operations" sequence="20"/>
-    <menuitem id="menu_tlmp_requests" name="Transport Requests" parent="menu_tlmp_quote_group"
-              action="action_tlmp_request" sequence="10"/>
     <menuitem id="menu_tlmp_inquiries" name="Inquiries" parent="menu_tlmp_quote_group"
               action="action_tlmp_inquiry" sequence="20"/>
     <menuitem id="menu_tlmp_quotes" name="Quotes" parent="menu_tlmp_quote_group"

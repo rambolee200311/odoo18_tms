@@ -197,3 +197,54 @@ class PickupScheduleController(http.Controller):
             result.append(item)
 
         return result
+
+
+    # ================================================================
+    # Sprint 2: schedule.plan.schedule API endpoints
+    # These use the new schedule.plan.schedule model for 
+    # proper state management and overlap prevention.
+    # ================================================================
+
+    @http.route('/pickup_schedule/api/v2/schedules', type='json', auth='user',
+                methods=['GET'], csrf=False)
+    def api_v2_get_schedules(self, year=None, month=None, destination_id=None, **kwargs):
+        """Return scheduled plans for the given month (using schedule.plan.schedule model).
+        
+        Returns structured data for the calendar grid with overlap-safe scheduling.
+        """
+        Schedule = request.env['schedule.plan.schedule']
+        return Schedule.api_get_schedules(year, month, destination_id)
+
+    @http.route('/pickup_schedule/api/v2/unplanned', type='json', auth='user',
+                methods=['GET'], csrf=False)
+    def api_v2_get_unplanned(self, destination_id=None, warehouse_id=None, **kwargs):
+        """Return unscheduled plans for the left-side panel.
+        
+        Uses schedule.plan.schedule model for enhanced filtering and 
+        cargo-type-aware scheduling (containers vs pallets).
+        """
+        Schedule = request.env['schedule.plan.schedule']
+        return Schedule.api_get_unplanned(destination_id, warehouse_id)
+
+    @http.route('/pickup_schedule/api/v2/schedule', type='json', auth='user',
+                methods=['POST'], csrf=False)
+    def api_v2_set_schedule(self, plan_id=None, scheduled_date=None, container_line_id=None, **kwargs):
+        """Create a schedule using schedule.plan.schedule model.
+        
+        Supports both container-level and plan-level scheduling.
+        Prevents overlap via SQL unique constraint.
+        """
+        Schedule = request.env['schedule.plan.schedule']
+        return Schedule.api_create_schedule(plan_id, scheduled_date, container_line_id)
+
+    @http.route('/pickup_schedule/api/v2/unschedule', type='json', auth='user',
+                methods=['POST'], csrf=False)
+    def api_v2_unschedule(self, schedule_id=None, **kwargs):
+        """Cancel a schedule record.
+        
+        Properly manages state transition and cleans up plan.scheduled_date.
+        """
+        if not schedule_id:
+            return {'ok': False, 'error': _('Missing schedule_id')}
+        Schedule = request.env['schedule.plan.schedule']
+        return Schedule.api_delete_schedule(int(schedule_id))

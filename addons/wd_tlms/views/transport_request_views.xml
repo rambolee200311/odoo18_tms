@@ -1,42 +1,184 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <record id="view_tlmp_transport_request_tree" model="ir.ui.view">
-        <field name="name">tlmp.transport.request.tree</field>
-        <field name="model">tlmp.transport.request</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
-                <field name="state"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_tlmp_transport_request_form" model="ir.ui.view">
-        <field name="name">tlmp.transport.request.form</field>
-        <field name="model">tlmp.transport.request</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <field name="name"/>
-                        <field name="state"/>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="view_tlmp_transport_request_search" model="ir.ui.view">
-        <field name="name">tlmp.transport.request.search</field>
-        <field name="model">tlmp.transport.request</field>
-        <field name="arch" type="xml">
-            <search/>
-        </field>
-    </record>
-
-    <record id="action_tlmp_request" model="ir.actions.act_window">
-        <field name="name"></field>
-        <field name="res_model">tlmp.transport.request</field>
-        <field name="view_mode">list,form</field>
-    </record>
-</odoo>
+ <?xml version="1.0" encoding="utf-8"?>
+ <odoo>
+ 
+     <!-- List View -->
+     <record id="view_tlmp_transport_request_tree" model="ir.ui.view">
+         <field name="name">tlmp.transport.request.tree</field>
+         <field name="model">tlmp.transport.request</field>
+         <field name="arch" type="xml">
+             <list string="Transport Requests" default_order="id desc">
+                 <field name="name"/>
+                 <field name="request_type"/>
+                 <field name="destination_type"/>
+                 <field name="cargo_type"/>
+                 <field name="partner_id" optional="show"/>
+                 <field name="state" widget="badge"/>
+                 <field name="carrier_id" optional="show"/>
+                 <field name="warehouse_id" optional="show"/>
+                 <field name="planned_pickup_date" optional="show"/>
+                 <field name="source_type" optional="show"/>
+             </list>
+         </field>
+     </record>
+ 
+     <!-- Form View -->
+     <record id="view_tlmp_transport_request_form" model="ir.ui.view">
+         <field name="name">tlmp.transport.request.form</field>
+         <field name="model">tlmp.transport.request</field>
+         <field name="arch" type="xml">
+             <form string="Transport Request">
+                 <header>
+                     <button name="action_go_schedule" type="object" string="Go to Schedule"
+                             class="btn-primary"
+                             invisible="request_type != 'plan_driven'"/>
+                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
+                             invisible="request_type != 'plan_driven'"/>
+                     <button name="action_start_inquiry" type="object" string="Start Inquiry"
+                             class="btn-primary"
+                             invisible="request_type != 'commercial'"/>
+                     <button name="action_confirm" type="object" string="Confirm" states="draft"/>
+                     <button name="action_cancel" type="object" string="Cancel" states="draft,confirmed"/>
+                     <field name="state" widget="statusbar"/>
+                 </header>
+                 <sheet>
+                     <group>
+                         <group string="Identity">
+                             <field name="name" readonly="1"/>
+                             <field name="request_type"/>
+                             <field name="destination_type"/>
+                             <field name="cargo_type"/>
+                             <field name="source_type"/>
+                             <field name="iff_requirement_ref"
+                                    invisible="source_type != 'iff'"
+                                    options="{'no_create': True, 'no_open': True}"/>
+                         </group>
+                         <group string="Partner &amp; Cargo">
+                             <field name="partner_id"
+                                    invisible="destination_type == 'warehouse'"
+                                    options="{'no_create': True}"/>
+                             <field name="customer_ref"/>
+                             <field name="contact_person"/>
+                             <field name="contact_phone"/>
+                             <field name="cargo_description"/>
+                         </group>
+                     </group>
+                     <group string="Scene Details">
+                         <group>
+                             <field name="terminal_id"
+                                    invisible="destination_type not in ('warehouse', 'customer')"
+                                    options="{'no_create': True}"/>
+                             <field name="warehouse_id"
+                                    invisible="destination_type not in ('warehouse', 'warehouse_transfer')"
+                                    options="{'no_create': True}"/>
+                             <field name="source_warehouse_id"
+                                    invisible="destination_type != 'warehouse_transfer'"
+                                    options="{'no_create': True}"/>
+                             <field name="delivery_address"
+                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                             <field name="delivery_contact"
+                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                             <field name="delivery_phone"
+                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                         </group>
+                         <group>
+                             <field name="pallet_count" invisible="cargo_type != 'pallet'"/>
+                             <field name="package_count" invisible="cargo_type != 'pallet'"/>
+                             <field name="cargo_weight"/>
+                             <field name="cargo_volume"/>
+                         </group>
+                     </group>
+                     <notebook>
+                         <page string="Scheduling" invisible="request_type != 'plan_driven'" name="scheduling_page">
+                             <group>
+                                 <field name="carrier_id" options="{'no_create': True}"/>
+                                 <field name="planned_pickup_date"/>
+                                 <field name="driver_name"/>
+                                 <field name="driver_phone"/>
+                                 <field name="vehicle_plate"/>
+                             </group>
+                             <group string="Pickup Plans">
+                                 <field name="pickup_plan_ids" readonly="1">
+                                     <list>
+                                         <field name="name"/>
+                                         <field name="cargo_type"/>
+                                         <field name="scheduled_date"/>
+                                     </list>
+                                 </field>
+                             </group>
+                         </page>
+                         <page string="Inquiry &amp; Quote" invisible="request_type != 'commercial'" name="inquiry_page">
+                             <button name="action_create_orders_from_quotes" type="object" string="Create Orders from Accepted Quotes"
+                                     class="btn-primary"
+                                     attrs="{'invisible': [('quote_ids', '=', [])]}"/>
+                             <group string="Inquiries">
+                                 <field name="inquiry_ids" readonly="1">
+                                     <list>
+                                         <field name="name"/>
+                                         <field name="partner_id"/>
+                                         <field name="state"/>
+                                         <field name="total_amount" sum="Total"/>
+                                     </list>
+                                 </field>
+                             </group>
+                             <group string="Quotes">
+                                 <field name="quote_ids" readonly="1">
+                                     <list>
+                                         <field name="name"/>
+                                         <field name="partner_id"/>
+                                         <field name="state"/>
+                                         <field name="total_amount" sum="Total"/>
+                                     </list>
+                                 </field>
+                             </group>
+                         </page>
+                         <page string="Notes" name="notes_page">
+                             <group>
+                                 <field name="special_requirements"/>
+                                 <field name="has_dangerous_goods"/>
+                                 <field name="customs_declaration_ref"/>
+                             </group>
+                         </page>
+                     </notebook>
+                 </sheet>
+                 <chatter/>
+             </form>
+         </field>
+     </record>
+ 
+     <!-- Search View -->
+     <record id="view_tlmp_transport_request_search" model="ir.ui.view">
+         <field name="name">tlmp.transport.request.search</field>
+         <field name="model">tlmp.transport.request</field>
+         <field name="arch" type="xml">
+             <search string="Search Transport Requests">
+                 <field name="name"/>
+                 <field name="partner_id"/>
+                 <field name="carrier_id"/>
+                 <field name="warehouse_id"/>
+                 <separator/>
+                 <filter string="Plan-Driven" name="plan_driven" domain="[('request_type', '=', 'plan_driven')]"/>
+                 <filter string="Commercial" name="commercial" domain="[('request_type', '=', 'commercial')]"/>
+                 <separator/>
+                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                 <filter string="Confirmed" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                 <separator/>
+                 <filter string="From IFF" name="from_iff" domain="[('source_type', '=', 'iff')]"/>
+                 <filter string="Manual" name="manual" domain="[('source_type', '=', 'manual')]"/>
+                 <group expand="0" string="Group By">
+                     <filter string="Request Type" name="group_type" context="{'group_by': 'request_type'}"/>
+                     <filter string="Destination" name="group_dest" context="{'group_by': 'destination_type'}"/>
+                     <filter string="Cargo Type" name="group_cargo" context="{'group_by': 'cargo_type'}"/>
+                 </group>
+             </search>
+         </field>
+     </record>
+ 
+     <!-- Window Action -->
+     <record id="action_tlmp_request" model="ir.actions.act_window">
+         <field name="name">Transport Requests</field>
+         <field name="res_model">tlmp.transport.request</field>
+         <field name="view_mode">list,form</field>
+         <field name="search_view_id" ref="view_tlmp_transport_request_search"/>
+     </record>
+ 
+ </odoo>

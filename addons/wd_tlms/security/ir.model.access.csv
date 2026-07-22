@@ -73,3 +73,7 @@ access_bl_container_all,bl.container.all,model_bl_container,base.group_user,1,0,
 access_transport_plan_manager,container.transport.plan.manager,model_container_transport_plan,transport_logistics_management.group_tlm_manager,1,1,1,1
 access_transport_plan_operator,container.transport.plan.operator,model_container_transport_plan,transport_logistics_management.group_tlm_operator,1,1,1,0
 access_transport_plan_all,container.transport.plan.all,model_container_transport_plan,base.group_user,1,0,0,0
+
+access_schedule_plan_manager,schedule.plan.schedule.manager,model_schedule_plan_schedule,transport_logistics_management.group_tlm_manager,1,1,1,1
+access_schedule_plan_operator,schedule.plan.schedule.operator,model_schedule_plan_schedule,transport_logistics_management.group_tlm_operator,1,1,1,0
+access_schedule_plan_all,schedule.plan.schedule.all,model_schedule_plan_schedule,base.group_user,1,0,0,0

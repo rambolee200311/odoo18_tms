@@ -34,7 +34,7 @@
                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
                             class="btn-primary"
                             invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
-                    <button name="action_create_transport_request" type="object" string="Create Transport Request"
+                    <button name="action_open_parent_request" type="object" string="Open Parent Request"
                             class="btn-primary"
                             invisible="destination_type not in ('customer', 'self_pickup')"/>
                 </header>

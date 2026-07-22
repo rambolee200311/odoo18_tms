@@ -12,6 +12,8 @@ from . import carrier_settlement
 from . import pricing_rule
 from . import res_partner
 from . import pickup_plan
+from . import pickup_plan_fix
 from . import container_service
 from . import container_master
 from . import transport_plan
+from . import schedule_plan

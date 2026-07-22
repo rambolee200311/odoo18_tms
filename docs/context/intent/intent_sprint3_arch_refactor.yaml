@@ -1,0 +1,129 @@
+ # ==============================================================
+ # 【Sprint3 正式意图契约】(v2 — 补充双 Transport Request 认知)
+ # 功能：TMS 全流程入口重校正 + transport.request 统一入口 + 商务报价链路
+ # 管控模式：意图控制 + 认知控制 双重强制约束
+ # ==============================================================
+ 
+ contract_meta:
+   contract_id: INT-TMS-SPRINT3-001
+   create_time: "2026-07-22"
+   project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+   sprint_version: "Sprint3 流程架构校正 + 商务报价链路"
+   contract_type: "架构校正 + 新功能开发"
+ 
+ goal: >
+   将 tlmp.transport.request 重构为 TMS 侧全流程统一入口单据，
+   与 wd_iffm 的 import.pickup.requirement（IFFM 侧运输请求）对等。
+   实现双流程正确分流：
+     计划驱动型：transport.request → Schedule → pickup.plan → transport.order
+     商务报价型：transport.request → inquiry → quote → transport.order
+   destination_type 与 pickup_scene 字段映射对齐，
+   修正 Sprint1+Sprint2 以 pickup.plan 为入口的错误架构。
+ 
+ scope:
+   allow:
+     # ---- 模型层：transport.request 通用入口 ----
+     - "tlmp.transport.request 新增 request_type (plan_driven / commercial)"
+     - "tlmp.transport.request 新增 destination_type (4场景，与 import.pickup.requirement.pickup_scene 映射对齐)"
+     - "tlmp.transport.request 新增 source_type (iff / manual，追踪来源)"
+     - "tlmp.transport.request 新增 pickup_plan_ids One2many"
+     - "tlmp.transport.request 新增 schedule_ids One2many"
+     - "tlmp.transport.request 新增 cargo_type + 托件/柜货物字段"
+     - "tlmp.transport.request 表单按 request_type 动态显隐"
+ 
+     # ---- 模型层：pickup.plan 降级调整 ----
+     - "pickup.plan 去掉 action_create_transport_request 按钮（逻辑反转）"
+     - "pickup.plan 修正 action_create_transport_order 指向父级 request"
+     - "pickup.plan 增加 transport_request_id 反向必填约束"
+ 
+     # ---- 视图层 ----
+     - "transport.request 表单头：按 request_type 显示不同操作按钮"
+     - "transport.request 左栏：基础信息，右栏：按场景动态显隐"
+     - "transport.request 新增商务报价页：inquiry/quote 子列表"
+     - "transport.request 新增排期页：pickup.plan/schedule 子列表"
+     - "pickup.plan 表单改为 transport.request 上下游联动"
+     - "菜单调整：Transport Requests 提升至 Operations 顶级"
+ 
+     # ---- 商务报价链路（Sprint3 新功能） ----
+     - "transport.request → inquiry → quote → transport.order"
+     - "inquiry 表单读取 transport.request 预填"
+     - "quote 表单读取 inquiry 结果加价"
+     - "quote accepted → 自动创建 transport.order"
+ 
+     # ---- 安全/配置 ----
+     - "同步更新 security 配置"
+     - "同步更新菜单结构"
+ 
+   forbid:
+     - "禁止修改 schedule.plan.schedule 已有字段与逻辑"
+     - "禁止修改 bl.container / container.transport.plan 存量"
+     - "禁止修改 Odoo 底层 ORM / stock / account"
+     - "禁止新增财务、结算、账单字段"
+     - "禁止直连数据库绕过 ORM"
+     - "禁止在视图层写业务逻辑"
+     - "禁止修改 wd_iffm 模块的 import.pickup.requirement / pickup.container.line"
+     - "禁止创建对 wd_iffm 的硬模块依赖（保持 Reference 字段软引用）"
+ 
+ workflow:
+   step_1: "全量加载认知资产（v1.0.4 基线，含双 Transport Request 体系）"
+   step_2: "读取决策6：架构重校正原则"
+   step_3: "修改 transport.request 模型 → TMS 统一入口"
+   step_4: "修正 pickup.plan 为子单据"
+   step_5: "修正 transport.request 视图 → 双流程动态UI"
+   step_6: "修正 pickup.plan 视图 → 上下游联动"
+   step_7: "补充商务报价链路（inquiry → quote → order）"
+   step_8: "destination_type ↔ pickup_scene 映射对齐，source_type 追踪"
+   step_9: "调整菜单、权限、序列号"
+   step_10: "全场景自测 + 认知资产沉淀"
+ 
+ input:
+   context_asset: [
+     "docs/context/architecture",
+     "docs/context/business",
+     "docs/context/history",
+     "docs/context/constraints",
+     "docs/context/cognition"
+   ]
+   current_code_base: "addons/wd_tlms/"
+ 
+ output:
+   model_change_list:
+     - "tlmp.transport.request（重构为TMS统一入口）"
+     - "pickup.plan（降级为子单据 + 逻辑修正）"
+   view_change_list:
+     - "transport_request_views.xml（重写，双流程动态UI）"
+     - "pickup_plan_views.xml（修正按钮与布局）"
+   code_file_list:
+     - "models/transport_request.py"
+     - "models/transport_inquiry.py"
+     - "models/transport_quote.py"
+     - "models/pickup_plan.py（逻辑修正，不改字段）"
+     - "views/transport_request_views.xml"
+     - "views/pickup_plan_views.xml"
+     - "views/tlmp_menus.xml"
+   document_update_list:
+     - "docs/context/history/sprint_log.md"
+     - "docs/context/history/decision_note.md"
+     - "docs/context/context_version.yaml"
+ 
+ task_state_flow:
+   states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+ 
+ exit_criteria:
+   rule_1: "transport.request 作为 TMS 统一入口正常分流（plan_driven / commercial）"
+   rule_2: "计划驱动型：transport.request → Schedule → pickup.plan → transport.order"
+   rule_3: "商务报价型：transport.request → inquiry → quote → transport.order（含自动创建）"
+   rule_4: "pickup.plan 降级为子单据正确，按钮逻辑双向正确"
+   rule_5: "destination_type 与 pickup_scene 映射对齐，source_type 正常追踪来源"
+   rule_6: "不修改 wd_iffm 模块任何模型/视图/数据"
+   rule_7: "不破坏 Sprint1+Sprint2 所有存量代码（仅修正逻辑）"
+   rule_8: "认知资产、迭代日志、版本全部同步更新至 v1.0.4"
+ 
+ human_gate:
+   gate1_parsing_review: "架构重校正范围 + 双Transport Request体系确认"
+   gate2_architecture_review: "双流程分流设计 + 跨模块IFFM边界审核"
+   gate3_risk_review: "涉及存量模型重构，需确认不破坏已有逻辑"
+ 
+ bind_context_version: "1.0.4"
+ bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+ bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"

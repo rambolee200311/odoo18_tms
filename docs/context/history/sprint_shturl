@@ -27,3 +27,52 @@
 - 柜/托不混合: 同一需求不混装
 - IFFM来源只读: container detail fields
 - 保税调拨强制勾选: bonded warehouse constraint
+
+## Sprint2 迭代快照 (2026-07-21)
+# 契约: INT-TMS-SPRINT2-001
+# 基线: context v1.0.3  |  模块: wd_tlms v1.0.39
+
+## 变更摘要
+- models/schedule_plan.py: 新建 (schedule.plan.schedule 排期模型，20+字段，4状态，4 API方法)
+- models/pickup_plan.py: +1 field (schedule_ids One2many)
+- views/schedule_calendar_views.xml: 新建 (calendar/tree/form/search 4视图)
+- controllers/pickup_schedule.py: +4路由 (v2 API endpoints)
+- architecture/ + business/: 4文件补齐 (module_map, dependency, stock_rule, inventory_flow)
+- context_version.yaml: 1.0.2 → 1.0.3
+
+## 验收状态: ✅ 全部通过
+- 日历拖拽功能: ✅ (模型+API支撑)
+- 防重叠校验: ✅ (SQL UNIQUE + 业务逻辑)
+- 双货型适配: ✅ (container + pallet)
+- 不破坏 Sprint1: ✅ (仅增量扩展)
+- 架构合规: ✅
+- 认知资产同步: ✅
+
+## Sprint3（架构重校正）快照 (2026-07-21)
+# 契约: INT-TMS-SPRINT3-001
+# 基线: context v1.0.4
+
+## 修正内容
+**原架构（错误）**:
+  计划驱动: pickup.plan → Schedule → transport.order
+  商务报价: pickup.plan → transport.request → inquiry → quote → order
+
+**正确架构**:
+  计划驱动: transport.request → Schedule → pickup.plan → transport.order
+  商务报价: transport.request → inquiry → quote → transport.order
+
+## 变更文件（文档层）
+- business/stock_rule.md: 双流程链路修正
+- business/inventory_flow.md: 全链路修正
+- architecture/module_map.md: 单据层次修正
+- architecture/dependency.yaml: 调用关系修正
+- design/详细设计.md: 流程图重构
+- requirement/需求分析.md: 流程修正
+- requirement/一期完成.md: 场景表修正
+- history/sprint_log.md: 修正说明追加
+- history/decision_note.md: 决策6追加
+- context_version.yaml: 1.0.3 → 1.0.4
+- intent_sprint3_arch_refactor.yaml: 新建
+
+## 代码存量状态
+Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构

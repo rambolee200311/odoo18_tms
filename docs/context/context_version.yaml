@@ -1,36 +1,36 @@
 # ==============================================
-# 上下文资产版本管理中心（AI Agent 认知控制工程）
+# 上下文资产版本管理中心
 # 适配：Odoo18 TMS 物流项目
-# 用途：流水线自动识别、AI迭代读取基线、实验对照版本锁定
 # ==============================================
 
-context_version: 1.0.2
+context_version: 1.0.4
 update_time: 2026-07-21
-adapt_sprint: Sprint2
+adapt_sprint: Sprint3
 update_author: AI-Engineering-Team
 
 version_log:
-  1.0.0:
-    update_content: 初始化四层上下文资产 + 意图契约体系完整落地
-    update_type: 全量新建
-    effect_scope: 所有AI迭代、代码生成、约束校验、实验基线
-  1.0.1:
-    update_content: Sprint1 完成pickup.plan提货需求模型与视图开发，新增业务约束校验
-    update_type: 迭代更新
-    effect_scope: 提货需求底层基座全流程
-  1.0.2:
-    update_content: 新增完整认知控制工程资产cognition全套模板；新增Sprint2排期日历意图契约；启用意图+认知双重管控体系
-    update_type: 资产新增
-    effect_scope: 全局所有AI开发迭代双控约束生效
+  1.0.0: {update_content: 初始化四层上下文资产 + 意图契约体系落地, update_type: 全量新建, effect_scope: 全局}
+  1.0.1: {update_content: Sprint1 pickup.plan 提货需求模型与视图, update_type: 迭代更新, effect_scope: 提货需求基座}
+  1.0.2: {update_content: 新增认知控制工程资产 + Sprint2 排期日历契约, update_type: 资产新增, effect_scope: 双控体系激活}
+  1.0.3: {update_content: Sprint2 schedule.plan.schedule 排期模型开发, update_type: 迭代开发, effect_scope: 排期调度模块}
+  1.0.4:
+    update_content: |
+      【架构重校正】transport.request 修正为全流程统一入口
+      pickup.plan 降级为计划驱动型排期子单据
+      双流程链路：
+        计划驱动: transport.request → Schedule → pickup.plan → transport.order
+        商务报价: transport.request → inquiry → quote → transport.order
+      同步修正全部认知资产（business/ architecture/ history/ design/ requirement）
+      新建 Sprint3 意图契约 INT-TMS-SPRINT3-001
+    update_type: 架构校正 + 版本基线切换
+    effect_scope: 全局流程入口 + 商务报价链路启动
 
-# 上下文有效性强制规则（AI不可绕过）
 valid_rule:
   - 每次迭代必须同步更新本版本文件
   - 禁止人工擅自删除/修改 forbidden_change.yaml 刚性约束
   - 意图契约变更必须升级小版本号
   - 架构/业务规则变更必须升级次版本号
 
-# 绑定资产目录
 bind_asset_folder:
   - architecture
   - business
