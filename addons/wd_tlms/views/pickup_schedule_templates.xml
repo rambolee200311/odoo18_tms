@@ -27,9 +27,9 @@
                         <!-- Right Panel: Calendar -->
                         <div class="ps_calendar_panel">
                             <div class="ps_month_nav">
-                                <button id="ps_prev_month" class="btn btn-sm btn-outline-secondary">&laquo; Prev</button>
+                                <button id="ps_prev_month" class="btn btn-sm btn-outline-secondary">« Prev</button>
                                 <span id="ps_month_title" class="ps_month_title"></span>
-                                <button id="ps_next_month" class="btn btn-sm btn-outline-secondary">Next &raquo;</button>
+                                <button id="ps_next_month" class="btn btn-sm btn-outline-secondary">Next »</button>
                             </div>
                             <div class="ps_weekdays">
                                 <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
