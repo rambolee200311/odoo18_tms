@@ -143,3 +143,36 @@
 ### 修正范围
 - `transport.request` 为**全流程统一入口**，pickup.plan 降级为排期阶段创建的子单据
 - 所有认知资产（business/stock_rule, inventory_flow, architecture/module_map, dependency, design/详细设计, requirement/需求分析, 一期完成）已同步修正
+
+
+---
+
+## Sprint4: transport.order 运输订单统一收敛闭环
+
+**时间**: 2026-07-22
+**契约**: INT-TMS-SPRINT4-001
+**状态**: 已完成
+
+### 迭代目标
+搭建 transport.order 全局统一运输订单闭环，实现双链路统一落单收敛。
+
+### 完成成果
+
+#### 模型层
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| models/transport_order.py | 增强 | 新增 pickup_plan_id / source_type / _compute_source_type / _sync_upstream_status / create_from_pickup_plan |
+| models/pickup_plan_fix.py | 修正 | action_create_transport_order 设置 pickup_plan_id |
+
+#### 视图层
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| views/transport_order_views.xml | 重写 | 10 状态流转 + source_type badge + 上游溯源跳转 + 5 标签页 |
+
+### 验收状态
+- transport.order 双来源落单: ✅ source_type computed
+- 计划链路: request → schedule → plan → order: ✅ pickup_plan_id 绑定
+- 商务链路: request → inquiry → quote → order: ✅ quote._auto_create_order
+- 上游溯源精准可跳转: ✅ 表单 Source Documents 组
+- 状态流转正常 + 联动回写: ✅ 10 状态 + _sync_upstream_status
+- 不破坏 S1/S2/S3 存量: ✅ 仅增量扩展

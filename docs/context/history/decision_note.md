@@ -155,3 +155,20 @@
 - 所有菜单、按钮、API 需要反向调整
 - `pickup.plan.action_create_transport_request()` 方法逻辑反转
 - Sprint3 将基于修正后的架构进行开发
+
+
+---
+
+### 决策7（Sprint4）：transport.order 统一收敛出口 + 双链路溯源
+
+**背景**: Sprint1~Sprint3 完成 request 统一入口 + 双链路分流，但 transport.order 缺少来源追溯。
+
+**决策**: transport.order 作为全系统唯一收敛出口，新增 source_type 计算字段 + pickup_plan_id 溯源绑定。
+
+**双链路收敛映射**:
+| 来源 | source_type | 上游字段 | 创建方式 |
+|------|-------------|---------|---------|
+| 计划驱动 | plan_driven | pickup_plan_id | pickup_plan.action_create_transport_order() |
+| 商务报价 | commercial | quote_id + inquiry_id | quote._auto_create_order() |
+
+**影响**: 全系统三轮闭环完成（Sprint1 pickup.plan → Sprint2 schedule → Sprint3 request 入口 → Sprint4 order 出口）。

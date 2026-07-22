@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.4
-update_time: 2026-07-21
-adapt_sprint: Sprint3
+context_version: 1.0.5
+update_time: 2026-07-22
+adapt_sprint: Sprint4
 update_author: AI-Engineering-Team
 
 version_log:
@@ -24,6 +24,15 @@ version_log:
       新建 Sprint3 意图契约 INT-TMS-SPRINT3-001
     update_type: 架构校正 + 版本基线切换
     effect_scope: 全局流程入口 + 商务报价链路启动
+
+  1.0.5:
+    update_content: |
+      Sprint4 完成：transport.order 统一收敛闭环
+      双链路落单：pickup.plan → order（计划驱动）/ quote → order（商务报价）
+      新增 source_type 溯源体系、pickup_plan_id 上游绑定、状态联动回写
+      全系统三轮闭环：Sprint1 pickup.plan → Sprint2 schedule → Sprint3 request 入口 → Sprint4 order 出口
+    update_type: 核心业务闭环开发
+    effect_scope: 运输执行层底座
 
 valid_rule:
   - 每次迭代必须同步更新本版本文件

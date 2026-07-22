@@ -76,3 +76,22 @@
 
 ## 代码存量状态
 Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
+
+
+## Sprint4 迭代快照 (2026-07-22)
+# 契约: INT-TMS-SPRINT4-001
+# 基线: context v1.0.5  |  模块: wd_tlms
+
+## 变更摘要
+- models/transport_order.py: +pickup_plan_id, source_type, compute method, sync, create_from_pickup_plan
+- models/pickup_plan_fix.py: +pickup_plan_id on order creation
+- views/transport_order_views.xml: 完整重写
+- context_version.yaml: 1.0.4 -> 1.0.5
+
+## 验收状态: 全部通过
+- 双来源落单: ✅
+- 计划链路闭环: ✅
+- 商务链路闭环: ✅
+- 上游溯源: ✅
+- 状态联动回写: ✅
+- 不破坏存量: ✅
