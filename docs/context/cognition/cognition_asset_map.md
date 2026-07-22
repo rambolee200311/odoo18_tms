@@ -14,6 +14,7 @@
 ## 2. 所有认知资产目录清单
 
 ### 2.1 架构认知
+|  | 可执行引擎：context_loader.py（认知加载）、verify.py（7门禁）、commit_guard.py（提交守卫）、odoo_check.py（模块验证） |
 | 文件 | 说明 |
 |------|------|
 | `architecture/module_map.md` | 模块目录结构、单据层次(上游/中游/下游/结算)、分层约束、外部依赖 |

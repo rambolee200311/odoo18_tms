@@ -2,7 +2,7 @@
 """产出语法门禁 — 可执行版本。取代 verify.sh（避免 bash heredoc 问题）"""
 import os, sys, glob, xml.etree.ElementTree as ET
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 MODELS = os.path.join(BASE, 'addons/wd_tlms/models')
 VIEWS = os.path.join(BASE, 'addons/wd_tlms/views')
 passed, failed = 0, 0
