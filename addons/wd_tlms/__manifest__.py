@@ -17,7 +17,6 @@
         'security/ir.model.access.csv',
         'data/sequences.xml',
         'data/surcharge_data.xml',
-        'data/assets.xml',
         'views/pickup_plan_views.xml',
         'views/transport_request_views.xml',
         'views/transport_inquiry_views.xml',

@@ -4,7 +4,7 @@
     <record id="access_tlmp_request_manager" model="ir.model.access">
         <field name="name">tlmp.request.manager</field>
         <field name="model_id" ref="model_tlmp_transport_request"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -14,7 +14,7 @@
     <record id="access_tlmp_inquiry_manager" model="ir.model.access">
         <field name="name">tlmp.inquiry.manager</field>
         <field name="model_id" ref="model_tlmp_transport_inquiry"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -24,7 +24,7 @@
     <record id="access_tlmp_quote_manager" model="ir.model.access">
         <field name="name">tlmp.quote.manager</field>
         <field name="model_id" ref="model_tlmp_transport_quote"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -34,7 +34,7 @@
     <record id="access_tlmp_order_manager" model="ir.model.access">
         <field name="name">tlmp.order.manager</field>
         <field name="model_id" ref="model_tlmp_transport_order"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -44,7 +44,7 @@
     <record id="access_tlmp_container_manager" model="ir.model.access">
         <field name="name">tlmp.container.manager</field>
         <field name="model_id" ref="model_tlmp_transport_container"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -54,7 +54,7 @@
     <record id="access_tlmp_surcharge_manager" model="ir.model.access">
         <field name="name">tlmp.surcharge.manager</field>
         <field name="model_id" ref="model_tlmp_surcharge"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -64,7 +64,7 @@
     <record id="access_tlmp_surchtype_manager" model="ir.model.access">
         <field name="name">tlmp.surchtype.manager</field>
         <field name="model_id" ref="model_tlmp_surcharge_type"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -74,7 +74,7 @@
     <record id="access_tlmp_tracking_manager" model="ir.model.access">
         <field name="name">tlmp.tracking.manager</field>
         <field name="model_id" ref="model_tlmp_transport_tracking"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -84,7 +84,7 @@
     <record id="access_tlmp_pod_manager" model="ir.model.access">
         <field name="name">tlmp.pod.manager</field>
         <field name="model_id" ref="model_tlmp_pod"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -94,7 +94,7 @@
     <record id="access_tlmp_cmr_manager" model="ir.model.access">
         <field name="name">tlmp.cmr.manager</field>
         <field name="model_id" ref="model_tlmp_cmr"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -104,7 +104,7 @@
     <record id="access_tlmp_bill_manager" model="ir.model.access">
         <field name="name">tlmp.bill.manager</field>
         <field name="model_id" ref="model_tlmp_customer_bill"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -114,7 +114,7 @@
     <record id="access_tlmp_settlement_manager" model="ir.model.access">
         <field name="name">tlmp.settlement.manager</field>
         <field name="model_id" ref="model_tlmp_carrier_settlement"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -124,7 +124,7 @@
     <record id="access_tlmp_pricing_manager" model="ir.model.access">
         <field name="name">tlmp.pricing.manager</field>
         <field name="model_id" ref="model_tlmp_pricing_rule"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -134,7 +134,7 @@
     <record id="access_tlmp_containerprice_manager" model="ir.model.access">
         <field name="name">tlmp.containerprice.manager</field>
         <field name="model_id" ref="model_tlmp_container_pricelist"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -144,7 +144,7 @@
     <record id="access_tlmp_request_operator" model="ir.model.access">
         <field name="name">tlmp.request.operator</field>
         <field name="model_id" ref="model_tlmp_transport_request"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -154,7 +154,7 @@
     <record id="access_tlmp_inquiry_operator" model="ir.model.access">
         <field name="name">tlmp.inquiry.operator</field>
         <field name="model_id" ref="model_tlmp_transport_inquiry"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -164,7 +164,7 @@
     <record id="access_tlmp_quote_operator" model="ir.model.access">
         <field name="name">tlmp.quote.operator</field>
         <field name="model_id" ref="model_tlmp_transport_quote"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -174,7 +174,7 @@
     <record id="access_tlmp_order_operator" model="ir.model.access">
         <field name="name">tlmp.order.operator</field>
         <field name="model_id" ref="model_tlmp_transport_order"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -184,7 +184,7 @@
     <record id="access_tlmp_tracking_operator" model="ir.model.access">
         <field name="name">tlmp.tracking.operator</field>
         <field name="model_id" ref="model_tlmp_transport_tracking"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -194,7 +194,7 @@
     <record id="access_tlmp_pod_operator" model="ir.model.access">
         <field name="name">tlmp.pod.operator</field>
         <field name="model_id" ref="model_tlmp_pod"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="False"/>
@@ -204,7 +204,7 @@
     <record id="access_tlmp_surcharge_fin" model="ir.model.access">
         <field name="name">tlmp.surcharge.fin</field>
         <field name="model_id" ref="model_tlmp_surcharge"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_financier"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_financier"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -214,7 +214,7 @@
     <record id="access_tlmp_bill_fin" model="ir.model.access">
         <field name="name">tlmp.bill.fin</field>
         <field name="model_id" ref="model_tlmp_customer_bill"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_financier"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_financier"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -224,7 +224,7 @@
     <record id="access_tlmp_settlement_fin" model="ir.model.access">
         <field name="name">tlmp.settlement.fin</field>
         <field name="model_id" ref="model_tlmp_carrier_settlement"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_financier"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_financier"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -234,7 +234,7 @@
     <record id="access_tlmp_request_view" model="ir.model.access">
         <field name="name">tlmp.request.view</field>
         <field name="model_id" ref="model_tlmp_transport_request"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_viewer"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_viewer"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -244,7 +244,7 @@
     <record id="access_tlmp_order_view" model="ir.model.access">
         <field name="name">tlmp.order.view</field>
         <field name="model_id" ref="model_tlmp_transport_order"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_viewer"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_viewer"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -254,7 +254,7 @@
     <record id="access_pickup_plan_manager" model="ir.model.access">
         <field name="name">access.pickup.plan.manager</field>
         <field name="model_id" ref="model_pickup_plan"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -264,7 +264,7 @@
     <record id="access_pickup_plan_operator" model="ir.model.access">
         <field name="name">access.pickup.plan.operator</field>
         <field name="model_id" ref="model_pickup_plan"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -274,7 +274,7 @@
     <record id="access_pickup_plan_container_manager" model="ir.model.access">
         <field name="name">access.pickup.plan.container.manager</field>
         <field name="model_id" ref="model_pickup_plan_container_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -284,7 +284,7 @@
     <record id="access_pickup_plan_container_operator" model="ir.model.access">
         <field name="name">access.pickup.plan.container.operator</field>
         <field name="model_id" ref="model_pickup_plan_container_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -294,7 +294,7 @@
     <record id="access_container_service_manager" model="ir.model.access">
         <field name="name">access.container.service.manager</field>
         <field name="model_id" ref="model_container_service_request"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -304,7 +304,7 @@
     <record id="access_container_service_operator" model="ir.model.access">
         <field name="name">access.container.service.operator</field>
         <field name="model_id" ref="model_container_service_request"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -314,7 +314,7 @@
     <record id="access_container_master_manager" model="ir.model.access">
         <field name="name">access.container.master.manager</field>
         <field name="model_id" ref="model_container_master"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -324,7 +324,7 @@
     <record id="access_container_master_operator" model="ir.model.access">
         <field name="name">access.container.master.operator</field>
         <field name="model_id" ref="model_container_master"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -334,7 +334,7 @@
     <record id="access_history_line_manager" model="ir.model.access">
         <field name="name">access.history.line.manager</field>
         <field name="model_id" ref="model_container_master_history_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -344,7 +344,7 @@
     <record id="access_history_line_operator" model="ir.model.access">
         <field name="name">access.history.line.operator</field>
         <field name="model_id" ref="model_container_master_history_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -354,7 +354,7 @@
     <record id="access_tlmp_quoteline_manager" model="ir.model.access">
         <field name="name">tlmp.quoteline.manager</field>
         <field name="model_id" ref="model_tlmp_transport_quote_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -364,7 +364,7 @@
     <record id="access_tlmp_quoteline_operator" model="ir.model.access">
         <field name="name">tlmp.quoteline.operator</field>
         <field name="model_id" ref="model_tlmp_transport_quote_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -374,7 +374,7 @@
     <record id="access_tlmp_inquiryline_manager" model="ir.model.access">
         <field name="name">tlmp.inquiryline.manager</field>
         <field name="model_id" ref="model_tlmp_transport_inquiry_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -384,7 +384,7 @@
     <record id="access_tlmp_inquiryline_operator" model="ir.model.access">
         <field name="name">tlmp.inquiryline.operator</field>
         <field name="model_id" ref="model_tlmp_transport_inquiry_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -394,7 +394,7 @@
     <record id="access_tlmp_billline_manager" model="ir.model.access">
         <field name="name">tlmp.billline.manager</field>
         <field name="model_id" ref="model_tlmp_customer_bill_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -404,7 +404,7 @@
     <record id="access_tlmp_billline_operator" model="ir.model.access">
         <field name="name">tlmp.billline.operator</field>
         <field name="model_id" ref="model_tlmp_customer_bill_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -414,7 +414,7 @@
     <record id="access_tlmp_settlementline_manager" model="ir.model.access">
         <field name="name">tlmp.settlementline.manager</field>
         <field name="model_id" ref="model_tlmp_carrier_settlement_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -424,7 +424,7 @@
     <record id="access_tlmp_settlementline_operator" model="ir.model.access">
         <field name="name">tlmp.settlementline.operator</field>
         <field name="model_id" ref="model_tlmp_carrier_settlement_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
@@ -434,7 +434,7 @@
     <record id="access_tlmp_pricingruleline_manager" model="ir.model.access">
         <field name="name">tlmp.pricingruleline.manager</field>
         <field name="model_id" ref="model_tlmp_pricing_rule_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_manager"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_manager"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
@@ -444,7 +444,7 @@
     <record id="access_tlmp_pricingruleline_operator" model="ir.model.access">
         <field name="name">tlmp.pricingruleline.operator</field>
         <field name="model_id" ref="model_tlmp_pricing_rule_line"/>
-        <field name="group_id" ref="transport_logistics_management.group_tlm_operator"/>
+        <field name="group_id" ref="wd_tlms.group_tlm_operator"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>

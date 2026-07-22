@@ -98,3 +98,24 @@ sed -i '' 's/transport_logistics_management\\.group/wd_tlms.group/g' ir.model.ac
 共 ~55 行受影响。
 
 ### 状态: 已修复
+
+## BUG-004: assets.xml 继承 web.assets_frontend 模板找不到 + ir.model.access.xml 前缀残留
+
+**发现时间**: 2026-07-22
+**发现场景**: odoodb -u wd_tlms（BUG-003 修复后）
+**根因文件**: data/assets.xml, security/ir.model.access.xml
+**严重等级**: LEVEL3（模块无法加载）
+
+### 错误现象（两个问题）
+1. `ParseError: while parsing None:3, somewhere inside <data inherit_id="web.assets_frontend">` — assets.xml 继承的模板不存在
+2. `ir.model.access.xml` 残留 `transport_logistics_management.` 前缀（同 BUG-003，但 CSV 之前已修，XML 漏了）
+
+### 根因
+- assets.xml 继承 web.assets_frontend 但该模板在当前 Odoo 环境无法找到
+- ir.model.access.xml 与 BUG-003 同根因：模块名从 transport_logistics_management → wd_tlms，但 XML 文件中 group_id 前缀未更新
+
+### 修复
+1. 从 __manifest__.py data 列表中移除 'data/assets.xml'（portal 模板非核心功能）
+2. sed 修正 ir.model.access.xml 中 transport_logistics_management.group → wd_tlms.group
+
+### 状态: 已修复
