@@ -128,7 +128,22 @@
                  'cargo_weight_kg': cl.weight,
                  'container_master_id': cl.container_master_id.id if cl.container_master_id else False,
              })
-         self.transport_order_id = order.id
+ 
+        # Create fee.line (carrier cost) for plan-driven flow
+        charge_item = self.env['world.depot.charge.item'].search([], limit=1)
+        if charge_item and self.carrier_id:
+            self.env['transport.fee.line'].create({
+                'fee_type_id': charge_item.id,
+                'source_type': 'plan_driven',
+                'source_order_id': order.id,
+                'party_type': 'carrier_cost',
+                'partner_id': self.carrier_id.id,
+                'quantity': 1.0,
+                'unit_amount': 0.0,
+                'description': 'Transport cost - %s' % self.name,
+            })
+
+        self.transport_order_id = order.id
          return self._open_record('tlmp.transport.order', order.id)
  
      def _open_record(self, model, res_id):
