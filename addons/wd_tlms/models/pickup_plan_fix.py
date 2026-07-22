@@ -95,6 +95,7 @@
          type_map = {'warehouse': 'port_to_warehouse', 'warehouse_transfer': 'warehouse_transfer'}
          tr_type = type_map.get(self.destination_type, 'port_to_warehouse')
          order_vals = {
+            'pickup_plan_id': self.id,
              'transport_type': tr_type,
              'fleet_operation_mode': 'subcontracted',
              'partner_id': self.carrier_id.id or self.env.user.partner_id.id,

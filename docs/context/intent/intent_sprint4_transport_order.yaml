@@ -1,0 +1,101 @@
+# ==============================================================
+# 【Sprint4 正式意图契约】
+# 功能：transport.order 统一订单闭环 + 双链路落单收敛
+# 前置架构：Sprint3 完成 transport.request 全局统一入口
+# 管控模式：意图+认知+治理 三重管控
+# 基线版本：context_version:1.0.4
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT4-001
+  create_time: "2026-07-22"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint4 运输订单闭环模块"
+  contract_type: "核心业务闭环开发"
+
+goal: >
+  搭建 transport.order 全局统一运输订单闭环，
+  实现【计划驱动链路】与【商务报价链路】双源统一落单收敛，
+  完成从 Request → 业务分支 → 最终 Order 的全链路闭环，
+  构建TMS运输执行层核心底座与完整状态流转体系。
+
+scope:
+  allow:
+    # 核心模型：transport.order 完整字段体系重构
+    - "新建/完善 transport.order 主模型全量业务字段"
+    - "支持双来源落单：plan_driven / commercial"
+    - "绑定上游溯源：request_id / pickup_plan_id / quote_id 多源溯源"
+    - "实现完整运输状态流转：draft → confirmed → in_transit → delivered → done / cancel"
+    # 双链路落单逻辑
+    - "计划链路：pickup.plan → transport.order 落单逻辑完善"
+    - "商务链路：quote.accept → 自动生成 transport.order 落单"
+    # 视图层
+    - "transport.order 列表/表单/搜索完整视图"
+    - "来源类型标签、上游单据跳转"
+    - "订单状态看板展示"
+    # 联动回写
+    - "order 确认后回写上游 request/quote/pickup 状态同步"
+    # 权限与菜单
+    - "transport.order 菜单权限完善、视图权限分级"
+
+  forbid:
+    - 禁止修改 transport.request 统一入口架构（Sprint3固化）
+    - 禁止修改 inquiry/quote 商务链路存量逻辑
+    - 禁止修改 pickup.plan/schedule 计划调度存量逻辑
+    - 禁止开发财务结算、对账、开票、费率核算
+    - 禁止开发车辆、司机、路径规划（后置迭代）
+    - 禁止修改wd_iffm模块任何内部逻辑
+    - 禁止视图层写业务、禁止绕过ORM直改数据
+
+workflow:
+  step_1: "加载v1.0.4双链路统一入口基线认知"
+  step_2: "确认双链路上游单据结构：request/plan/quote"
+  step_3: "构建transport.order全量字段、状态、溯源体系"
+  step_4: "实现双路径落单生成逻辑"
+  step_5: "实现下游订单状态向上游单据回写同步"
+  step_6: "开发全套订单视图、看板、跳转、筛选"
+  step_7: "全链路闭环自测（计划+商务双流程）"
+  step_8: "沉淀order层架构决策、更新认知资产与版本"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "transport.order（完整重构闭环）"
+  view_change_list:
+    - "transport_order_views.xml（全套订单视图）"
+  code_file_list:
+    - "models/transport_order.py"
+    - "views/transport_order_views.xml"
+  document_update_list:
+    - "docs/context/history/sprint_shturl"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+exit_criteria:
+  rule_1: "transport.order 支持双来源落单：计划驱动 / 商务报价"
+  rule_2: "计划链路末端落单通顺：request→schedule→plan→order"
+  rule_3: "商务链路末端落单通顺：request→inquiry→quote→order"
+  rule_4: "所有上游单据溯源精准可跳转"
+  rule_5: "订单完整状态流转正常、上下游状态联动回写正常"
+  rule_6: "不破坏S1/S2/S3全部存量架构与功能"
+  rule_7: "三重管控校验全部通过、无越界、无幻觉逻辑"
+
+human_gate:
+  gate1_parsing_review: "双链路收敛落单架构审核"
+  gate2_architecture_review: "订单层统一底座架构合规审核"
+  gate3_risk_review: "核心业务层迭代，卡点放行"
+
+bind_context_version: "1.0.4"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+bind_governance_rule: "docs/context/governance/"

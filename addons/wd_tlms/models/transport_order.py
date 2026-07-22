@@ -26,6 +26,27 @@ class TransportOrder(models.Model):
     request_id = fields.Many2one('tlmp.transport.request', string='Request')
     quote_id = fields.Many2one('tlmp.transport.quote', string='Quote')
     inquiry_id = fields.Many2one('tlmp.transport.inquiry', string='Inquiry')
+    pickup_plan_id = fields.Many2one(
+        'pickup.plan', string='Pickup Plan',
+        readonly=True, copy=False, index=True,
+        help='Source document for plan-driven flow.')
+    source_type = fields.Selection([
+        ('plan_driven', 'Plan-Driven'),
+        ('commercial', 'Commercial'),
+    ], string='Source Type', compute='_compute_source_type', store=True)
+
+    @api.depends('pickup_plan_id', 'quote_id', 'request_id')
+    def _compute_source_type(self):
+        for r in self:
+            if r.pickup_plan_id:
+                r.source_type = 'plan_driven'
+            elif r.quote_id:
+                r.source_type = 'commercial'
+            elif r.request_id and r.request_id.request_type:
+                r.source_type = r.request_id.request_type
+            else:
+                r.source_type = False
+
     partner_id = fields.Many2one('res.partner', string='Customer', required=True)
     carrier_id = fields.Many2one('res.partner', string='Carrier', required=True)
     carrier_contact = fields.Char(string='Carrier Contact')
@@ -113,9 +134,68 @@ class TransportOrder(models.Model):
         for r in self:
             r.total_surcharge = sum(r.surcharge_ids.mapped('amount'))
 
+    # -----------------------------------------------------------
+    # Upstream status sync
+    # -----------------------------------------------------------
+    def _sync_upstream_status(self):
+        """Sync order status back to upstream documents."""
+        for r in self:
+            # Plan-driven: update pickup.plan state
+            if r.pickup_plan_id:
+                r.pickup_plan_id.scheduled_date = r.planned_pickup_date.date() if r.planned_pickup_date else r.pickup_plan_id.scheduled_date
+            # Commercial: ensure quote is marked accepted
+            if r.quote_id and r.quote_id.state != 'accepted':
+                r.quote_id.sudo().write({'state': 'accepted'})
+
+    # -----------------------------------------------------------
+    # Dual-source creation assistant
+    # -----------------------------------------------------------
+    @api.model
+    def create_from_pickup_plan(self, pickup_plan):
+        """Create transport.order from a pickup.plan (plan-driven flow)."""
+        type_map = {'warehouse': 'port_to_warehouse', 'warehouse_transfer': 'warehouse_transfer',
+                    'customer': 'to_customer', 'self_pickup': 'to_customer'}
+        tr_type = type_map.get(pickup_plan.destination_type, 'port_to_warehouse')
+        val = {
+            'transport_type': tr_type,
+            'fleet_operation_mode': 'subcontracted',
+            'pickup_plan_id': pickup_plan.id,
+            'request_id': pickup_plan.transport_request_id.id if pickup_plan.transport_request_id else False,
+            'partner_id': pickup_plan.partner_id.id or pickup_plan.carrier_id.id or False,
+            'carrier_id': pickup_plan.carrier_id.id if pickup_plan.carrier_id else False,
+            'cargo_description': pickup_plan.cargo_description or '',
+            'cargo_weight': pickup_plan.cargo_weight,
+            'cargo_volume': pickup_plan.cargo_volume,
+            'pallet_count': pickup_plan.pallet_count,
+            'package_count': pickup_plan.package_count,
+            'planned_pickup_date': pickup_plan.planned_pickup_date or pickup_plan.scheduled_date,
+            'driver_name': pickup_plan.driver_name,
+            'driver_phone': pickup_plan.driver_phone,
+            'vehicle_plate': pickup_plan.vehicle_plate,
+            'notes': pickup_plan.notes,
+        }
+        if pickup_plan.destination_type == 'warehouse_transfer':
+            val['pickup_location_id'] = pickup_plan.source_warehouse_id.partner_id.id if pickup_plan.source_warehouse_id else False
+            val['delivery_location_id'] = pickup_plan.warehouse_id.partner_id.id if pickup_plan.warehouse_id else False
+        else:
+            val['delivery_location_id'] = pickup_plan.warehouse_id.partner_id.id if pickup_plan.warehouse_id else False
+            if pickup_plan.terminal_id:
+                val['pickup_location_id'] = pickup_plan.terminal_id.id
+        order = self.create(val)
+        # Copy container lines
+        for cl in pickup_plan.container_line_ids:
+            self.env['tlmp.transport.container'].create({
+                'order_id': order.id, 'name': cl.container_number,
+                'container_type': cl.container_type, 'seal_number': cl.seal_number,
+                'cargo_weight_kg': cl.weight,
+                'container_master_id': cl.container_master_id.id if cl.container_master_id else False,
+            })
+        return order
+
     # ---- State Transitions ----
     def action_confirm(self):
         self.write({'state': 'confirmed'})
+        self._sync_upstream_status()
         return True
 
     def action_assign(self):
