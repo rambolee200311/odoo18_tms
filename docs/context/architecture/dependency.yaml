@@ -76,3 +76,17 @@ direction_constraints:
   - from: "JS/Controller"
     to: "数据库"
     rule: "必须通过 ORM 模型层写入"
+
+# ==============================================
+# 开发运行环境
+# ==============================================
+development_environment:
+  python_venv: "/Users/lijianqiang/Documents/odoo18_tms/venv"
+  venv_python: "/Users/lijianqiang/Documents/odoo18_tms/venv/bin/python3"
+  odoo_bin: "/Users/lijianqiang/Documents/odoo18_tms/odoo-bin"
+  odoo_conf: "/Users/lijianqiang/Documents/odoo18_tms/odoo.conf"
+  note: |
+    项目使用 Python 虚拟环境隔离依赖。
+    odoo_check.py、odoo-bin -u 等运行时操作必须使用 venv/bin/python3，
+    否则会因找不到 pytz、babel 等依赖导致 ModuleNotFoundError。
+    系统全局 Python（/usr/bin/python3 或 /Library/...）不含项目依赖。

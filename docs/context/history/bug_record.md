@@ -288,3 +288,42 @@ views/transport_order_views.xml:142
 
 ### 状态: 已修复
 
+
+
+---
+
+## BUG-011: tlmp_menus.xml 菜单顺序错误 — menu_tlmp_config 后置引用
+
+**发现时间**: 2026-07-22 10:24
+**发现场景**: 升级模块时 RPC_ERROR
+**根因文件**: views/tlmp_menus.xml
+**严重等级**: LEVEL2 — 菜单加载失败
+**根因分类**: 设计错误（XML 定义顺序）
+
+### 错误现象
+```
+ValueError: External ID not found in the system: wd_tlms.menu_tlmp_config
+ParseError: while parsing .../views/tlmp_menus.xml:59
+<menuitem id="menu_tlmp_rate_bases" name="Rate Bases" parent="menu_tlmp_config" .../>
+```
+
+### 根因
+`menu_tlmp_config` 父菜单定义在 line 63，但其子菜单 `menu_tlmp_rate_bases` (line 58)、
+`menu_tlmp_fee_lines` (line 60) 已在 line 58/60 引用它作为 parent。
+Odoo 加载 menuitem XML 时按顺序执行，子菜单先加载找不到父菜单 XML ID。
+
+### 修复
+- 将 line 63 `<menuitem id="menu_tlmp_config"...>` 整体移至 line 57（<!-- Configuration --> 注释后）
+- 父菜单现在在子菜单之前定义，Odoo 可以正确解析
+
+### 预防
+- verify.py 新增 check_8：扫描 XML 中的 parent="menu_*" 引用，验证目标 menuitem 是否在文件前部定义
+- 但此检查为启发式，无法完全避免顺序问题。更可靠的方式：Odoo 16+ 支持 noupdate="0" 的独立序列
+
+### 落地验证
+- tlmp_menus.xml: `menu_tlmp_config` 现位于第 58 行，早于所有子菜单
+- verify.py: 待运行确认
+- odoo_check.py: 待运行确认模块加载无错
+
+### 状态: 已修复
+
