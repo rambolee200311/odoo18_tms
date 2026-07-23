@@ -117,7 +117,26 @@
          </field>
      </record>
  
-     <record id="action_transport_fee_line" model="ir.actions.act_window">
+     <record id="view_transport_fee_line_form" model="ir.ui.view">
+        <field name="name">transport.fee.line.form</field>
+        <field name="model">transport.fee.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="fee_type_id"/>
+                        <field name="party_type" widget="badge"/>
+                        <field name="partner_id"/>
+                        <field name="quantity"/>
+                        <field name="unit_amount"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_transport_fee_line" model="ir.actions.act_window">
          <field name="name">Fee Lines</field>
          <field name="res_model">transport.fee.line</field>
          <field name="view_mode">list,form</field>

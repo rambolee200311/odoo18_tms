@@ -19,6 +19,14 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
+echo "========== [Gate] Step 2.5: Integration Tests (test_runner.py) =========="
+python3 execution/scripts/test_runner.py
+if [ $? -ne 0 ]; then
+    echo "FAIL: Integration tests not passed. Fix errors and retry."
+    exit 1
+fi
+
+echo ""
 echo "========== [Gate] Step 3: Commit =========="
 echo "Enter sprint description:"
 read commit_msg
