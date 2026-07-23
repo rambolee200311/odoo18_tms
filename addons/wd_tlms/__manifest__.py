@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.44',
+    'version': '1.0.46',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -11,6 +11,7 @@
     'depends': [
         'base', 'mail', 'stock', 'account',
         'portal', 'contacts', 'product', 'fleet',
+        'worlddepot',
     ],
     'data': [
         'security/security.xml',

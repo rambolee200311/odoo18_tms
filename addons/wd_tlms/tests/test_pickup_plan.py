@@ -18,6 +18,14 @@ class TestPickupPlan(TransactionCase):
         self.carrier = self.env['res.partner'].create({
             'name': 'Test Carrier', 'is_carrier': True,
         })
+        try:
+            waybill = self.env['world.depot.waybill'].create({'name': 'Test'})
+            self.iff_req = self.env['import.pickup.requirement'].create({
+                'waybill_id': waybill.id, 'pickup_scene': 'to_our_warehouse',
+            })
+            self.env['world.depot.charge.item'].create({'item_name': 'Transport Fee'})
+        except Exception:
+            self.iff_req = None
         self.default_req = self.env['tlmp.transport.request'].create({
             'request_type': 'plan_driven',
             'destination_type': 'warehouse',
@@ -112,4 +120,9 @@ class TestPickupPlan(TransactionCase):
         """IFFM 引用字段存在性校验（引用值验证需 wd_iffm 模块）"""
         plan = self._mk_plan()
         self.assertTrue(hasattr(plan, 'iff_requirement_ref'))
-        self.assertFalse(plan.iff_requirement_ref)
+        if self.iff_req:
+            ref = f'import.pickup.requirement,{self.iff_req.id}'
+            plan.write({'iff_requirement_ref': ref})
+            self.assertEqual(plan.iff_requirement_ref, ref)
+        else:
+            self.assertFalse(plan.iff_requirement_ref)

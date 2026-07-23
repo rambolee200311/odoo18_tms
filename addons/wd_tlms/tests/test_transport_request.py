@@ -13,6 +13,13 @@ class TestTransportRequest(TransactionCase):
         self.wh2 = self.env['stock.warehouse'].create({'name': 'WH2', 'code': 'WH2'})
         self.partner = self.env['res.partner'].create({'name': 'Test Customer'})
         self.carrier = self.env['res.partner'].create({'name': 'Test Carrier', 'is_carrier': True})
+        try:
+            waybill = self.env['world.depot.waybill'].create({'name': 'Test'})
+            self.iff_req = self.env['import.pickup.requirement'].create({
+                'waybill_id': waybill.id, 'pickup_scene': 'to_our_warehouse',
+            })
+        except Exception:
+            self.iff_req = None
 
     def _mk_req(self, **kw):
         vals = {
@@ -104,7 +111,12 @@ class TestTransportRequest(TransactionCase):
         req = self._mk_req(source_type='iff')
         self.assertEqual(req.source_type, 'iff')
         self.assertTrue(hasattr(req, 'iff_requirement_ref'))
-        self.assertFalse(req.iff_requirement_ref)
+        if self.iff_req:
+            ref = f'import.pickup.requirement,{self.iff_req.id}'
+            req.write({'iff_requirement_ref': ref})
+            self.assertEqual(req.iff_requirement_ref, ref)
+        else:
+            self.assertFalse(req.iff_requirement_ref)
         req = self._mk_req()
         req.action_confirm()
         req.action_cancel()

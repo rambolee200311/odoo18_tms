@@ -15,6 +15,7 @@ class TestTransportOrder(TransactionCase):
         self.carrier = self.env['res.partner'].create({
             'name': 'Test Carrier', 'is_carrier': True,
         })
+        self.env['world.depot.charge.item'].create({'item_name': 'Transport Fee'})
         self.partner = self.env['res.partner'].create({'name': 'Test Customer'})
         self.wh = self.env['stock.warehouse'].create({'name': 'WH1', 'code': 'WH1'})
         self.default_req = self.env['tlmp.transport.request'].create({

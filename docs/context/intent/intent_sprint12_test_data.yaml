@@ -1,0 +1,49 @@
+# ==============================================================
+# 【Sprint12 正式意图契约】
+# 功能：补全测试环境缺失数据 — world.depot.charge.item + import.pickup.requirement
+# 前置基线：Sprint11 8条留存均因测试环境数据不存在
+# 基线版本：context_version:1.0.14 → 1.0.15
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT12-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint12 测试环境数据补全"
+  contract_type: "测试基础设施修复"
+
+goal: >
+  在 tests/ 各 TestCase.setUp 中创建测试所需数据记录：
+  1. world.depot.charge.item — 让 charge_item.search([], limit=1) 返回有效记录
+  2. import.pickup.requirement — 让 Reference 字段 iff_requirement_ref 验证通过
+
+scope:
+  allow:
+    - "test_* setUp 新增 world.depot.charge.item 创建"
+    - "test_* setUp 新增 import.pickup.requirement 创建（如模块已安装）"
+    - "恢复 pickup_08/test_09 的 iff_requirement_ref 值赋值测试"
+    - "docs/context/validation/test_exec_records.yaml 更新"
+    - "docs/context/context_version.yaml 1.0.14→1.0.15"
+  forbid:
+    - 禁止修改任何业务模型逻辑
+    - 禁止修改测试断言逻辑（仅补数据，不改断言）
+    - 禁止改动 governance 资产
+
+workflow:
+  step_1: "加载基线 → 确认 4 条留存测试根因"
+  step_2: "test_transport_order setUp 创建 world.depot.charge.item"
+  step_3: "test_pickup_plan setUp 创建 world.depot.charge.item + iff_requirement"
+  step_4: "test_inquiry_quote setUp 创建 iff_requirement"
+  step_5: "test_transport_request setUp 创建 iff_requirement"
+  step_6: "恢复 pickup_08/test_09 iff_requirement_ref 赋值测试"
+  step_7: "verify + odoo_check + test_runner 三检"
+  step_8: "台账更新 + context_version 1.0.15 + 归档"
+
+exit_criteria:
+  rule_1: "39/39 测试全部通过（0 failures, 0 errors）"
+  rule_2: "verify.py 8项 PASS"
+  rule_3: "odoo_check.py PASS"
+  rule_4: "test_exec_records match_exit_criteria=true"
+  rule_5: "context_version 1.0.15"
+
+bind_context_version: "1.0.15"
