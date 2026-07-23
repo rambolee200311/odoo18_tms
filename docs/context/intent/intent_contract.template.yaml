@@ -12,6 +12,7 @@ contract_meta:
   project_name: "Odoo18 TMS 跨境3PL运输管理系统"
   sprint_version: ""
   contract_type: ["新功能开发", "需求迭代", "Bug修复", "规则优化"]
+  context_load_profile: "full"
 
 # ========== 八大意图控制核心要素（全书理论唯一落地载体） ==========
 goal: ""

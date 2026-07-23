@@ -18,22 +18,54 @@ import os, sys, glob, json, re
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 CTX = os.path.join(BASE, 'docs/context')
+PATH_TEST_LESSONS = os.path.join(CTX, 'governance', 'test_lessons.yaml')
+PATH_DECISION_NOTE = os.path.join(CTX, 'history', 'decision_note.md')
 
 EXIT_READY = 0
 EXIT_ASSET_MISSING = 1
 EXIT_RISK_BLOCKED = 2
 EXIT_BASELINE_MISMATCH = 3
 
+# -----------------------------------------------------------
+# 加载画像 — 按 Sprint 类型决定哪些资产做深度扫描
+# -----------------------------------------------------------
+PROFILE_ASSETS = {
+    'development': {
+        'deep': ['architecture', 'business', 'constraints/forbidden_change.yaml'],
+        'label': 'New Feature Development',
+    },
+    'testing': {
+        'deep': ['history/bug_record.md', 'governance/test_lessons.yaml', 'validation'],
+        'label': 'Testing',
+    },
+    'bugfix': {
+        'deep': ['history/bug_record.md', 'constraints/forbidden_change.yaml',
+                 'governance/test_lessons.yaml'],
+        'label': 'Bug Fix',
+    },
+    'infrastructure': {
+        'deep': ['governance', 'architecture/dependency.yaml'],
+        'label': 'Infrastructure',
+    },
+    'full': {
+        'deep': None,
+        'label': 'Full Audit',
+    },
+}
+
 
 # -----------------------------------------------------------
 # 通用工具
 # -----------------------------------------------------------
 def _read(path):
-    """安全读取文件，补全 encoding"""
+    """安全读取文件，补全 encoding + 异常捕获"""
     if not os.path.exists(path):
         return ''
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except (UnicodeDecodeError, PermissionError, OSError) as err:
+        return f'[READ_ERROR]: {repr(err)}'
 
 
 def _yaml_val(text, key, default=''):
@@ -68,7 +100,8 @@ def read_intent():
     raw = _read(best)
     sv = _yaml_val(raw, 'sprint_version', '')
     bv = _yaml_val(raw, 'bind_context_version', '')
-    return (name, sv, bv)
+    pf = _yaml_val(raw, 'context_load_profile', 'full')
+    return (name, sv, bv, pf)
 
 
 # -----------------------------------------------------------
@@ -113,12 +146,26 @@ def summarize_file(fullpath, filename):
         return f'{filename}: {len(lines)} lines'
 
 
-def summarize_domain(name, subdir, items, critical_files):
-    """对一个 domain 生成摘要"""
+def _is_deep(subdir, fname, deep_list):
+    if deep_list is None:
+        return True
+    rel = os.path.join(subdir, fname)
+    for pattern in deep_list:
+        if rel == pattern or rel.startswith(pattern):
+            return True
+    return False
+
+
+def summarize_domain(name, subdir, items, deep_list):
     summary = {'name': name, 'subdir': subdir, 'count': len(items), 'files': []}
     for fname in items:
         fpath = os.path.join(CTX, subdir, fname)
-        line = summarize_file(fpath, fname)
+        if _is_deep(subdir, fname, deep_list):
+            line = summarize_file(fpath, fname) + ' [Deep]'
+        else:
+            raw = _read(fpath)
+            lc = raw.count('\n') + 1 if raw else 0
+            line = f'{fname}: {lc} lines [Light]'
         summary['files'].append(line)
     return summary
 
@@ -151,7 +198,7 @@ def load_risks():
 # 报告构建
 # -----------------------------------------------------------
 def build_report(version, intent_info, domains, risks, summaries, all_pass):
-    iv_name, iv_sprint, iv_bind = intent_info
+    iv_name, iv_sprint, iv_bind, iv_profile = intent_info
     baseline_match = version == iv_bind if iv_bind else True
     high_risks = [r for r in risks if r['severity'] == 'LEVEL3']
     medium_risks = [r for r in risks if r['severity'] == 'LEVEL2']
@@ -195,6 +242,7 @@ def display_human(report):
         print(f'  Intent:           {iv["file"]}')
         if iv['sprint']:
             print(f'  Sprint:           {iv["sprint"]}')
+        print(f'  Decision Note:    {PATH_DECISION_NOTE}')
 
     # Baseline
     bc = report['baseline_check']
@@ -276,18 +324,15 @@ def main():
 
     version = read_version()
     intent_info = read_intent()
-    iv_name, iv_sprint, iv_bind = intent_info
+    iv_name, iv_sprint, iv_bind, iv_profile = intent_info
 
     # ── 1. 基线校验 ──
     if iv_bind and version != iv_bind:
         if json_mode:
-            rep = {
-                'status': 'BLOCKED',
-                'reason': 'baseline_mismatch',
-                'context_version': version,
-                'intent_bind': iv_bind,
-                'ready': False,
-            }
+            rep = build_report(version, intent_info, domains, [], [], all_pass)
+            rep['status'] = 'BLOCKED'
+            rep['reason'] = 'baseline_mismatch'
+            rep['ready'] = False
             print(json.dumps(rep))
         else:
             print()
@@ -332,7 +377,9 @@ def main():
     summaries = []
     for name, subdir in domain_configs:
         items = scan_dir(subdir)
-        summary = summarize_domain(name, subdir, items, [])
+        profile_dict = PROFILE_ASSETS.get(iv_profile, PROFILE_ASSETS['full'])
+        deep_list = profile_dict['deep']
+        summary = summarize_domain(name, subdir, items, deep_list)
         summaries.append(summary)
 
     # ── 5. 构建 + 显示 ──
@@ -346,10 +393,13 @@ def main():
         display_human(report)
 
     # ── 6. 退出码 ──
-    if not all_pass:
-        sys.exit(EXIT_ASSET_MISSING)
-    if report['risks']['level3']:
-        sys.exit(EXIT_RISK_BLOCKED)
+    if not report.get('ready', False):
+        if not all_pass:
+            sys.exit(EXIT_ASSET_MISSING)
+        elif report.get('risks', {}).get('level3'):
+            sys.exit(EXIT_RISK_BLOCKED)
+        elif not report.get('baseline_check', {}).get('match', True):
+            sys.exit(EXIT_BASELINE_MISMATCH)
     sys.exit(EXIT_READY)
 
 
