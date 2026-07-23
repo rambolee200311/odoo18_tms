@@ -2,12 +2,6 @@
 # Release Gate — verify + odoo_check + git commit
 cd "$(dirname "$0")"
 
-echo "========== [Gate] Step 0: Context Loader (context_loader.py) =========="
-python3 execution/scripts/context_loader.py
-if [ $? -ne 0 ]; then
-    echo "FAIL: Context loading failed. Fix missing assets."
-    exit 1
-fi
 
 
 echo ""

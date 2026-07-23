@@ -30,7 +30,7 @@ security_redline:
   
 # 知识管理红线
 knowledge_redline:
-  - 每次 Sprint 开发前必须运行 context_loader.py，自动输出当前全部未消化的 LEVEL2/3 约束警告
+  - 每次 Sprint 启动时，AI 必须首先执行 context_loader.py，加载当前全部 LEVEL2/3 约束警告，再开始编写代码（教训在编码前而非提交前加载）
   - 每次 Sprint 迭代结束，更新 decision_note.md 后必须同步审查并更新 test_lessons.yaml
   - 禁止仅更新 decision_note.md 而不同步更新 test_lessons.yaml
-  - 若不更新 test_lessons.yaml，教训不会被 context_loader.py 加载为开发前警告
+  - 若不更新 test_lessons.yaml，教训不会被 context_loader.py 加载为下次开发前警告
