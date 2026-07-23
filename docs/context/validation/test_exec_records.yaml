@@ -1,0 +1,70 @@
+# ==============================================
+# 迭代测试执行台账
+# 归属：Validation 验证资产
+# 用途：记录每次测试执行的汇总数据，支持追踪、审计、回归分析
+# ==============================================
+
+test_exec_records:
+
+  - contract_id: INT-TMS-SPRINT9-001
+    sprint_name: 运行时集成测试底座 — 静态门禁盲区补充
+    context_baseline: "1.0.12"
+    parent_baseline: "1.0.11"
+    execute_time: "2026-07-23 06:24:13"
+    test_category: "运行时集成测试"
+    test_target_models:
+      - 全模块（ir.actions.act_window / ir.ui.menu / ir.ui.view / ir.actions.act_window.view_ids）
+    total_case_count: 4
+    pass_count: 4
+    fail_count: 0
+    skip_count: 0
+    coverage_rate: "集成覆盖（非代码覆盖率）"
+    fail_detail: []
+    execute_environment: "开发环境 macOS Odoo18 PostgreSQL 5555"
+    auditor: "Codex Agent"
+    match_exit_criteria: true
+    attachment: "集成测试验证通过（test_runner.py -u wd_tlms --test-enable）"
+
+  - contract_id: INT-TMS-SPRINT10-001
+    sprint_name: 核心业务单元测试覆盖 — 双链路全模型
+    context_baseline: "1.0.13"
+    parent_baseline: "1.0.12"
+    execute_time: "2026-07-23 06:38:49"
+    test_category: "业务单元测试"
+    test_target_models:
+      - tlmp.transport.request
+      - pickup.plan
+      - tlmp.transport.inquiry
+      - tlmp.transport.quote
+      - tlmp.transport.order
+    total_case_count: 39
+    pass_count: 34
+    fail_count: 5
+    skip_count: 0
+    coverage_rate: "87% (34/39 pass)"
+    fail_detail:
+      - test_name: "TestPickupPlan.test_07_lifecycle_by_downstream"
+        fail_reason: "transport.order.partner_id required=True — 手动创建order时模型层拦截"
+        root_cause: "模型层 partner_id NOT NULL 约束，测试传递了 carrier.id 但被模型 write 清除"
+        severity: LEVEL3
+      - test_name: "TestPickupPlan.test_08_iff_source_reference"
+        fail_reason: "iff_requirement_ref 在 create 时验证 Reference 记录是否存在"
+        root_cause: "Reference 字段在 create 时触发 _check 验证，引用的 import.pickup.requirement 记录不存在"
+        severity: LEVEL3
+      - test_name: "TestTransportOrder.test_01_state_flow_normal"
+        fail_reason: "transport.order.create() 时 partner_id 为空"
+        root_cause: "模型层 partner_id NOT NULL 约束，即使 vals 提供了 partner_id 也被清除"
+        severity: LEVEL3
+      - test_name: "TestTransportOrder.test_06_from_pickup_plan"
+        fail_reason: "action_create_transport_order() 创建 order 时 partner_id 为空"
+        root_cause: "模型层 action_create_transport_order 存在 partner_id 设置逻辑，但测试环境中失效"
+        severity: LEVEL3
+      - test_name: "TestTransportRequest.test_09_source_type_iff"
+        fail_reason: "iff_requirement_ref 在 create 时验证 Reference 记录"
+        root_cause: "Reference 字段在 create 时触发验证，write 方式可绕过"
+        severity: LEVEL3
+    execute_environment: "开发环境 macOS Odoo18 PostgreSQL 5555"
+    auditor: "Codex Agent"
+    match_exit_criteria: false
+    note: "5 cases blocked by model-layer bugs (partner_id required / Reference field create validation). 34/39 passed (87%)."
+    attachment: "test_runner.py -u wd_tlms --test-enable 输出见执行日志"
