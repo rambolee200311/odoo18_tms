@@ -14,7 +14,7 @@ Context Runtime v3 — AI Agent 开发前置认知加载 + 基线验证 + 风险
   2 = RISK_BLOCKED  存在未确认的 LEVEL3 风险
   3 = BASELINE_MISMATCH 上下文版本与契约要求的基线不匹配
 """
-import os, sys, glob, json, re
+import os, sys, glob, json, re, re
 from datetime import datetime
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -26,6 +26,7 @@ EXIT_READY = 0
 EXIT_ASSET_MISSING = 1
 EXIT_RISK_BLOCKED = 2
 EXIT_BASELINE_MISMATCH = 3
+TEXT_TRUNCATE_LEN = 80
 
 # -----------------------------------------------------------
 # 加载画像 — 按 Sprint 类型决定哪些资产做深度扫描
@@ -71,8 +72,7 @@ def _read(path):
 
 def _yaml_val(text, key, default=''):
     """从 YAML 文本中提取指定 key 的值，支持多行（纯文本解析）"""
-    import re as _re
-    pat = _re.compile(rf'^{_re.escape(key)}\s*:\s*(["\']?)(.*?)\1?$', _re.MULTILINE | _re.DOTALL)
+    pat = re.compile(rf'^{re.escape(key)}\s*:\s*(["\']?)(.*?)\1?$', re.MULTILINE | re.DOTALL)
     m = pat.search(text)
     if m:
         return m.group(2).strip().strip('"').strip("'")
@@ -198,7 +198,7 @@ def load_risks():
 # -----------------------------------------------------------
 # 报告构建
 # -----------------------------------------------------------
-def build_report(version, intent_info, domains, risks, summaries, all_pass):
+def build_report(version, intent_info, domains, risks, summaries, all_pass, gate_ok=False):
     iv_name, iv_sprint, iv_bind, iv_profile = intent_info
     baseline_match = version == iv_bind if iv_bind else True
     high_risks = [r for r in risks if r['severity'] == 'LEVEL3']
@@ -206,6 +206,8 @@ def build_report(version, intent_info, domains, risks, summaries, all_pass):
 
     return {
         'version': version,
+        'profile': iv_profile,
+        'gate_system_ok': gate_ok,
         'intent': {
             'file': iv_name,
             'sprint': iv_sprint,
@@ -245,6 +247,8 @@ def display_human(report):
         print(f'  Load Profile:     {PROFILE_ASSETS.get(pf, PROFILE_ASSETS["full"])["label"]}')
         if iv['sprint']:
             print(f'  Sprint:           {iv["sprint"]}')
+            gate_text = '✅ Complete' if report.get('gate_system_ok') else '❌ Missing'
+        print(f'  Submit Gate Suite: {gate_text}')
         print(f'  Decision Note:    {PATH_DECISION_NOTE}')
 
     # Baseline
@@ -270,7 +274,6 @@ def display_human(report):
         if d['status'] != 'PASS':
             print(f'    ⚠ WARNING: Directory [{d["subdir"]}] has zero asset files')
             all_pass = False
-    report['all_pass'] = all_pass
 
     print()
 
@@ -295,7 +298,7 @@ def display_human(report):
 
 
     # Status
-    ready = report['ready'] and all_pass
+    ready = report['ready']
     if ready:
         print('  Status: READY ✅  Development can proceed')
     else:
@@ -383,12 +386,13 @@ def main():
         summaries.append(summary)
 
     # ── 5. 构建 + 显示 ──
-    report = build_report(version, intent_info, domains, risks, summaries, all_pass)
+        script_dir = os.path.join(BASE, 'execution', 'scripts')
+    gate_ok = all(os.path.exists(os.path.join(script_dir, s)) for s in ['verify.py', 'odoo_check.py', 'test_runner.py'])
+    report = build_report(version, intent_info, domains, risks, summaries, all_pass, gate_ok)
 
     if json_mode:
         # Report already has domains in it via build_report, but needs all_pass
-        report['all_pass'] = all_pass
-        display_json(report)
+            display_json(report)
     else:
         display_human(report)
 
