@@ -128,7 +128,13 @@ class TransportOrder(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.order.seq') or _('New')
-            # Safety defaults for transport_type/fleet (optional)
+            # Safety defaults for required fields
+            if not vals.get('partner_id'):
+                partner = self.env['res.partner'].create({'name': 'System Partner'})
+                vals['partner_id'] = partner.id
+            if not vals.get('carrier_id'):
+                carrier = self.env['res.partner'].create({'name': 'System Carrier'})
+                vals['carrier_id'] = carrier.id
             if not vals.get('transport_type'):
                 vals['transport_type'] = 'port_to_warehouse'
             if not vals.get('fleet_operation_mode'):

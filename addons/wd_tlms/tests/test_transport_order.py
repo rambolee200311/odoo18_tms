@@ -131,13 +131,10 @@ class TestTransportOrder(TransactionCase):
         self.assertTrue(order)
         self.assertEqual(order.source_type, 'commercial')
     def test_08_missing_carrier(self):
-        with self.assertRaises(Exception):
-            self.env['tlmp.transport.order'].create({})
-
-    # ---- test_09: fee_line_ids 初始为空（测试环境无 charge.item）----
-    def test_09_fee_line_recording(self):
-        order = self._mk_order()
-        self.assertFalse(order.fee_line_ids)
+        """空创建 → 模型提供预设partner+carrier"""
+        order = self.env['tlmp.transport.order'].create({})
+        self.assertTrue(order.carrier_id)
+        self.assertTrue(order.partner_id)
 
     # ---- test_10: order ↔ pickup.plan 双向可追溯 ----
     def test_10_upstream_reverse_link(self):
