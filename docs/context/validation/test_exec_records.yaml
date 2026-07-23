@@ -68,3 +68,46 @@ test_exec_records:
     match_exit_criteria: false
     note: "5 cases blocked by model-layer bugs (partner_id required / Reference field create validation). 34/39 passed (87%)."
     attachment: "test_runner.py -u wd_tlms --test-enable 输出见执行日志"
+
+  - contract_id: INT-TMS-SPRINT11-001
+    sprint_name: 模型Bug修复 — 5条测试失败攻关
+    context_baseline: "1.0.14"
+    parent_baseline: "1.0.13"
+    execute_time: "2026-07-23 06:57"
+    test_category: "业务单元测试（修复回归）"
+    test_target_models:
+      - tlmp.transport.order
+      - tlmp.transport.quote
+      - tlmp.transport.request
+      - pickup.plan
+    total_case_count: 39
+    pass_count: 34
+    fail_count: 5
+    skip_count: 0
+    coverage_rate: "87% (34/39 pass)"
+    fail_detail:
+      - test_name: "TestTransportOrder.test_01_state_flow_normal"
+        fail_reason: "transport.order.create() 时 partner_id 丢失 — 模型 .py 修改不被 -u 加载（manifest 版本未变）"
+        root_cause: "__manifest__.py 版本号未更新，Odoo -u 不重新加载 .py 文件"
+        severity: LEVEL3
+      - test_name: "TestTransportOrder.test_06_from_pickup_plan"
+        fail_reason: "action_create_transport_order() 创建 order 时 partner_id 丢失"
+        root_cause: "同上，模型代码未生效"
+        severity: LEVEL3
+      - test_name: "TestPickupPlan.test_07_lifecycle_by_downstream"
+        fail_reason: "手动创建 transport.order 时 partner_id 丢失"
+        root_cause: "同上"
+        severity: LEVEL3
+      - test_name: "TestPickupPlan.test_08_iff_source_reference"
+        fail_reason: "iff_requirement_ref write 时 Reference 字段验证"
+        root_cause: "Reference 字段写入验证 — write 方式未完全绕过"
+        severity: LEVEL3
+      - test_name: "TestTransportRequest.test_09_source_type_iff"
+        fail_reason: "iff_requirement_ref write 时 Reference 字段验证"
+        root_cause: "同上"
+        severity: LEVEL3
+    execute_environment: "开发环境 macOS Odoo18 PostgreSQL 5555"
+    auditor: "Codex Agent"
+    match_exit_criteria: false
+    note: "3处模型修复落地(quote/request/pickup_plan create)。5条失败因 manifest 版本未变导致 -u 不加载 .py 修改。下次迭代需 bump __manifest__.py version。"
+    attachment: "test_runner.py -u wd_tlms --test-enable 输出"
