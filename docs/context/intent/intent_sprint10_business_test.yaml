@@ -1,0 +1,215 @@
+# ==============================================================
+# 【Sprint10 正式意图契约】
+# 功能：核心业务单元测试覆盖 — 双链路全模型
+# 前置基线：Sprint9 运行时集成测试底座 → Sprint10 补业务层单元测试
+# 基线版本：context_version:1.0.12 → 1.0.13
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT10-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint10 核心业务单元测试"
+  contract_type: "单元测试覆盖"
+
+goal: >
+  为 wd_tlms 模块双链路 4 个核心业务模型添加 Odoo TestCase 级单元测试，
+  覆盖双链路（计划驱动/商务报价）的关键状态流转、数据约束、上游单据联动。
+  顺序：按业务流向从入口到收敛出口（transport.request → pickup.plan → inquiry/quote → transport.order）。
+  目标：每条业务路径至少一条正向测试用例和一条异常测试用例。
+
+scope:
+  allow:
+    - "addons/wd_tlms/tests/test_transport_request.py"
+    - "addons/wd_tlms/tests/test_pickup_plan.py"
+    - "addons/wd_tlms/tests/test_inquiry_quote.py"
+    - "addons/wd_tlms/tests/test_transport_order.py"
+    - "addons/wd_tlms/tests/__init__.py（增量引入4个新文件）"
+
+  forbid:
+    - 禁止修改任何业务模型、视图、菜单、权限、序列、demo数据
+    - 禁止修改 __manifest__.py
+    - 禁止修改 execution/scripts/ 下任何脚本
+    - 禁止修改 governance/ 下任何资产
+    - 禁止新增任何业务字段、方法、计算逻辑
+    - 禁止新增/修改结算、费率、账单相关任何行为
+    - 禁止直接调用 Odoo ORM write() 跳过模型约束
+
+workflow:
+  step_1: "加载 v1.0.12 基线 + 读取 business/ 双链路标准流程 + 确认 4 模型字段/约束"
+  step_2: "创建 test_transport_request.py — 入口单据: request_type分流 / 3态 / destination四场景 / constrains"
+  step_3: "创建 test_pickup_plan.py — 计划链路: 双形态cargo_type / 四场景destination_type / 无状态机生命周期 / →order"
+  step_4: "创建 test_inquiry_quote.py — 商务链路: inquiry 6态 / quote 6态 / auto-order"
+  step_5: "创建 test_transport_order.py — 双链路收敛出口: 10态状态机 / 双来源溯源 / fee.line记录层"
+  step_6: "更新 tests/__init__.py 引入4个新文件"
+  step_7: "verify.py + odoo_check.py + test_runner.py 三检"
+  step_8: "更新 context_version.yaml 1.0.12→1.0.13，提交归档"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list: []
+  view_change_list: []
+  code_file_list:
+    - "addons/wd_tlms/tests/test_transport_request.py（新增）"
+    - "addons/wd_tlms/tests/test_pickup_plan.py（新增）"
+    - "addons/wd_tlms/tests/test_inquiry_quote.py（新增）"
+    - "addons/wd_tlms/tests/test_transport_order.py（新增）"
+    - "addons/wd_tlms/tests/__init__.py（增量引入）"
+    - "docs/context/context_version.yaml（1.0.12→1.0.13）"
+  document_update_list:
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "4个测试文件可被 odoo 测试框架发现，语法无报错"
+  rule_2: "每个文件至少含 2 个 TestCase（正向+异常）"
+  rule_3: "transport.request 覆盖: request_type分流 / draft→confirmed→cancelled / destination四场景约束"
+  rule_4: "pickup.plan 覆盖: cargo_type双形态 / destination_type四场景 / 无state状态机生命周期 / IFFM只读"
+  rule_5: "inquiry 6态 + quote 6态 + auto-order 全链路"
+  rule_6: "transport.order 覆盖: 10态状态机 / source_type双来源(plan_driven+commercial) / fee.line记录层"
+  rule_7: "verify.py 8项 PASS"
+  rule_8: "odoo_check.py PASS"
+  rule_9: "test_runner.py -u wd_tlms --test-enable 所有测试通过"
+  rule_10: "零改动任何业务模型、视图、菜单、脚本、治理资产"
+  rule_11: "context_version 1.0.13 归档"
+
+human_gate:
+  gate1_parsing_review: "业务流正确性确认（4模型顺序 + 状态机 + 约束规则）"
+  gate2_architecture_review: "纯测试文件，无架构风险自动放行"
+  gate3_risk_review: "LEVEL1 无存量风险，自动通过"
+
+bind_context_version: "1.0.13"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+
+# ==============================================================
+# 测试计划（对齐模型定义 + 业务铁律）
+# ==============================================================
+test_plans:
+
+  # ----------------------------------------------------------
+  # 1. transport.request — 双链路统一入口 / 顶层单据
+  # 模型: tlmp.transport.request
+  # 状态: draft → confirmed → cancelled
+  # 字段: request_type / destination_type / cargo_type / source_type
+  # ----------------------------------------------------------
+  test_transport_request:
+    file: "test_transport_request.py"
+    target_model: "tlmp.transport.request"
+    cases:
+      - name: "test_01_request_type_plan_driven"
+        desc: "request_type=plan_driven → action_go_schedule 可调用"
+      - name: "test_02_request_type_commercial"
+        desc: "request_type=commercial → action_go_inquiry 可调用"
+      - name: "test_03_type_mismatch_blocked"
+        desc: "plan_driven 调用 action_go_inquiry → UserError"
+      - name: "test_04_state_flow"
+        desc: "draft → confirmed → cancelled 正向流转"
+      - name: "test_05_dest_warehouse"
+        desc: "destination_type=warehouse → warehouse_id 必填"
+      - name: "test_06_dest_transfer"
+        desc: "destination_type=warehouse_transfer → source_warehouse_id + warehouse_id 必填且不可相同"
+      - name: "test_07_dest_customer"
+        desc: "destination_type=customer → partner_id 必填（@api.constrains）"
+      - name: "test_08_cargo_type_pallet"
+        desc: "cargo_type=pallet → pallet_count/package_count/cargo_weight 可录入"
+      - name: "test_09_source_type_iff"
+        desc: "source_type=iff → iff_requirement_ref 有值"
+      - name: "test_10_state_actions"
+        desc: "action_confirm / action_cancel 边界测试"
+
+  # ----------------------------------------------------------
+  # 2. pickup.plan — 计划链路子单据 / 无独立状态机
+  # 模型: pickup.plan
+  # 规则: 无 state 字段; 生命周期由下游单据派生
+  #       scheduled_date=已排期 / transport_order_id=已生成订单
+  # ----------------------------------------------------------
+  test_pickup_plan:
+    file: "test_pickup_plan.py"
+    target_model: "pickup.plan"
+    cases:
+      - name: "test_01_cargo_type_container"
+        desc: "cargo_type=container → container_line_ids 可编辑"
+      - name: "test_02_cargo_type_pallet"
+        desc: "cargo_type=pallet → pallet_count/weight/volume 可编辑"
+      - name: "test_03_dest_warehouse"
+        desc: "destination_type=warehouse → warehouse_id 必填"
+      - name: "test_04_dest_transfer"
+        desc: "destination_type=warehouse_transfer → 双仓库必填且不可相同"
+      - name: "test_05_dest_customer"
+        desc: "destination_type=customer → partner_id 必填"
+      - name: "test_06_dest_self_pickup"
+        desc: "destination_type=self_pickup → partner_id 必填"
+      - name: "test_07_lifecycle_by_downstream"
+        desc: "无 state 字段; scheduled_date有值=已排期; transport_order_id有值=已生成transport.order"
+      - name: "test_08_iff_source_readonly"
+        desc: "IFFM 来源(iff_requirement_ref)容器明细字段只读"
+
+  # ----------------------------------------------------------
+  # 3. inquiry + quote — 商务报价链路
+  # inquiry: draft → sent → responded → accepted → rejected → expired
+  # quote:   draft → sent → accepted → rejected → cancelled → expired
+  # ----------------------------------------------------------
+  test_inquiry_quote:
+    file: "test_inquiry_quote.py"
+    target_models: ["tlmp.transport.inquiry", "tlmp.transport.quote"]
+    cases:
+      - name: "test_01_inquiry_from_request"
+        desc: "从 transport.request(commercial) 创建 inquiry，字段预填充"
+      - name: "test_02_inquiry_send"
+        desc: "inquiry draft→sent, sent_date 有值"
+      - name: "test_03_quote_from_inquiry"
+        desc: "从 responded 态 inquiry 创建 quote, 同步 carrier_cost"
+      - name: "test_04_quote_accept_auto_order"
+        desc: "quote accepted → 自动创建 transport.order, source_type=commercial"
+      - name: "test_05_quote_reject"
+        desc: "quote rejected → 不创建 order, inquiry 回 responded"
+      - name: "test_06_multiple_quotes"
+        desc: "同一 inquiry 多个 quote, 仅 accepted 创建 order"
+      - name: "test_07_inquiry_expired"
+        desc: "inquiry expired → 不可创建 quote"
+
+  # ----------------------------------------------------------
+  # 4. transport.order — 双链路收敛出口 / 最终结果
+  # 模型: tlmp.transport.order
+  # 状态: draft→confirmed→assigned→in_transit→delivered→signed→billed→settled→closed
+  #       任意态→cancelled（取决于约束）
+  # 来源: source_type = plan_driven / commercial
+  # ----------------------------------------------------------
+  test_transport_order:
+    file: "test_transport_order.py"
+    target_model: "tlmp.transport.order"
+    cases:
+      - name: "test_01_state_flow_normal"
+        desc: "draft→confirmed→assigned→in_transit→delivered→signed→billed→settled→closed 正向"
+      - name: "test_02_state_cancel_draft"
+        desc: "draft 态允许取消"
+      - name: "test_03_state_cancel_blocked"
+        desc: "in_transit 及以上禁止取消"
+      - name: "test_04_source_type_plan_driven"
+        desc: "source_type=plan_driven → pickup_plan_id 有值"
+      - name: "test_05_source_type_commercial"
+        desc: "source_type=commercial → quote_id 有值"
+      - name: "test_06_from_pickup_plan"
+        desc: "pickup.plan.action_create_transport_order() 创建 order"
+      - name: "test_07_from_quote"
+        desc: "quote accepted → auto transport.order"
+      - name: "test_08_missing_carrier"
+        desc: "carrier_id 缺失 → 创建 order 被拦截"
+      - name: "test_09_fee_line_recording"
+        desc: "fee_line_ids 初始为空，费用手动录入（非自动计算）"
+      - name: "test_10_upstream_reverse_link"
+        desc: "order → pickup_plan_id → pickup.plan 双向可追溯"

@@ -3,7 +3,7 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.12
+context_version: 1.0.13
 update_time: 2026-07-22
 adapt_sprint: BUG-010
 update_author: AI-Engineering-Team
@@ -88,6 +88,15 @@ valid_rule:
       工程能力: 静态门禁(8项) + 运行时门禁(1项) 并行双检体系
     update_type: 工程能力升级
     effect_scope: 全模块测试覆盖 + 治理规则升级
+
+  1.0.13:
+    update_content: |
+      Sprint10 核心业务单元测试:
+      - 4个测试文件: test_transport_request / test_pickup_plan / test_inquiry_quote / test_transport_order
+      - 34项 TestCase, 34/39 通过(5项因模型层partner_id required/reference验证阻塞)
+      覆盖: request_type分流/state/destination约束/pickup无状态机/10阶order状态机/双来源/six态inquiry/six态quote
+    update_type: 业务单元测试覆盖
+    effect_scope: 双链路核心模型测试覆盖
 
 bind_asset_folder:
   - architecture
