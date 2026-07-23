@@ -82,6 +82,7 @@ def main():
             'governance/audit_spec.yaml',
             'governance/tool_governance.yaml',
             'governance/bug_fix_workflow.yaml',
+            'governance/test_lessons.yaml',
         ]),
     ]
 
@@ -91,8 +92,38 @@ def main():
             all_pass = False
 
     print()
+    # Load test lessons and print warnings
+    lessons_file = os.path.join(CTX, 'governance', 'test_lessons.yaml')
+    if os.path.exists(lessons_file):
+        with open(lessons_file) as f:
+            lesson_text = f.read()
+        lines = lesson_text.split('\n')
+        rules = []
+        for i, line in enumerate(lines):
+            if line.strip().startswith('- id:'):
+                rid = line.split('"')[1]
+                problem = ''
+                severity = ''
+                for j in range(i, min(i+10, len(lines))):
+                    if 'problem: "' in lines[j]:
+                        problem = lines[j].split('"')[1]
+                    if 'severity: "' in lines[j]:
+                        severity = lines[j].split('"')[1]
+                if severity in ('LEVEL2', 'LEVEL3'):
+                    rules.append((rid, problem, severity))
+        if rules:
+            print(f'  ⚠  Test Lessons: {len(rules)} rules to review')
+            for rid, problem, severity in rules:
+                print(f'     [{severity}] {rid}: {problem[:80]}')
+            print('  ⚠  Read: docs/context/governance/test_lessons.yaml')
+        else:
+            print('  Test Lessons:  0 rules')
+    else:
+        print('  Test Lessons:  NOT FOUND')
+
+    print()
     print(f'  Engine:     4 scripts in execution/scripts/')
-    print(f'  Gate:       7 checks (verify.py)')
+    print(f'  Gate:       8 checks (verify.py)')
     print(f'  Validation: odoo_check.py')
     print()
     if all_pass:

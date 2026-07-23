@@ -1,0 +1,66 @@
+# ==============================================
+# 测试基础设施约束规则（跨 Sprint 沉淀）
+# 归属：运行治理 → 测试工程规范
+# 作用：每次 Sprint 开发前由 context_loader.py 加载并警告
+# 来源：Sprint9~Sprint12 跨迭代回顾
+# ==============================================
+
+test_lessons_version: "1.0.0"
+source_sprints: ["Sprint9", "Sprint10", "Sprint11", "Sprint12"]
+
+rules:
+
+  - id: "TL-001"
+    category: "测试数据自包含"
+    source: "Sprint10/11 test_06、pickup_07、pickup_08"
+    problem: "TestCase 未在 setUp 中创建被测方法所需的数据记录（charge.item、waybill、iff_req），导致测试因引用数据不存在而失败"
+    rule: "每个 TestCase.setUp 必须创建被测方法直接或间接依赖的所有数据记录"
+    check: "检查 setUp 中是否创建了 required 模型的基础记录"
+    severity: "LEVEL2"
+
+  - id: "TL-002"
+    category: "外部模块依赖声明"
+    source: "Sprint12 test_06"
+    problem: "action_create_transport_order 中直接调用 self.env['world.depot.charge.item']，但 worlddepot 不在 __manifest__.py depends 中。测试环境不加载未声明模块的模型"
+    rule: "所有通过 self.env['module.model'] 直接引用的外部模块，必须在 __manifest__.py depends 中显式声明。Reference 字段中的模型除外（软引用）"
+    check: "grep 'self.env\\[' 找外部模块名，反向核对 depends"
+    severity: "LEVEL2"
+
+  - id: "TL-003"
+    category: "Reference 字段测试"
+    source: "Sprint11/12 pickup_08、test_09"
+    problem: "Odoo Reference 字段在 create 和 write 时都会验证引用记录的存在性，不存在则抛 ValueError。write() 也无法绕过"
+    rule: "测试 Reference 字段赋值时，必须预先创建目标记录。如果目标模块不可用（软引用），则测试只能做存在性检查，不能做值赋值验证"
+    check: "setUp 中 try/except 创建引用记录，测试中根据是否创建成功分支执行"
+    severity: "LEVEL2"
+
+  - id: "TL-004"
+    category: "状态推进数据依赖"
+    source: "Sprint11 test_01"
+    problem: "transport.order.create() 成功后，action_bill() → _check_settle_lock() 因缺少 POD+CMR 记录而拒绝推进，导致状态机全流程测试失败"
+    rule: "测试状态机全流程时，需逐一确认每个 state transition 方法的数据依赖（POD、CMR、invoice 等），并在 setUp 中预创建"
+    check: "列出所有 action_* 方法的校验逻辑，确认测试数据是否满足"
+    severity: "LEVEL3"
+
+  - id: "TL-005"
+    category: "版本与模块重载"
+    source: "Sprint11 全阶段"
+    problem: ".py 文件修改后运行 -u wd_tlms，Odoo 因 manifest 版本未递增而跳过升级，修改未生效。Python import 机制不受 -u 控制，但 module loading（data/xml）受版本比较控制"
+    rule: "每次修改 .py 文件后，递增 __manifest__.py 的 version 字段。如果修改涉及模型字段或方法签名，必须递增；若仅改测试，也建议递增以避免混淆"
+    check: "git diff 时确认 manifest version 是否有变化。无变化则加 --amend 或单独 commit 修改 version"
+    severity: "LEVEL1"
+
+  - id: "TL-006"
+    category: "测试驱动开发"
+    source: "Sprint9~Sprint12 整体"
+    problem: "单元测试在业务代码之后编写，大量模型层接口缺陷（字段缺失、约束遗漏）在 Sprint10 才被发现，导致 Sprint11 需要大量模型修复"
+    rule: "新增业务功能时，优先编写测试定义（接口契约），再实现代码。至少应在功能开发前编写核心模型创建和状态流转测试"
+    check: "intent 契约的 workflow 中 step_2 或 3 应包含测试编写"
+    severity: "LEVEL3"
+
+# ==============================================
+# 规则引用
+# ==============================================
+refs:
+  - "docs/context/history/decision_note.md → 跨迭代回顾章节"
+  - "docs/context/governance/bug_fix_workflow.yaml"
