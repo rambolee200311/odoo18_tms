@@ -111,6 +111,7 @@ class TransportQuote(models.Model):
             'fleet_operation_mode': 'subcontracted',
             'total_customer_charge': self.total_amount,
             'source_amount_customer': self.total_amount,
+            'carrier_id': self.partner_id.id,
             'price_source': 'quote',
         })
         # Auto-create fee lines

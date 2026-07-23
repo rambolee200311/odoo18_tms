@@ -1,0 +1,154 @@
+# ==============================================================
+# 【Sprint11 正式意图契约】
+# 功能：修复 Sprint10 5 条失败测试 — 模型层 Bug 修正
+# 前置基线：Sprint10 发现 5 条模型层 Bug 导致 34/39 测试通过
+# 基线版本：context_version:1.0.13 → 1.0.14
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT11-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint11 模型Bug修复 — 5条测试失败清零"
+  contract_type: "Bug修复（模型层）"
+
+goal: >
+  修复 Sprint10 发现的 5 条模型层 Bug，使 39 项业务单元测试全部通过 (39/39)。
+  同时修复 `_auto_create_order()`、`action_create_transport_order()`、
+  `action_start_inquiry()`、`pickup.plan.create()` 等 4 处模型方法中
+  字段缺失问题。修复后执行全量回归测试并更新测试台账。
+
+scope:
+  allow:
+    # ---- 模型层 Bug 修复 ----
+    - "models/transport_quote.py: _auto_create_order() 新增 carrier_id 字段"
+    - "models/pickup_plan_fix.py: action_create_transport_order() 确保 carrier_id/partner_id 正确传递"
+    - "models/transport_request.py: action_start_inquiry() 新增 partner_id（carrier）"
+    - "models/pickup_plan.py: create() 自动创建 request 时补充 warehouse_id"
+    - "models/transport_order.py: 排查并修复 create() 时 partner_id 丢失问题"
+
+    # ---- 验证资产更新 ----
+    - "execution/scripts/test_runner.py（如有必要微调）"
+    - "docs/context/validation/test_exec_records.yaml（match_exit_criteria→true）"
+    - "docs/context/history/decision_note.md（追加修复记录）"
+    - "docs/context/context_version.yaml（1.0.13→1.0.14）"
+    - "docs/context/history/bug_record.md（追加 BUG-014 修复记录）"
+
+  forbid:
+    - 禁止新增任何业务字段、模型、视图、菜单
+    - 禁止新增/修改结算、费率、账单相关任何代码
+    - 禁止修改 tests/ 目录下任何测试文件（测试代码已正确，修复的是模型层）
+    - 禁止改动 __manifest__.py
+    - 禁止改动 Odoo 底层 ORM、原生模块
+    - 禁止改动 govenance/ 目录下任何资产
+    - 禁止改动 execution/scripts/verify.py / commit_guard.py
+
+workflow:
+  step_1: "加载 v1.0.13 基线 + 读取 validation/test_exec_records.yaml 5条失败详情"
+  step_2: "修复 transport_quote._auto_create_order() — 添加 carrier_id"
+  step_3: "修复 transport_request.action_start_inquiry() — 添加 inquiry.partner_id"
+  step_4: "修复 pickup_plan.create() — 自动创建 request 时补充 warehouse_id"
+  step_5: "修复 transport_order.create() — 排查 partner_id 丢失根因"
+  step_6: "修复 pickup_plan_fix.action_create_transport_order() — 确保 carrier/partner"
+  step_7: "verify.py + odoo_check.py + test_runner.py 三检（确认 39/39 通过）"
+  step_8: "更新 test_exec_records.yaml match_exit_criteria→true + context_version 1.0.14 + 归档"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "models/transport_quote.py（_auto_create_order 新增 carrier_id）"
+    - "models/transport_request.py（action_start_inquiry 新增 partner_id）"
+    - "models/pickup_plan.py（create 自动创建 request 补充 warehouse_id）"
+    - "models/pickup_plan_fix.py（action_create_transport_order 确保 carrier/partner）"
+    - "models/transport_order.py（create/回调排查 partner_id 丢失）"
+  code_file_list:
+    - "addons/wd_tlms/models/transport_quote.py（增量）"
+    - "addons/wd_tlms/models/transport_request.py（增量）"
+    - "addons/wd_tlms/models/pickup_plan.py（增量）"
+    - "addons/wd_tlms/models/pickup_plan_fix.py（增量）"
+    - "addons/wd_tlms/models/transport_order.py（增量）"
+    - "docs/context/validation/test_exec_records.yaml（更新失败记录）"
+    - "docs/context/history/bug_record.md（追加 BUG-014）"
+    - "docs/context/history/decision_note.md（追加修复记录）"
+    - "docs/context/context_version.yaml（1.0.13→1.0.14）"
+  document_update_list:
+    - "docs/context/validation/test_exec_records.yaml"
+    - "docs/context/history/bug_record.md"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "5处模型层修复全部落地"
+  rule_2: "verify.py 8项静态门禁 PASS"
+  rule_3: "odoo_check.py 模块加载 PASS"
+  rule_4: "test_runner.py -u wd_tlms --test-enable 39/39 全部通过（0 failures, 0 errors）"
+  rule_5: "test_exec_records.yaml 更新 match_exit_criteria→true，fail_detail 清空"
+  rule_6: "bug_record.md 追加 BUG-014 修复记录"
+  rule_7: "context_version 1.0.14 归档"
+
+human_gate:
+  gate1_parsing_review: "模型层修复范围确认（仅修复字段缺失，不改结构）"
+  gate2_architecture_review: "最小修改原则 — 仅增补缺失字段，不重构不破坏存量"
+  gate3_risk_review: "LEVEL2 核心模型方法修改，需要人工审核"
+
+bind_context_version: "1.0.14"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+
+# ==============================================================
+# 5 条失败修复详细设计
+# ==============================================================
+bug_fixes:
+
+  fix_01:
+    test: "TestTransportOrder.test_01_state_flow_normal"
+    file: "models/transport_order.py"
+    symptom: "create() 时 partner_id 丢失（null value violates not-null constraint）"
+    root_cause: "partner_id = fields.Many2one(required=True) 但在 create 传递 vals 后仍被清除"
+    fix: "排查 create 方法及 _sync_upstream_status 回调，确保 partner_id 正确写入"
+    verify: "test_01 通过 → source_type 不依赖 partner_id 问题"
+
+  fix_02:
+    test: "TestTransportOrder.test_06_from_pickup_plan"
+    file: "models/pickup_plan_fix.py"
+    symptom: "action_create_transport_order() 创建 order 时 partner_id/carrier_id 缺失"
+    root_cause: "order_vals 依赖 plan.carrier_id.id，但 create 时 carrier_id 传递有误"
+    fix: "确保 order_vals 包含 carrier_id=self.carrier_id.id, partner_id=(carrier or env.user)"
+    verify: "test_06 通过 → plan→order 创建正常"
+
+  fix_03:
+    test: "TestTransportOrder.test_07_from_quote"
+    file: "models/transport_quote.py"
+    symptom: "_auto_create_order() 创建 order 缺少 carrier_id（required=True）"
+    root_cause: "order create vals 中没有包含 carrier_id"
+    fix: "新增 carrier_id = self.partner_id.id（quote 的 partner_id 即为承运商）"
+    verify: "test_07 通过 → quote→order 自动创建正常"
+
+  fix_04:
+    test: "TestTransportRequest.test_09_source_type_iff"
+    file: "models/transport_request.py (action_start_inquiry)"
+    symptom: "action_start_inquiry() 创建 inquiry 时缺少 partner_id（required=True）"
+    root_cause: "inquiry create vals 中没有 partner_id 字段"
+    fix: "新增 partner_id = self.carrier_id.id（request 的 carrier 作为承运商）"
+    verify: "test_09 通过 → inquiry 创建正常"
+
+  fix_05:
+    test: "TestPickupPlan.test_07_lifecycle_by_downstream / test_08"
+    file: "models/pickup_plan.py"
+    symptom: "create() 自动创建 transport.request 时 warehouse_id 缺失"
+    root_cause: "auto-created request 的 vals 未继承 plan 的 warehouse_id"
+    fix: "在 create 方法中补充 warehouse_id = vals.get('warehouse_id', False)"
+    verify: "test_07/test_08 通过 → plan 创建正常"

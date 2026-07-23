@@ -186,6 +186,7 @@ class TransportRequest(models.Model):
            raise UserError(_('Inquiry is only available for commercial requests.'))
        inquiry = self.env['tlmp.transport.inquiry'].create({
            'request_id': self.id,
+           'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
            'cargo_summary': self.cargo_description or '',
            'weight_kg': self.cargo_weight, 'volume_m3': self.cargo_volume,
            'pickup_date': self.requested_pickup_date,

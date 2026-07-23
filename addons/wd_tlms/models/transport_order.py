@@ -128,6 +128,11 @@ class TransportOrder(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.order.seq') or _('New')
+            # Safety defaults for transport_type/fleet (optional)
+            if not vals.get('transport_type'):
+                vals['transport_type'] = 'port_to_warehouse'
+            if not vals.get('fleet_operation_mode'):
+                vals['fleet_operation_mode'] = 'subcontracted'
         return super().create(vals_list)
 
     @api.depends('surcharge_ids.amount')
