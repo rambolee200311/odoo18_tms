@@ -30,7 +30,16 @@ security_redline:
   
 # 知识管理红线
 knowledge_redline:
-  - 每次 Sprint 启动时，AI 必须首先执行 context_loader.py，加载当前全部 LEVEL2/3 约束警告，再开始编写代码（教训在编码前加载）
-  - 每次 Sprint 的 commit 前，必须先更新 decision_note.md + test_lessons.yaml（教训与代码同时提交，禁止事后补）
-  - 禁止仅更新 decision_note.md 而不同步更新 test_lessons.yaml
-  - 若不更新 test_lessons.yaml，本条 Sprint 的教训不会被下次 Sprint 的 context_loader.py 加载
+  # 开发前置 —— 任何 Sprint 类型
+  - 每次 Sprint 启动时，AI 必须首先执行 context_loader.py，加载当前全部 LEVEL2/3 约束警告，再开始编写代码
+
+  # 提交前置 —— 按 Sprint 类型区分
+  # 通用（必更新）
+  - decision_note.md（记录本次 Sprint 的决策/发现/关键数据）
+  - context_version.yaml（升级版本号）
+
+  # 按类型
+  - test_exec_records.yaml: 凡是跑了测试的 Sprint 都更新（测试/开发/Bug修复）
+  - bug_record.md: 凡是发现 Bug 的 Sprint 都更新
+  - test_lessons.yaml: 仅当本次 Sprint 有新教训可提取时更新；无新教训则跳过
+  - 禁止仅更新 decision_note.md 而不同步更新其他应更新的资产
