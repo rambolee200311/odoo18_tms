@@ -28,3 +28,8 @@ security_redline:
   - 禁止开放超级权限匿名接口
   - 禁止绕过权限校验执行业务操作
   
+# 知识管理红线
+knowledge_redline:
+  - 每次 Sprint 迭代结束，更新 decision_note.md 后必须同步审查并更新 test_lessons.yaml
+  - 禁止仅更新 decision_note.md 而不同步更新 test_lessons.yaml
+  - 若不更新 test_lessons.yaml，教训不会被 context_loader.py 加载为开发前警告
