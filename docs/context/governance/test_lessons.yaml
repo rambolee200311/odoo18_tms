@@ -64,3 +64,22 @@ rules:
 refs:
   - "docs/context/history/decision_note.md → 跨迭代回顾章节"
   - "docs/context/governance/bug_fix_workflow.yaml"
+
+# ==============================================
+# 更新流程（强制规则）
+# ==============================================
+update_process:
+  trigger: "每次 Sprint 迭代结束，更新 decision_note.md 后"
+  steps:
+    - "审查 decision_note.md 的本次迭代记录，提取新出现的教训"
+    - "将每条新教训按 test_lessons.yaml 格式写入 rules 列表末尾"
+    - "递增 test_lessons_version 小版本号"
+    - "用 context_loader.py 验证新规则可正常加载显示"
+  rule: |
+    禁止仅更新 decision_note.md 而不同步更新 test_lessons.yaml。
+    test_lessons.yaml 是 context_loader.py 的格式化输入，
+    不更新则下次 Sprint 开发时不会显示警告，教训等于白记。
+  example: |
+    Sprint12 新增了 TL-002（外部模块依赖），
+    但如果只写进 decision_note.md 而不写入 test_lessons.yaml，
+    下次 context_loader.py 加载时该教训不会被输出为警告。
