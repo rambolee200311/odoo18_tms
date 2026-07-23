@@ -1,0 +1,140 @@
+# ==============================================================
+# 【Sprint9 正式意图契约】
+# 功能：运行时集成测试底座 — 捕获静态门禁无法发现的运行时报错
+# 前置基线：BUG-012 暴露 verify.py 8项静态门禁无法拦截 view_mode 运行时问题
+# 基线版本：context_version:1.0.11 → 1.0.12
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT9-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint9 运行时集成测试底座"
+  contract_type: "工程能力升级"
+
+goal: >
+  为 wd_tlms 模块搭建运行时集成测试层，覆盖静态门禁（verify.py 8项）无法捕获的
+  运行时集成问题。新增 tests/test_runtime_validation.py，实现 4 项 Odoo TestCase：
+  1. view_mode 中 "tree" 的检测（Odoo 18 兼容）
+  2. menuitem parent 存在性校验
+  3. act_window res_model 对应视图存在性
+  4. act_window view_ids 引用视图存在性
+  同步更新治理资产（pipeline_check.yaml + bug_fix_workflow.yaml），
+  将运行时测试纳入 Bug 修复标准工作流。
+
+scope:
+  allow:
+    # ---- 测试文件 ----
+    - "创建 addons/wd_tlms/tests/__init__.py"
+    - "创建 addons/wd_tlms/tests/test_runtime_validation.py（4项 TestCase）"
+
+    # ---- 治理资产升级 ----
+    - "pipeline_check.yaml 新增 check_8_menuitem_order（按 verify.py 对齐）"
+    - "pipeline_check.yaml 新增 check_9_runtime_test"
+    - "pipeline_check.yaml check_7 注释更新（v3 精确模式，63→0 误报）"
+    - "pipeline_check.yaml 熔断策略更新（check_7/check_8 真实错误→拒绝提交）"
+    - "bug_fix_workflow.yaml step_5 post_check 新增集成测试要求"
+
+    # ---- 版本管理 ----
+    - "context_version.yaml: 1.0.11 → 1.0.12"
+
+  forbid:
+    - 禁止修改任何业务模型（transport.request/pickup.plan/order/inquiry/quote/fee）
+    - 禁止修改任何业务视图（transport_request_views/pickup_plan_views/order_views 等）
+    - 禁止修改任何菜单、权限、序列、数据文件
+    - 禁止修改 __manifest__.py（tests 目录自动发现，无需声明）
+    - 禁止修改 execution/scripts/verify.py（check_7/check_8 已在 Sprint12 迭代中上线）
+    - 禁止开发财务、结算、费率、账单任何字段或逻辑
+    - 禁止修改 Odoo 底层 ORM、原生模块
+
+workflow:
+  step_1: "加载 v1.0.11 基线 + bug_record.md 回顾 BUG-001~012 根因"
+  step_2: "分析哪些 Bug 可通过运行时测试拦截（4类）"
+  step_3: "创建 tests/__init__.py + test_runtime_validation.py"
+  step_4: "更新 pipeline_check.yaml（check_7/check_8/check_9）"
+  step_5: "更新 bug_fix_workflow.yaml step_5 post_check"
+  step_6: "verify.py 8项门禁 + odoo_check.py 模块加载验证"
+  step_7: "沉淀决策资产，版本升级至 1.0.12"
+
+input:
+  context_asset: [
+    "docs/context/architecture",
+    "docs/context/business",
+    "docs/context/history",
+    "docs/context/constraints",
+    "docs/context/cognition",
+    "docs/context/governance"
+  ]
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list: []  # 纯新增测试文件，不改模型
+  view_change_list: []  # 不修改视图
+  code_file_list:
+    - "addons/wd_tlms/tests/__init__.py（新增）"
+    - "addons/wd_tlms/tests/test_runtime_validation.py（新增，4项 TestCase）"
+    - "docs/context/governance/pipeline_check.yaml（check_7注释更新 + check_8/check_9新增）"
+    - "docs/context/governance/bug_fix_workflow.yaml（step_5 post_check新增）"
+    - "docs/context/context_version.yaml（1.0.11→1.0.12）"
+  document_update_list:
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "tests/test_runtime_validation.py 4项 TestCase 全部通过语法检查"
+  rule_2: "verify.py 8项门禁全部 PASS"
+  rule_3: "odoo_check.py 模块加载 PASS"
+  rule_4: "pipeline_check.yaml check_7/check_8/check_9 定义完整"
+  rule_5: "bug_fix_workflow.yaml step_5 post_check 包含集成测试要求"
+  rule_6: "context_version: 1.0.12，已提交归档"
+  rule_7: "零修改任何业务模型、视图、菜单"
+
+human_gate:
+  gate1_parsing_review: "测试范围覆盖确认（4项 TestCase 是否充分）"
+  gate2_architecture_review: "纯测试文件 + 治理规则，无架构风险自动放行"
+  gate3_risk_review: "LEVEL1 无存量风险，自动通过"
+
+bind_context_version: "1.0.12"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+
+# ==============================================================
+# 4项运行时 TestCase 详细定义（设计文档，非实现）
+# ==============================================================
+test_cases:
+
+  test_01_view_mode_no_tree:
+    target: "ir.actions.act_window（wd_tlms 模块内的）"
+    check: "view_mode 字段值中不含 'tree'"
+    coverage: "BUG-012"
+    rationale: |
+      Odoo 18 将 tree 视图类型重命名为 list。
+      若 act_window 的 view_mode 值为 "calendar,tree,form"，
+      前端打开菜单时抛"View types not defined tree"错误。
+
+  test_02_menuitem_parent_exists:
+    target: "ir.ui.menu（wd_tlms 模块内的）"
+    check: "每个菜单项的 parent_id 存在于模块定义的菜单集中"
+    coverage: "BUG-011"
+    rationale: |
+      XML 中 menuitem 的 parent= 指向一个不存在的 XML ID，
+      或父菜单在后部定义，模块加载时抛 ValueError。
+
+  test_03_action_res_model_has_view:
+    target: "ir.actions.act_window（wd_tlms 模块内的）"
+    check: "每个 view_mode 类型，其 res_model 在 ir.ui.view 中至少有一个对应类型视图"
+    coverage: "BUG-007/009（扩展覆盖）"
+    rationale: |
+      若视图引用了模型中不存在的字段，或 act_window 引用了不存在的视图，
+      Python 层面可能通过，但运行时打开视图会报错。
+
+  test_04_action_view_refs_exist:
+    target: "act_window view_ids 行"
+    check: "每个 view_ids 行的 view_id 对应的 ir.ui.view 记录存在"
+    coverage: "通用引用完整性"
+    rationale: |
+      view_ids 中引用了已删除或不存在的视图记录，
+      打开 action 时前端可能加载空白页面。
