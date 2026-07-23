@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.16
-update_time: 2026-07-22
-adapt_sprint: BUG-010
+context_version: 1.0.19
+update_time: 2026-07-23
+adapt_sprint: Sprint14-CMR
 update_author: AI-Engineering-Team
 
 version_log:
@@ -105,6 +105,30 @@ valid_rule:
       7项能力: encoding/YAML回退/基线校验/风险阻断/退出码/JSON输出/资产摘要
     update_type: 工程基础设施重构
     effect_scope: context_loader.py + 开发前置流程
+  1.0.17:
+    update_content: |
+      CMR 上下文资产更新：双路径设计决策入库
+      - dependency.yaml: tlmp.cmr 模块依赖定义完成
+      - module_map.md: CMR 数据模型字段定义完成
+      - 修复 dependency.yaml 中的孤儿行 creates: ["tlmp.transport.order"]
+    update_type: 上下文资产更新
+    effect_scope: CMR 模块 + 上下文资产维护
+
+
+  1.0.19:
+    update_content: |
+      Sprint14 CMR 运单制作与打印：完整功能开发
+      - 新增 tlmp.cmr.line 货物明细子模型
+      - 新增 tlmp.cmr.coordinate XY 坐标配置模型
+      - 增强 tlmp.cmr: line_ids/累加校验/快速创建/套打辅助方法
+      - 重写 cmr_views.xml 完整表单（6 tab）
+      - 重写 report_cmr.xml 210×310mm 纯文本套打 PDF
+      - 菜单调整: CMR 迁移至 Transport Execution, 坐标配置放 Configuration
+      - verify.py 8/8 PASS, odoo_check.py DB 不可用
+    update_type: 新功能开发
+    effect_scope: CMR 模块 + 坐标配置 + 报表套打
+
+
 bind_asset_folder:
   - architecture
   - business

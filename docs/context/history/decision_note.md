@@ -424,3 +424,39 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 ### 教训 6: 测试优先原则
 **问题**: Sprint10 编写测试时才发现模型层字段缺失（partner_id、carrier_id 未设置）。
 **启示**: 业务单元测试应尽可能早地编写，甚至先于功能开发（TDD），以便早期暴露接口设计缺陷。
+
+---
+## Sprint14 — CMR 运单制作与打印
+**时间**: 2026-07-23
+**契约**: INT-TMS-SPRINT14-001
+**基线**: context_version 1.0.17 → 1.0.19
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/cmr_line.py` | `tlmp.cmr.line` 货物明细子模型 |
+| 新增模型 | `models/cmr_coordinate.py` | `tlmp.cmr.coordinate` XY 坐标配置模型 |
+| 模型增强 | `models/cmr.py` | 加 line_ids / 累加校验 / 快速创建 / 套打辅助方法 |
+| 视图重写 | `views/cmr_views.xml` | 完整表单（6 个 notebook tab） |
+| 视图新增 | `views/cmr_coordinate_views.xml` | 坐标配置 tree+form 视图 |
+| 菜单调整 | `views/tlmp_menus.xml` | CMR 从 Documents 迁移到 Transport Execution；新增坐标配置菜单 |
+| 报表重写 | `reports/report_cmr.xml` | 210×310mm 纯文本套打 PDF |
+| 权限 | `security/ir.model.access.csv` | cmr.line / cmr.coordinate 3 级权限 |
+| manifest | `__manifest__.py` | version 1.0.46→1.0.47, 注册 cmr_coordinate_views.xml |
+
+### 关键架构决策
+1. **CMR 双路径设计**: wd_tlms 生成 PDF 套打 + worlddepot 上传附件归档，通过 load_ref ↔ name 松耦合
+2. **产品数据来源**: CMR 货物信息手动录入 `tlmp.cmr.line`，运输订单无产品行
+3. **ADR 字段**: 从 order_id 关联读取（related field），禁止手动录入
+4. **坐标配置**: `tlmp.cmr.coordinate` 独立模型，运维用户可在 Configuration 菜单下维护套打偏移量
+
+### 已知限制
+1. odoo_check.py 因 PostgreSQL 未启动未能运行（非代码问题）
+2. 坐标配置的初始数据（default coordinates for CMR form layout）需要在生产环境手动录入或后续通过 data xml 预灌
+3. 套打 PDF 的精确坐标校准需在真实预印纸上验证微调
+
+### 风险状态
+- context_loader 基线检查: PASS
+- verify.py 8 项门禁: ALL PASS
+- odoo_check.py: DB 不可用（环境依赖）
+- 存量风险: TL-004, TL-006 (LEVEL3), TL-001~TL-003 (LEVEL2) — 未新增风险

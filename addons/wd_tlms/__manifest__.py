@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.46',
+    'version': '1.0.47',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -28,6 +28,7 @@
         'views/transport_tracking_views.xml',
         'views/pod_views.xml',
         'views/cmr_views.xml',
+        'views/cmr_coordinate_views.xml',
         'views/customer_bill_views.xml',
         'views/carrier_settlement_views.xml',
         'views/pricing_rule_views.xml',

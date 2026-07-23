@@ -4,6 +4,13 @@
 TMS 系统部署在 `addons/wd_tlms/` 模块中，遵循标准 Odoo 模块结构。
 
 ### 1.1 目录结构
+
+### 1.0 关键架构决策
+
+- **CMR 双路径设计**：`wd_tlms` 生成（PDF 套打）与 `worlddepot` 上传（附件归档）并存，通过 `outbound_order.load_ref` ↔ `tlmp.transport.order.name` 松耦合
+- **CMR 产品数据来源**：运输订单无产品明细行，CMR 货物信息由用户手动录入 `tlmp.cmr.line`
+- **PDF 输出规格**：210×310mm 纯文本叠加，无框线/底色，依赖 XY 坐标配置体系
+
 ```
 wd_tlms/
 ├── __init__.py
@@ -102,7 +109,25 @@ wd_tlms/
 
 签收/结算层:
   tlmp.pod                      —— 签收凭证
-  tlmp.cmr                      —— CMR 运单
+  tlmp.cmr                      —— CMR 运单（运输管理侧生成）
+
+  CMR 数据模型关键字段（tlmp.cmr）：
+  ├─ 收发方：sender_id / consignee_id / carrier_id（均 Many2one → res.partner）
+  ├─ 地址：place_of_taking_over / place_of_delivery
+  ├─ 车辆：vehicle_reg_no
+  ├─ 货物明细（tlmp.cmr.line 子模型）：commodity / sku / qty / gross_weight_per_unit / gross_weight / points
+  │   父模型 packages_count / gross_weight 从 line_ids 自动累计
+  ├─ ADR：has_dangerous_goods / adr_class / adr_un_number（均 related=order_id.*，只读）
+  ├─ 费用：freight_charges / additional_charges / currency_id
+  ├─ 备注：sender_remarks / carrier_remarks / sender_instructions
+  ├─ 签收：signed_by / signed_date / signature_image / damage_description
+  ├─ 状态机：draft → printed → in_transit → signed → archived
+  ├─ 关联：order_id → tlmp.transport.order
+  └─ 坐标配置：tlmp.cmr.coordinate（独立配置模型，运维维护 XY 套打偏移量）
+
+  worlddepot 侧（world.depot.inbound/outbound.order.docs）：
+  └─ doc_type = 'cmr'，文件上传带自动 ir.attachment 归档
+
   tlmp.customer.bill            —— 客户账单
   tlmp.carrier.settlement       —— 承运商结算
 ```

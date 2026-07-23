@@ -4,14 +4,14 @@
               web_icon="wd_tlms,static/description/icon.png"/>
 
     <!-- Transport Operations (3-group menu) -->
-    <menuitem id="menu_tlmp_operations" name="Operations" parent="menu_tlmp_root" sequence="10"/>
+    <menuitem id="menu_tlmp_operations" name="Operations" parent="menu_tlmp_root" sequence="25"/>
 
     <menuitem id="menu_tlmp_transport_requests_top" name="Transport Requests" parent="menu_tlmp_operations"
               action="action_tlmp_request" sequence="5"/>
     <!-- Group 1: Pickup &amp; Service -->
-    <menuitem id="menu_tlmp_pickup_group" name="Pickup &amp; Service" parent="menu_tlmp_operations" sequence="10"/>
+    <menuitem id="menu_tlmp_pickup_group" name="Pickup &amp; Service" parent="menu_tlmp_operations" sequence="25"/>
     <menuitem id="menu_tlmp_pickup_plans" name="Pickup Requirements" parent="menu_tlmp_pickup_group"
-              action="action_pickup_plan" sequence="10"/>
+              action="action_pickup_plan" sequence="25"/>
     <menuitem id="menu_tlmp_schedule_plans" name="Schedule Plans" parent="menu_tlmp_pickup_group"
               action="action_schedule_plan_schedule" sequence="15"/>
     <menuitem id="menu_tlmp_container_service" name="Container Service"
@@ -37,7 +37,7 @@
     <!-- Finance -->
     <menuitem id="menu_tlmp_finance" name="Finance" parent="menu_tlmp_root" sequence="20"/>
     <menuitem id="menu_tlmp_bills" name="Customer Bills" parent="menu_tlmp_finance"
-              action="action_tlmp_bill" sequence="10"/>
+              action="action_tlmp_bill" sequence="25"/>
     <menuitem id="menu_tlmp_settlements" name="Carrier Settlements" parent="menu_tlmp_finance"
               action="action_tlmp_settlement" sequence="20"/>
     <menuitem id="menu_tlmp_surcharges" name="Surcharges" parent="menu_tlmp_finance"
@@ -45,8 +45,8 @@
 
     <!-- Documents -->
     <menuitem id="menu_tlmp_docs" name="Documents" parent="menu_tlmp_root" sequence="30"/>
-    <menuitem id="menu_tlmp_cmr" name="CMR Waybills" parent="menu_tlmp_docs"
-              action="action_tlmp_cmr" sequence="10"/>
+    <menuitem id="menu_tlmp_cmr" name="CMR Waybills" parent="menu_tlmp_exec_group"
+              action="action_tlmp_cmr" sequence="25"/>
     <menuitem id="menu_tlmp_pod" name="PODs" parent="menu_tlmp_docs"
               action="action_tlmp_pod" sequence="20"/>
 
@@ -62,9 +62,11 @@
               action="action_transport_fee_line" sequence="50"/>
 
     <menuitem id="menu_tlmp_pricing" name="Pricing Rules" parent="menu_tlmp_config"
-              action="action_tlmp_pricing_rule" sequence="10"/>
+              action="action_tlmp_pricing_rule" sequence="25"/>
     <menuitem id="menu_tlmp_surcharge_type" name="Surcharge Types" parent="menu_tlmp_config"
               action="action_tlmp_surcharge_type" sequence="20"/>
+    <menuitem id="menu_tlmp_cmr_coordinate" name="CMR Coordinates" parent="menu_tlmp_config"
+              action="action_tlmp_cmr_coordinate" sequence="45"/>
 
 
     <!-- 运输计划独立菜单 -->
@@ -76,7 +78,7 @@
               name="排期管理"
               parent="menu_transportation_root"
               action="action_transport_plan_schedule"
-              sequence="10"/>            
+              sequence="25"/>            
     <menuitem id="menu_transport_plan_records"
               name="排期记录"
               parent="menu_transportation_root"

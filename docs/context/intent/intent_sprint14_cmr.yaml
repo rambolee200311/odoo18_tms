@@ -1,0 +1,126 @@
+# ==============================================================
+# 【Sprint14 正式意图契约】
+# 功能：CMR 运单制作与打印 — wd_tlms 侧完整功能
+# 前置基线：Sprint13 Context Runtime v3 → Sprint14 CMR 套打功能
+# 基线版本：context_version: 1.0.16 → 1.0.17
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT14-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint14 CMR 运单制作与打印"
+  contract_type: "新功能开发"
+  context_load_profile: "development"
+
+goal: >
+  在 wd_tlms 模块中实现完整的 CMR 运单制作与 210×310mm 预印纸纯文本套打功能：
+  1. 增强 tlmp.cmr 模型，添加货物明细行（tlmp.cmr.line），支持多行 SKU 录入
+  2. 新增 XY 坐标配置模型（tlmp.cmr.coordinate），运维人员可可视化维护套打偏移量
+  3. 重写 CMR 表单视图（含货物明细 tab + 地址/费用/签收信息）
+  4. 重写 report_cmr.xml 为 210×310mm 纯文本套打 PDF，坐标读取自 tlmp.cmr.coordinate
+  5. 调整菜单结构：CMR 迁移至 Transport Execution 与 Orders 同级；坐标配置放 Configuration
+  6. 补充 operator 组访问权限
+  7. ADR 标志、UN 编号从 transport.order（order_id）关联读取，禁止重复录入
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/cmr.py（增强）"
+    - "addons/wd_tlms/models/__init__.py（增量引入 cmr_line.py, cmr_coordinate.py）"
+    - "addons/wd_tlms/views/cmr_views.xml（重写完整视图）"
+    - "addons/wd_tlms/views/cmr_coordinate_views.xml（新增）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（仅调整 CMR 菜单位置 + 新增坐标配置子菜单）"
+    - "addons/wd_tlms/reports/report_cmr.xml（重写为 210×310mm 纯文本套打）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增 cmr.line / cmr.coordinate 权限）"
+    - "addons/wd_tlms/__manifest__.py（仅增量注册新视图文件）"
+    - "docs/context/architecture/module_map.md（更新 CMR 货物明细行模型说明）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.17→1.0.18）"
+
+  forbid:
+    - 禁止修改 transport.order / pickup.plan / inquiry / quote 等非 CMR 模块的任何文件
+    - 禁止修改 worlddepot 模块下的任何文件（出入库单 CMR 上传附件逻辑不动）
+    - 禁止修改运输计划（排期/集装箱/运输计划）相关模型和视图
+    - 禁止修改 Finance、Containers、POD、费率/费用等非 CMR 模块
+    - 禁止引用 worlddepot 入库单/出库单的产品明细
+    - 禁止在 CMR 货物明细中自动读取运输订单的产品数据（完全手工录入）
+    - 禁止删除原有 Documents 菜单组（POD 还在里面）
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+
+workflow:
+  step_1: "context_loader.py 加载认知基线 + 确认 CMR 需求文档"
+  step_2: "新建 cmr_line.py — tlmp.cmr.line 货物明细子模型"
+  step_3: "新建 cmr_coordinate.py — tlmp.cmr.coordinate XY 坐标配置模型"
+  step_4: "增强 cmr.py — 加 line_ids / 累加校验 / 快速创建方法"
+  step_5: "增量更新 models/__init__.py"
+  step_6: "重写 cmr_views.xml — 完整表单（含 line_ids tab）"
+  step_7: "新增 cmr_coordinate_views.xml — 坐标配置 tree + form 视图"
+  step_8: "更新 tlmp_menus.xml — CMR 迁移 + 坐标配置菜单"
+  step_9: "重写 report_cmr.xml — 210×310mm 纯文本套打（坐标驱动）"
+  step_10: "追加 ir.model.access.csv — cmr.line / cmr.coordinate 权限"
+  step_11: "增量更新 __manifest__.py — 注册 cmr_coordinate_views.xml"
+  step_12: "verify.py + odoo_check.py 双检"
+  step_13: "更新 decision_note.md + context_version.yaml 1.0.17→1.0.18"
+
+input:
+  context_asset: [
+    "docs/context/architecture/module_map.md",
+    "docs/context/architecture/dependency.yaml",
+    "docs/context/constraints/forbidden_change.yaml",
+    "docs/context/cognition/cognition_rule.yaml",
+    "docs/context/history/decision_note.md"
+  ]
+  requirement_doc: "docs/requirement/CMR开发需求说明书.md"
+  current_code_base: "addons/wd_tlms/"
+
+output:
+  model_change_list:
+    - "tlmp.cmr（增强：line_ids / 累加校验 / 快速创建）"
+    - "tlmp.cmr.line（新增：货物明细子模型）"
+    - "tlmp.cmr.coordinate（新增：XY 坐标配置模型）"
+  view_change_list:
+    - "addons/wd_tlms/views/cmr_views.xml（重写）"
+    - "addons/wd_tlms/views/cmr_coordinate_views.xml（新增）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（菜单调整）"
+  report_change_list:
+    - "addons/wd_tlms/reports/report_cmr.xml（重写为 210×310mm 纯文本套打）"
+  security_change_list:
+    - "addons/wd_tlms/security/ir.model.access.csv（增量）"
+  code_file_list:
+    - "addons/wd_tlms/models/cmr.py（增强）"
+    - "addons/wd_tlms/models/cmr_line.py（新增）"
+    - "addons/wd_tlms/models/cmr_coordinate.py（新增）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/views/cmr_views.xml（重写）"
+    - "addons/wd_tlms/views/cmr_coordinate_views.xml（新增）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（调整）"
+    - "addons/wd_tlms/reports/report_cmr.xml（重写）"
+    - "addons/wd_tlms/security/ir.model.access.csv（增量）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "docs/context/architecture/module_map.md（更新）"
+    - "docs/context/history/decision_note.md（更新）"
+    - "docs/context/context_version.yaml（1.0.17→1.0.18）"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "tlmp.cmr 表单可正常新建/编辑/保存 CMR 运单"
+  rule_2: "货物明细行（tlmp.cmr.line）在 CMR 表单内可增删改，支持多行录入"
+  rule_3: "从运输订单快速创建 CMR（action_create_from_order），预填充收发方/地址信息"
+  rule_4: "总托盘数 = 各行 qty 累加值校验；总毛重 = 各 line 毛重累加值校验"
+  rule_5: "XY 坐标配置（tlmp.cmr.coordinate）可在 Configuration 菜单下维护"
+  rule_6: "report_cmr 打印输出 210×310mm 纯文本 PDF，不含框线/底色"
+  rule_7: "CMR 菜单在 Transport → Operations → Transport Execution → CMR Waybills"
+  rule_8: "坐标配置菜单在 Transport → Configuration → CMR Coordinates"
+  rule_9: "manager 和 operator 组对新模型有适当权限"
+  rule_10: "ADR 字段从 order_id 关联读取，禁止手动录入"
+
+human_gate:
+  gate1_scope_review: "CMR 功能范围确认（仅 wd_tlms 侧，不动 worlddepot）"
+  gate2_ux_review: "CMR 制作界面布局 + 货物明细录入交互确认"
+  gate3_pdf_review: "套打 PDF 坐标精度 + 规格确认"
+
+bind_context_version: "1.0.18"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"

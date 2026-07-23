@@ -21,3 +21,5 @@ from . import transport_rate_base
 from . import transport_fee_line
 from . import fee_base_inherit
 
+from . import cmr_line
+from . import cmr_coordinate

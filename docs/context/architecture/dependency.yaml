@@ -48,14 +48,26 @@ model_call_graph:
 
   tlmp.transport.inquiry:
     creates: ["tlmp.transport.quote"]
-    reads: ["tlmp.transport.request"]
 
   tlmp.transport.quote:
     creates: ["tlmp.transport.order"]
     reads: ["tlmp.transport.inquiry"]
 
   container.service.request:
+
     creates: ["tlmp.transport.order"]
+
+  tlmp.cmr:
+    reads: ["res.partner", "tlmp.transport.order"]
+    creates: []
+
+  tlmp.cmr.line:
+    reads: ["tlmp.cmr"]
+    creates: []
+
+  tlmp.cmr.coordinate:
+    reads: []
+    creates: []
 
 # ==============================================
 # 调用方向约束
@@ -76,6 +88,11 @@ direction_constraints:
   - from: "JS/Controller"
     to: "数据库"
     rule: "必须通过 ORM 模型层写入"
+
+  - from: "tlmp.cmr 货物明细"
+    to: "worlddepot 入库单/出库单产品明细"
+    rule: "禁止引用或依赖 inbound_order_product_ids / outbound_order_product_ids。运输订单无产品行，CMR 产品数据手动录入 tlmp.cmr.line"
+
 
 # ==============================================
 # 开发运行环境
