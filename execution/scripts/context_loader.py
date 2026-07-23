@@ -14,7 +14,7 @@ Context Runtime v3 — AI Agent 开发前置认知加载 + 基线验证 + 风险
   2 = RISK_BLOCKED  存在未确认的 LEVEL3 风险
   3 = BASELINE_MISMATCH 上下文版本与契约要求的基线不匹配
 """
-import os, sys, glob, json, re, re
+import os, sys, glob, json, re
 from datetime import datetime
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -133,6 +133,8 @@ def check(name, subdir):
 def summarize_file(fullpath, filename):
     """读取单个文件，返回一行摘要"""
     raw = _read(fullpath)
+    if raw.startswith('[READ_ERROR]'):
+        return f'{filename}: FILE_READ_ERROR'
     if not raw:
         return f'{filename}: EMPTY'
     lines = raw.split('\n')
@@ -145,8 +147,6 @@ def summarize_file(fullpath, filename):
         return f'{filename}: {headers} headings, {bullets} items'
     else:
         return f'{filename}: {len(lines)} lines'
-
-
 def _is_deep(subdir, fname, deep_list):
     if deep_list is None:
         return True
@@ -247,7 +247,7 @@ def display_human(report):
         print(f'  Load Profile:     {PROFILE_ASSETS.get(pf, PROFILE_ASSETS["full"])["label"]}')
         if iv['sprint']:
             print(f'  Sprint:           {iv["sprint"]}')
-            gate_text = '✅ Complete' if report.get('gate_system_ok') else '❌ Missing'
+        gate_text = '✅ Complete' if report.get('gate_system_ok') else '❌ Missing'
         print(f'  Submit Gate Suite: {gate_text}')
         print(f'  Decision Note:    {PATH_DECISION_NOTE}')
 
@@ -386,7 +386,7 @@ def main():
         summaries.append(summary)
 
     # ── 5. 构建 + 显示 ──
-        script_dir = os.path.join(BASE, 'execution', 'scripts')
+    script_dir = os.path.join(BASE, 'execution', 'scripts')
     gate_ok = all(os.path.exists(os.path.join(script_dir, s)) for s in ['verify.py', 'odoo_check.py', 'test_runner.py'])
     report = build_report(version, intent_info, domains, risks, summaries, all_pass, gate_ok)
 
