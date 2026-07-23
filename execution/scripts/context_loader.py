@@ -1,36 +1,80 @@
 #!/usr/bin/env python3
-"""Context Loader v2 — 目录扫描模式，新增文件自动识别"""
-import os, sys, glob
+"""
+Context Runtime v3 — AI Agent 开发前置认知加载 + 基线验证 + 风险注入
+
+职责:
+  1. 加载上下文资产（目录扫描 + 内容摘要）
+  2. 基线校验（intent binding vs context_version）
+  3. 风险阻断（test_lessons LEVEL3 规则告警）
+  4. 结构化输出（human / --json）
+
+退出码:
+  0 = READY         一切正常，可以开发
+  1 = ASSET_MISSING 关键资产缺失
+  2 = RISK_BLOCKED  存在未确认的 LEVEL3 风险
+  3 = BASELINE_MISMATCH 上下文版本与契约要求的基线不匹配
+"""
+import os, sys, glob, json, re
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 CTX = os.path.join(BASE, 'docs/context')
 
+EXIT_READY = 0
+EXIT_ASSET_MISSING = 1
+EXIT_RISK_BLOCKED = 2
+EXIT_BASELINE_MISMATCH = 3
 
+
+# -----------------------------------------------------------
+# 通用工具
+# -----------------------------------------------------------
+def _read(path):
+    """安全读取文件，补全 encoding"""
+    if not os.path.exists(path):
+        return ''
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+
+def _yaml_val(text, key, default=''):
+    """从 YAML 文本中提取指定 key 的值（纯文本解析，无需 yaml 模块）"""
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith(f'{key}:'):
+            val = stripped.split(':', 1)[1].strip()
+            return val.strip('"').strip("'")
+    return default
+
+
+# -----------------------------------------------------------
+# 版本与意图
+# -----------------------------------------------------------
 def read_version():
-    fp = os.path.join(CTX, 'context_version.yaml')
-    if not os.path.exists(fp):
-        return 'UNKNOWN'
-    for line in open(fp):
-        if 'context_version:' in line:
-            return line.split(':', 1)[1].strip()
-    return 'UNKNOWN'
+    raw = _read(os.path.join(CTX, 'context_version.yaml'))
+    return _yaml_val(raw, 'context_version', 'UNKNOWN')
 
 
 def read_intent():
-    files = sorted(glob.glob(os.path.join(CTX, 'intent', 'sprint*.yaml')))
+    """返回 (filename, sprint_version, bind_context_version)"""
+    files = glob.glob(os.path.join(CTX, 'intent', '*sprint*.yaml'))
+    files = [f for f in files if 'template' not in f]
     if not files:
-        return 'NONE'
-    last = files[-1]
-    name = os.path.basename(last)
-    for line in open(last):
-        if 'sprint_version:' in line:
-            ver = line.split(':', 1)[1].strip()
-            return f'{name}: {ver}'
-    return name
+        return ('NONE', '', '')
+    def sprint_num(fp):
+        m = re.search(r'sprint(\d+)', os.path.basename(fp))
+        return int(m.group(1)) if m else 0
+    best = max(files, key=sprint_num)
+    name = os.path.basename(best)
+    raw = _read(best)
+    sv = _yaml_val(raw, 'sprint_version', '')
+    bv = _yaml_val(raw, 'bind_context_version', '')
+    return (name, sv, bv)
 
 
+# -----------------------------------------------------------
+# 资产扫描
+# -----------------------------------------------------------
 def scan_dir(subdir):
-    """扫描目录返回非隐藏条目列表，新增文件自动识别"""
     path = os.path.join(CTX, subdir)
     if not os.path.isdir(path):
         return []
@@ -46,52 +90,220 @@ def check(name, subdir):
     items = scan_dir(subdir)
     ok = len(items)
     status = 'PASS' if ok > 0 else 'FAIL'
-    print(f'  {name:15s} [{status}]  {ok} file(s)')
-    return ok > 0
+    return {'name': name, 'subdir': subdir, 'count': ok, 'status': status, 'items': items}
 
 
-def load_lessons():
+# -----------------------------------------------------------
+# 内容摘要
+# -----------------------------------------------------------
+def summarize_file(fullpath, filename):
+    """读取单个文件，返回一行摘要"""
+    raw = _read(fullpath)
+    if not raw:
+        return f'{filename}: EMPTY'
+    lines = raw.split('\n')
+    if filename.endswith(('.yaml', '.yml')):
+        entries = sum(1 for l in lines if ':' in l and not l.strip().startswith('#') and l[0] != ' ')
+        return f'{filename}: {entries} entries'
+    elif filename.endswith('.md'):
+        headers = sum(1 for l in lines if l.startswith('#'))
+        bullets = sum(1 for l in lines if l.strip().startswith('-'))
+        return f'{filename}: {headers} headings, {bullets} items'
+    else:
+        return f'{filename}: {len(lines)} lines'
+
+
+def summarize_domain(name, subdir, items, critical_files):
+    """对一个 domain 生成摘要"""
+    summary = {'name': name, 'subdir': subdir, 'count': len(items), 'files': []}
+    for fname in items:
+        fpath = os.path.join(CTX, subdir, fname)
+        line = summarize_file(fpath, fname)
+        summary['files'].append(line)
+    return summary
+
+
+# -----------------------------------------------------------
+# 风险加载
+# -----------------------------------------------------------
+def load_risks():
+    """从 test_lessons.yaml 加载风险规则"""
     fp = os.path.join(CTX, 'governance', 'test_lessons.yaml')
     if not os.path.exists(fp):
-        print('  Test Lessons:  NOT FOUND')
-        return
-    with open(fp) as f:
-        text = f.read()
-    blocks = text.split('\n  - id:')
+        return []
+    raw = _read(fp)
+    blocks = raw.split('\n  - id:')
     rules = []
     for block in blocks[1:]:
         rid = block.split('"')[1] if block.count('"') >= 2 else '?'
-        problem = ''
         severity = ''
+        problem = ''
         for line in block.split('\n'):
-            if 'problem: "' in line:
-                problem = line.split('"')[1]
             if 'severity: "' in line:
                 severity = line.split('"')[1]
-        if severity in ('LEVEL2', 'LEVEL3'):
-            rules.append((rid, problem, severity))
-    if rules:
-        print(f'  \u26a0  Test Lessons: {len(rules)} rules to review')
-        for rid, problem, severity in rules:
-            print(f'     [{severity}] {rid}: {problem[:80]}')
+            if 'problem: "' in line:
+                problem = line.split('"')[1]
+        rules.append({'id': rid, 'severity': severity, 'problem': problem})
+    return rules
+
+
+# -----------------------------------------------------------
+# 报告构建
+# -----------------------------------------------------------
+def build_report(version, intent_info, domains, risks, summaries, all_pass):
+    iv_name, iv_sprint, iv_bind = intent_info
+    baseline_match = version == iv_bind if iv_bind else True
+    high_risks = [r for r in risks if r['severity'] == 'LEVEL3']
+    medium_risks = [r for r in risks if r['severity'] == 'LEVEL2']
+
+    return {
+        'version': version,
+        'intent': {
+            'file': iv_name,
+            'sprint': iv_sprint,
+            'bind_version': iv_bind,
+        },
+        'baseline_check': {
+            'context_version': version,
+            'intent_bind': iv_bind,
+            'match': baseline_match,
+        },
+        'domains': domains,
+        'all_pass': all_pass,
+        'risks': {
+            'total': len(risks),
+            'level3': high_risks,
+            'level2': medium_risks,
+        },
+        'summaries': summaries,
+        'ready': all_pass and baseline_match and len(high_risks) == 0,
+    }
+
+
+# -----------------------------------------------------------
+# 显示
+# -----------------------------------------------------------
+def display_human(report):
+    print()
+    print('=' * 50)
+    print('  Context Runtime v3 - Pre-Development Gate')
+    print('=' * 50)
+    print(f'  Context Version:  {report["version"]}')
+
+    iv = report['intent']
+    if iv['file'] != 'NONE':
+        print(f'  Intent:           {iv["file"]}')
+        if iv['sprint']:
+            print(f'  Sprint:           {iv["sprint"]}')
+
+    # Baseline
+    bc = report['baseline_check']
+    if bc['intent_bind']:
+        ok = 'PASS' if bc['match'] else 'FAIL'
+        icon = '✅' if bc['match'] else '❌'
+        print(f'  Baseline Check:   [{ok}]  {icon}')
+        if not bc['match']:
+            print(f'    context_version={bc["context_version"]} vs intent bind={bc["intent_bind"]}')
     else:
-        print('  Test Lessons:  0 rules')
+        print(f'  Baseline Check:   [SKIP]  (intent has no baseline)')
+
+    print()
+
+    # Domains
+    all_pass = True
+    for d in report['domains']:
+        ok = 'PASS' if d['status'] == 'PASS' else 'FAIL'
+        print(f'  {d["name"]:15s} [{ok}]  {d["count"]} file(s)')
+        for fl in d.get('files', []):
+            print(f'    {fl}')
+        if d['status'] != 'PASS':
+            all_pass = False
+    report['all_pass'] = all_pass
+
+    print()
+
+    # Risks
+    risks = report['risks']
+    if risks['level3']:
+        print(f'  🔴 HIGH RISK: {len(risks["level3"])} unresolved LEVEL3 rule(s)')
+        for r in risks['level3']:
+            print(f'     [{r["severity"]}] {r.get("id","?")}: {r.get("problem","")[:80]}')
+        print('  ⚠  Review required before development')
+    elif risks['level2']:
+        print(f'  🟡 MEDIUM RISK: {len(risks["level2"])} LEVEL2 rule(s) to review')
+        for r in risks['level2'][:3]:
+            print(f'     [{r["severity"]}] {r.get("id","?")}: {r.get("problem","")[:60]}')
+        if len(risks['level2']) > 3:
+            print(f'     ... and {len(risks["level2"]) - 3} more')
+    else:
+        print('  Risk Review:      No unresolved risks')
+
+    print()
+
+    # Summaries
+    if report['summaries']:
+        print('  ── Key Asset Content ──')
+        for s in report['summaries']:
+            for fl in s.get('files', []):
+                print(f'    {fl}')
+        print()
+
+    # Status
+    ready = report['ready'] and all_pass
+    if ready:
+        print('  Status: READY ✅  Development can proceed')
+    else:
+        blockers = []
+        if not all_pass:
+            blockers.append('asset missing')
+        if not report['baseline_check'].get('match', True):
+            blockers.append('baseline mismatch')
+        if risks['level3']:
+            blockers.append('LEVEL3 risks unresolved')
+        print(f'  Status: BLOCKED ❌  ({", ".join(blockers)})')
+    print('=' * 50)
 
 
+def display_json(report):
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+# -----------------------------------------------------------
+# 主流程
+# -----------------------------------------------------------
 def main():
+    json_mode = '--json' in sys.argv
+
     version = read_version()
-    intent = read_intent()
+    intent_info = read_intent()
+    iv_name, iv_sprint, iv_bind = intent_info
 
-    print()
-    print('=' * 50)
-    print('  Context Loader - Cognitive Snapshot')
-    print('=' * 50)
-    print(f'  Project:    Odoo18 TMS')
-    print(f'  Version:    {version}')
-    print(f'  Intent:     {intent}')
-    print()
+    # ── 1. 基线校验 ──
+    if iv_bind and version != iv_bind:
+        if json_mode:
+            rep = {
+                'status': 'BLOCKED',
+                'reason': 'baseline_mismatch',
+                'context_version': version,
+                'intent_bind': iv_bind,
+                'ready': False,
+            }
+            print(json.dumps(rep))
+        else:
+            print()
+            print('=' * 50)
+            print('  ❌ BASELINE MISMATCH - Development BLOCKED')
+            print('=' * 50)
+            print(f'  context_version.yaml:  {version}')
+            print(f'  intent requires:       {iv_bind}')
+            print(f'  Intent file:           {iv_name}')
+            print()
+            print('  Run: context_loader.py --json for machine-readable output')
+            print('=' * 50)
+        sys.exit(EXIT_BASELINE_MISMATCH)
 
-    domain_dirs = [
+    # ── 2. 资产扫描 ──
+    domain_configs = [
         ('Architecture', 'architecture'),
         ('Business', 'business'),
         ('History', 'history'),
@@ -101,23 +313,44 @@ def main():
         ('Validation', 'validation'),
     ]
 
+    domains = []
     all_pass = True
-    for name, subdir in domain_dirs:
-        if not check(name, subdir):
+    for name, subdir in domain_configs:
+        result = check(name, subdir)
+        domains.append(result)
+        if result['status'] != 'PASS':
             all_pass = False
 
-    print()
-    load_lessons()
-    print()
-    print(f'  Engine:     4 scripts in execution/scripts/')
-    print(f'  Validation: odoo_check.py + test_runner.py')
-    print()
-    if all_pass:
-        print('  Ready for Development: YES')
+    if not all_pass:
+        # Print report anyway, let user see what's missing
+        pass  # Continue to show report, don't exit yet
+
+    # ── 3. 风险加载 ──
+    risks = load_risks()
+
+    # ── 4. 内容摘要 ──
+    summaries = []
+    for name, subdir in domain_configs:
+        items = scan_dir(subdir)
+        summary = summarize_domain(name, subdir, items, [])
+        summaries.append(summary)
+
+    # ── 5. 构建 + 显示 ──
+    report = build_report(version, intent_info, domains, risks, summaries, all_pass)
+
+    if json_mode:
+        # Report already has domains in it via build_report, but needs all_pass
+        report['all_pass'] = all_pass
+        display_json(report)
     else:
-        print('  Ready for Development: NO (some domains empty)')
-    print('=' * 50)
-    sys.exit(0 if all_pass else 1)
+        display_human(report)
+
+    # ── 6. 退出码 ──
+    if not all_pass:
+        sys.exit(EXIT_ASSET_MISSING)
+    if report['risks']['level3']:
+        sys.exit(EXIT_RISK_BLOCKED)
+    sys.exit(EXIT_READY)
 
 
 if __name__ == '__main__':
