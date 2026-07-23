@@ -257,7 +257,7 @@ class TransportOrder(models.Model):
 
     def action_close(self):
         self.ensure_one()
-        if not self.pod_id or self.pod_id.state != 'confirmed':
+        if self.pod_id and self.pod_id.state not in (False, "confirmed"):
             raise UserError(_('Cannot close order: POD must be confirmed first.'))
         self.write({'state': 'closed'})
         return True
@@ -281,16 +281,10 @@ class TransportOrder(models.Model):
     # ---- Settlement Lock ----
     def _check_settle_lock(self):
         self.ensure_one()
-        pod_confirmed = self.pod_id and self.pod_id.state == 'confirmed'
-        cmr_exists = bool(self.cmr_ids)
-        cmr_signed = any(c.state == 'signed' for c in self.cmr_ids)
-        if not pod_confirmed:
-            return {'locked': True, 'reason': 'POD not confirmed'}
-        if cmr_exists and not cmr_signed:
-            return {'locked': True, 'reason': 'CMR not signed'}
-        if self.pod_id.state in ('disputed',):
+        # Removed POD/CMR mandatory check per Sprint11 decision
+        if self.pod_id and self.pod_id.state in ('disputed',):
             return {'locked': True, 'reason': 'POD has unresolved dispute'}
-        if self.pod_id.goods_condition in ('damaged', 'short', 'rejected'):
+        if self.pod_id and self.pod_id.goods_condition in ('damaged', 'short', 'rejected'):
             return {'locked': True, 'reason': 'POD has damage/short/rejected issue'}
         if self.settlement_locked:
             return {'locked': True, 'reason': 'Order is locked (damage/claim pending)'}
