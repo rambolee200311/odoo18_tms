@@ -98,6 +98,10 @@ fix_workflow:
     name: 回归验证
     action: odoo-bin -u wd_tlms 确认模块加载无报错
     note: "如无法启动 Odoo，至少验证 Python 语法 + XML 结构无误"
+    post_check: |
+      运行集成测试: odoo-bin -u wd_tlms --test-enable --stop-after-init
+      验证 items: view_mode 兼容 / menuitem parent / view-model交叉
+      作用: 捕获 BUG-012(view_mode=tree) 型运行时错误
 
   step_6:
     name: 状态闭环

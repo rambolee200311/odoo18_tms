@@ -71,16 +71,40 @@ check_steps:
     verify_py: true
     blocked_by: "BUG-007 (TabError)"
 
+
+  check_8_menuitem_order:
+    name: "Menuitem 父菜单顺序校验"
+    scope: "addons/wd_tlms/views/ 下的 .xml 文件"
+    method: "扫描 <menuitem parent=...>，验证父菜单 ID 在当前文件前部定义"
+    fail_on: "父菜单后置引用或未定义"
+    verify_py: true
+    blocked_by: "BUG-011"
+
   check_7_view_model:
     name: "View-Model 字段存在性交叉校验"
     scope: "视图 XML → 对应模型 Python"
     script: "execution/scripts/verify.py (check_7)"
-    note: "启发式检查，64 个已知误报。仅用于辅助排查，不阻塞提交"
+    note: "v3 精确模式，误报率 63→0。真实错误会阻塞提交"
     blocked_by: "BUG-007 (schedule_ids)"
+
+
+  check_9_runtime_test:
+    name: "运行时集成测试"
+    scope: "addons/wd_tlms/tests/test_runtime_validation.py"
+    method: |
+      odoo-bin -u wd_tlms --test-enable --stop-after-init
+      验证：
+        1. act_window view_mode 不含 "tree"（Odoo 18 兼容）
+        2. 菜单 parent 指向存在视图
+        3. act_window res_model 有对应类型视图
+        4. view_ids 引用的视图真实存在
+    fail_on: "任何测试失败"
+    blocked_by: "BUG-012 (view_mode=tree)"
 
 # ==============================================
 # 执行时机
 # ==============================================
+
 execution_timing:
   - after_every_code_generation: true
   - before_git_commit: true
@@ -91,7 +115,7 @@ execution_timing:
 # ==============================================
 fuse:
   - "check_1 ~ check_6 任一失败 → 拒绝提交"
-  - "check_7 仅警告，不阻塞（启发式）"
+  - "check_7 真实错误 → 拒绝提交；check_8 失败 → 拒绝提交"
   - "修复后重新运行 verify.py，通过后方可提交"
   - "跳过校验需人工审批（LEVEL2/3 风险），并在 bug_record.md 记录"
 

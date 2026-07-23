@@ -3,7 +3,7 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.11
+context_version: 1.0.12
 update_time: 2026-07-22
 adapt_sprint: BUG-010
 update_author: AI-Engineering-Team
@@ -77,6 +77,17 @@ valid_rule:
       工程能力: verify.py check_7误报63→0修复 + check_8 menuitem顺序校验 + check_5 view_mode扩展
     update_type: Bug修复 + 工程能力升级
     effect_scope: verify.py 8门禁体系
+
+  1.0.12:
+    update_content: |
+      运行时集成测试底座:
+      - tests/test_runtime_validation.py (4项验证: view_mode/menuitem/action_view_ref)
+      治理资产升级:
+      - pipeline_check.yaml: check_8(menuitem顺序) + check_9(运行时测试)
+      - bug_fix_workflow.yaml: step_5新增 post_check 集成测试要求
+      工程能力: 静态门禁(8项) + 运行时门禁(1项) 并行双检体系
+    update_type: 工程能力升级
+    effect_scope: 全模块测试覆盖 + 治理规则升级
 
 bind_asset_folder:
   - architecture
