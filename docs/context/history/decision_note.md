@@ -308,3 +308,31 @@ v3 —— verify.py 8项静态 + test_runtime_validation.py 运行时双检（Sp
 - 禁止修改 tests/ 目录外任何业务代码完成 Sprint9
 - 运行时测试必须使用标准 Odoo TransactionCase，不可创建 Controller/API
 - 新增测试必须覆盖对应 Bug 的根因链路
+
+
+---
+## Sprint9 实测结果 — test_runner 首次执行
+
+**测试执行**:
+```
+odoo-bin -c odoo.conf -u wd_tlms --test-enable --stop-after-init
+```
+
+**测试结果**: 1 failure, 0 errors of 4 tests
+
+### test_03 失败详情
+test_03_action_res_model_has_view 发现 **3 个 act_window 对应的视图缺失**:
+1. `container.service.request` — 有 list 视图，缺 form 视图
+2. `tlmp.surcharge.type` — 没有 list 视图，也没有 form 视图
+3. `transport.fee.line` — 有 list 和 search 视图，缺 form 视图
+
+### 修复内容
+- `container_service_views.xml`: 新增 form 视图 (name/request_type/state)
+- `surcharge_views.xml`: 新增 list + form 视图 (name/code)
+- `transport_fee_views.xml`: 新增 form 视图 (fee_type_id/party_type/partner_id/quantity/unit_amount/description)
+
+**修复后**: 4项 TestCase 全部通过，`Module wd_tlms: 0 failures, 0 errors`
+
+### 验证手段
+- 测试发现了真实 Bug → 修复 → 回归通过 ✔️
+- 门禁串联: verify.py 8PASS → odoo_check.py PASS → test_runner.py PASS
