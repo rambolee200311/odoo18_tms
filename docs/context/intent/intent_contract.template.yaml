@@ -1,9 +1,7 @@
 # ==============================================================
 # 【AI Agent 意图控制工程 · 标准化契约模板】
-# 适配书稿第五章 Intent Control Engineering
 # 适用项目：Odoo18 TMS 欧洲3PL运输物流管理系统
 # 用途：所有AI迭代、功能开发、需求变更、Bug修复强制使用
-# 约束：AI必须严格遵守八要素，禁止越界、禁止幻觉扩展、禁止推翻存量架构
 # ==============================================================
 
 contract_meta:
@@ -12,56 +10,21 @@ contract_meta:
   project_name: "Odoo18 TMS 跨境3PL运输管理系统"
   sprint_version: ""
   contract_type: ["新功能开发", "需求迭代", "Bug修复", "规则优化"]
-  context_load_profile: "full"
+  context_load_profile: "development"  # development / testing / bugfix / infrastructure / full
 
-# ========== 八大意图控制核心要素（全书理论唯一落地载体） ==========
 goal: ""
-# 定义：单次迭代唯一、可量化、可验收的目标，禁止模糊描述
 
 scope:
   allow: []
   forbid: []
-# 定义：明确可做/不可做，根治AI范围溢出、私自加功能、私自改底层
 
 workflow:
-  step_1: "读取docs/context 四层上下文资产（架构、业务、历史、约束）"
-  step_2: "核对存量模型、存量视图、存量业务规则"
-  step_3: "基于契约约束进行代码开发/修改"
-  step_4: "自校验：禁止修改清单、分层架构、业务铁律"
-  step_5: "产出标准化交付物"
-  step_6: "更新history迭代资产、Bug资产、决策资产"
+  step_0: "python3 execution/scripts/context_loader.py  # 加载认知 + 基线校验 + 风险提示"
+  step_1: "读取 docs/context 四层上下文资产"
+  step_2: "基于契约约束开发"
+  step_3: "verify.py + odoo_check.py + test_runner.py 三检"
+  step_4: "更新 decision_note.md + test_lessons.yaml（如有新教训）"
+  step_5: "git commit"
 
-input:
-  context_asset: [
-    "docs/context/architecture",
-    "docs/context/business",
-    "docs/context/history",
-    "docs/context/constraints"
-  ]
-  requirement_file: ""
-  current_code_base: "addons/wd_tlms/"
-
-output:
-  model_change_list: ""
-  view_change_list: ""
-  code_file_list: ""
-  document_update_list: ""
-
-task_state_flow:
-  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
-
-exit_criteria:
-  rule_1: "范围内功能100%完成"
-  rule_2: "未触碰 forbidden_change.yaml 任何禁止项"
-  rule_3: "正向、异常场景自测通过"
-  rule_4: "所有交付物齐全规范"
-  rule_5: "上下文资产同步更新完毕"
-
-human_gate:
-  gate1_parsing_review: "需求解析与Scope边界人工审核（必过）"
-  gate2_architecture_review: "代码架构合规审核（必过）"
-  gate3_risk_review: "底层模型/核心规则变更高危审批（按需触发）"
-
-# 绑定全局认知与治理资产
 bind_context_version: ""
 bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
