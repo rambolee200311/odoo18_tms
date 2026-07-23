@@ -111,3 +111,25 @@ test_exec_records:
     match_exit_criteria: false
     note: "3处模型修复落地(quote/request/pickup_plan create)。5条失败因 manifest 版本未变导致 -u 不加载 .py 修改。下次迭代需 bump __manifest__.py version。"
     attachment: "test_runner.py -u wd_tlms --test-enable 输出"
+
+  - contract_id: INT-TMS-SPRINT12-001
+    sprint_name: 测试环境数据补全 — world.depot.charge.item + import.pickup.requirement
+    context_baseline: "1.0.15"
+    parent_baseline: "1.0.14"
+    execute_time: "2026-07-23 07:25"
+    test_category: "业务单元测试（数据补全回归）"
+    test_target_models:
+      - tlmp.transport.order
+      - pickup.plan
+      - tlmp.transport.request
+    total_case_count: 39
+    pass_count: 39
+    fail_count: 0
+    skip_count: 0
+    coverage_rate: "100% (39/39 pass)"
+    fail_detail: []
+    execute_environment: "开发环境 macOS Odoo18 PostgreSQL 5555"
+    auditor: "Codex Agent"
+    match_exit_criteria: true
+    note: "worlddepot 追加 depends + setUp 创建 charge.item / iff_req / waybill。39/39全量通过。container_type 40HC→40HQ修复。"
+    attachment: "test_runner.py -u wd_tlms --test-enable 输出"
