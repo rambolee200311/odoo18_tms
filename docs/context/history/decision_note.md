@@ -390,3 +390,37 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 - transport.order.partner_id required=True — 模型 create/action 方法未正确设置 carrier_id
 - Reference 字段(iff_requirement_ref)在 create 时验证引用记录存在
 - 详见 validation/test_exec_records.yaml fail_detail
+
+
+---
+## 跨迭代回顾 — Sprint9~Sprint12 测试基础设施教训
+
+### 教训 1: 测试环境数据必须自包含
+**问题**: test_06/pickup_07 因 `world.depot.charge.item` 不存在而失败；pickup_08/test_09 因 IFFM 引用记录不存在而失败。
+**解决**: setUp 中创建所有依赖数据 (charge_item, waybill, iff_requirement)。
+**规则**: TestCase.setUp 必须创建被测方法所需的一切引用数据。
+
+### 教训 2: 外部模块必须在 depends 中声明
+**问题**: `action_create_transport_order` 使用 `self.env['world.depot.charge.item'].search()`，但 worlddepot 不在 depends 中。生产环境因该模块已安装而正常，测试环境因 TransactionCase 不加载未声明模块而崩溃。
+**解决**: 将 worlddepot 加入 __manifest__.py depends。
+**规则**: 所有代码中 `self.env['module.model']` 直接引用的外部模块，必须显式声明在 depends 中。
+
+### 教训 3: Reference 字段验证无法绕过
+**问题**: `iff_requirement_ref` (Reference 字段) 在 create 和 write 时都会验证引用记录的 existence。即使 `write()` 也无法绕过。
+**解决**: 在 setUp 中创建真实的 import.pickup.requirement 记录。
+**规则**: Reference 字段的测试必须预先创建目标记录，没有取巧途径。
+
+### 教训 4: 状态推进方法不等于创建方法
+**问题**: test_01 在 Sprint11 初期一直报 partner_id 空，但根源不是 create 方法，而是 action_bill() → _check_settle_lock() 要求 POD+CMR，和 action_close() 同样要求 POD。
+**解决**: 分别修 _check_settle_lock 和 action_close 的检查条件。
+**规则**: 测试状态机全流程时，每个 state transition 方法都可能有其独立的数据依赖。不能只看 create。
+
+### 教训 5: -u 的版本检查机制
+**问题**: Python 文件已修改但测试不生效，原因是 -u 跳过升级。
+**机制**: `-u wd_tlms` 比较 manifest 版本与数据库版本，只有 manifest 版本更新时才触发升级。但 Python import 不受此限制——Python 文件由进程启动时的 import 系统加载。
+**解决**: 当确认 Python 代码已修改但测试仍不生效时，检查 manifest 版本是否已递增。
+**规则**: 每次修改 .py 文件后，递增 __manifest__.py 版本号（即使只是测试相关改动）。
+
+### 教训 6: 测试优先原则
+**问题**: Sprint10 编写测试时才发现模型层字段缺失（partner_id、carrier_id 未设置）。
+**启示**: 业务单元测试应尽可能早地编写，甚至先于功能开发（TDD），以便早期暴露接口设计缺陷。
