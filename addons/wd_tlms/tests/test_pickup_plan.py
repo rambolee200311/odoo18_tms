@@ -43,7 +43,7 @@ class TestPickupPlan(TransactionCase):
         line = self.env['pickup.plan.container.line'].create({
             'plan_id': plan.id,
             'container_number': 'CONT-001',
-            'container_type': '40HC',
+            'container_type': '40HQ',
         })
         self.assertEqual(plan.container_line_ids[0].container_number, 'CONT-001')
 

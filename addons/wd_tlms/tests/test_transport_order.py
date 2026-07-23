@@ -95,7 +95,7 @@ class TestTransportOrder(TransactionCase):
         })
         self.env['pickup.plan.container.line'].create({
             'plan_id': plan.id,
-            'container_number': 'CONT-001', 'container_type': '40HC',
+            'container_number': 'CONT-001', 'container_type': '40HQ',
         })
         result = plan.action_create_transport_order()
         self.assertEqual(result['type'], 'ir.actions.act_window')

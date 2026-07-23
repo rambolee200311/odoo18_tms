@@ -10,7 +10,7 @@ class TransportContainer(models.Model):
     order_id = fields.Many2one('tlmp.transport.order', string='Order')
     container_type = fields.Selection([
         ('20GP', '20GP'), ('40GP', '40GP'), ('40HQ', '40HQ'),
-        ('45HQ', '45HQ'), ('other', 'Other'),
+        ('40HC', '40HC'), ('45HQ', '45HQ'), ('other', 'Other'),
     ], string='Container Type', required=True)
     seal_number = fields.Char(string='Seal No.')
     cargo_weight_kg = fields.Float(string='Cargo Weight (kg)')
