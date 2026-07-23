@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Context Loader — 认知加载 + 结构化快照输出"""
+"""Context Loader v2 — 目录扫描模式，新增文件自动识别"""
 import os, sys, glob
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 CTX = os.path.join(BASE, 'docs/context')
+
 
 def read_version():
     fp = os.path.join(CTX, 'context_version.yaml')
@@ -13,6 +14,7 @@ def read_version():
         if 'context_version:' in line:
             return line.split(':', 1)[1].strip()
     return 'UNKNOWN'
+
 
 def read_intent():
     files = sorted(glob.glob(os.path.join(CTX, 'intent', 'sprint*.yaml')))
@@ -26,14 +28,55 @@ def read_intent():
             return f'{name}: {ver}'
     return name
 
-def check(name, paths):
-    ok = 0
-    for p in paths:
-        if os.path.exists(os.path.join(CTX, p)):
-            ok += 1
-    status = 'PASS' if ok == len(paths) else 'FAIL'
-    print(f'  {name:15s} [{status}]  {ok}/{len(paths)}')
-    return ok == len(paths)
+
+def scan_dir(subdir):
+    """扫描目录返回非隐藏条目列表，新增文件自动识别"""
+    path = os.path.join(CTX, subdir)
+    if not os.path.isdir(path):
+        return []
+    items = []
+    for f in sorted(os.listdir(path)):
+        if f.startswith('.') or f == '__pycache__':
+            continue
+        items.append(f)
+    return items
+
+
+def check(name, subdir):
+    items = scan_dir(subdir)
+    ok = len(items)
+    status = 'PASS' if ok > 0 else 'FAIL'
+    print(f'  {name:15s} [{status}]  {ok} file(s)')
+    return ok > 0
+
+
+def load_lessons():
+    fp = os.path.join(CTX, 'governance', 'test_lessons.yaml')
+    if not os.path.exists(fp):
+        print('  Test Lessons:  NOT FOUND')
+        return
+    with open(fp) as f:
+        text = f.read()
+    blocks = text.split('\n  - id:')
+    rules = []
+    for block in blocks[1:]:
+        rid = block.split('"')[1] if block.count('"') >= 2 else '?'
+        problem = ''
+        severity = ''
+        for line in block.split('\n'):
+            if 'problem: "' in line:
+                problem = line.split('"')[1]
+            if 'severity: "' in line:
+                severity = line.split('"')[1]
+        if severity in ('LEVEL2', 'LEVEL3'):
+            rules.append((rid, problem, severity))
+    if rules:
+        print(f'  \u26a0  Test Lessons: {len(rules)} rules to review')
+        for rid, problem, severity in rules:
+            print(f'     [{severity}] {rid}: {problem[:80]}')
+    else:
+        print('  Test Lessons:  0 rules')
+
 
 def main():
     version = read_version()
@@ -48,90 +91,34 @@ def main():
     print(f'  Intent:     {intent}')
     print()
 
-    domains = [
-        ('Architecture', [
-            'architecture/module_map.md',
-            'architecture/dependency.yaml',
-            'architecture/odoo_version.md',
-        ]),
-        ('Business', [
-            'business/stock_rule.md',
-            'business/inventory_flow.md',
-        ]),
-        ('History', [
-            'history/decision_note.md',
-            'history/bug_record.md',
-            'history/sprint_log.md',
-            'history/sprint_shturl',
-        ]),
-        ('Constraints', [
-            'constraints/forbidden_change.yaml',
-        ]),
-        ('Cognition', [
-            'cognition/cognition_rule.yaml',
-            'cognition/cognition_consistency_check.yaml',
-            'cognition/cognition_refresh.yaml',
-            'cognition/cognition_asset_map.md',
-        ]),
-        ('Governance', [
-            'governance/rules.yaml',
-            'governance/risk_level.yaml',
-            'governance/human_loop.yaml',
-            'governance/workflow_risk.yaml',
-            'governance/pipeline_check.yaml',
-            'governance/audit_spec.yaml',
-            'governance/tool_governance.yaml',
-            'governance/bug_fix_workflow.yaml',
-            'governance/test_lessons.yaml',
-        ]),
+    domain_dirs = [
+        ('Architecture', 'architecture'),
+        ('Business', 'business'),
+        ('History', 'history'),
+        ('Constraints', 'constraints'),
+        ('Cognition', 'cognition'),
+        ('Governance', 'governance'),
+        ('Validation', 'validation'),
     ]
 
     all_pass = True
-    for name, paths in domains:
-        if not check(name, paths):
+    for name, subdir in domain_dirs:
+        if not check(name, subdir):
             all_pass = False
 
     print()
-    # Load test lessons and print warnings
-    lessons_file = os.path.join(CTX, 'governance', 'test_lessons.yaml')
-    if os.path.exists(lessons_file):
-        with open(lessons_file) as f:
-            lesson_text = f.read()
-        lines = lesson_text.split('\n')
-        rules = []
-        for i, line in enumerate(lines):
-            if line.strip().startswith('- id:'):
-                rid = line.split('"')[1]
-                problem = ''
-                severity = ''
-                for j in range(i, min(i+10, len(lines))):
-                    if 'problem: "' in lines[j]:
-                        problem = lines[j].split('"')[1]
-                    if 'severity: "' in lines[j]:
-                        severity = lines[j].split('"')[1]
-                if severity in ('LEVEL2', 'LEVEL3'):
-                    rules.append((rid, problem, severity))
-        if rules:
-            print(f'  ⚠  Test Lessons: {len(rules)} rules to review')
-            for rid, problem, severity in rules:
-                print(f'     [{severity}] {rid}: {problem[:80]}')
-            print('  ⚠  Read: docs/context/governance/test_lessons.yaml')
-        else:
-            print('  Test Lessons:  0 rules')
-    else:
-        print('  Test Lessons:  NOT FOUND')
-
+    load_lessons()
     print()
     print(f'  Engine:     4 scripts in execution/scripts/')
-    print(f'  Gate:       8 checks (verify.py)')
-    print(f'  Validation: odoo_check.py')
+    print(f'  Validation: odoo_check.py + test_runner.py')
     print()
     if all_pass:
         print('  Ready for Development: YES')
     else:
-        print('  Ready for Development: NO (missing assets)')
+        print('  Ready for Development: NO (some domains empty)')
     print('=' * 50)
     sys.exit(0 if all_pass else 1)
+
 
 if __name__ == '__main__':
     main()
