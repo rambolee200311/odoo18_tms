@@ -15,6 +15,7 @@ Context Runtime v3 — AI Agent 开发前置认知加载 + 基线验证 + 风险
   3 = BASELINE_MISMATCH 上下文版本与契约要求的基线不匹配
 """
 import os, sys, glob, json, re
+from datetime import datetime
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 CTX = os.path.join(BASE, 'docs/context')
@@ -69,12 +70,12 @@ def _read(path):
 
 
 def _yaml_val(text, key, default=''):
-    """从 YAML 文本中提取指定 key 的值（纯文本解析，无需 yaml 模块）"""
-    for line in text.split('\n'):
-        stripped = line.strip()
-        if stripped.startswith(f'{key}:'):
-            val = stripped.split(':', 1)[1].strip()
-            return val.strip('"').strip("'")
+    """从 YAML 文本中提取指定 key 的值，支持多行（纯文本解析）"""
+    import re as _re
+    pat = _re.compile(rf'^{_re.escape(key)}\s*:\s*(["\']?)(.*?)\1?$', _re.MULTILINE | _re.DOTALL)
+    m = pat.search(text)
+    if m:
+        return m.group(2).strip().strip('"').strip("'")
     return default
 
 
@@ -88,7 +89,7 @@ def read_version():
 
 def read_intent():
     """返回 (filename, sprint_version, bind_context_version)"""
-    files = glob.glob(os.path.join(CTX, 'intent', '*sprint*.yaml'))
+    files = glob.glob(os.path.join(CTX, 'intent', '*[Ss]print*.yaml'))
     files = [f for f in files if 'template' not in f]
     if not files:
         return ('NONE', '', '')
@@ -175,7 +176,7 @@ def summarize_domain(name, subdir, items, deep_list):
 # -----------------------------------------------------------
 def load_risks():
     """从 test_lessons.yaml 加载风险规则"""
-    fp = os.path.join(CTX, 'governance', 'test_lessons.yaml')
+    fp = PATH_TEST_LESSONS
     if not os.path.exists(fp):
         return []
     raw = _read(fp)
@@ -235,11 +236,13 @@ def display_human(report):
     print('=' * 50)
     print('  Context Runtime v3 - Pre-Development Gate')
     print('=' * 50)
+    print(f'  Run Timestamp:    {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'  Context Version:  {report["version"]}')
 
     iv = report['intent']
     if iv['file'] != 'NONE':
-        print(f'  Intent:           {iv["file"]}')
+        pf = report.get('profile', 'full')
+        print(f'  Load Profile:     {PROFILE_ASSETS.get(pf, PROFILE_ASSETS["full"])["label"]}')
         if iv['sprint']:
             print(f'  Sprint:           {iv["sprint"]}')
         print(f'  Decision Note:    {PATH_DECISION_NOTE}')
@@ -265,6 +268,7 @@ def display_human(report):
         for fl in d.get('files', []):
             print(f'    {fl}')
         if d['status'] != 'PASS':
+            print(f'    ⚠ WARNING: Directory [{d["subdir"]}] has zero asset files')
             all_pass = False
     report['all_pass'] = all_pass
 
@@ -288,13 +292,7 @@ def display_human(report):
 
     print()
 
-    # Summaries
-    if report['summaries']:
-        print('  ── Key Asset Content ──')
-        for s in report['summaries']:
-            for fl in s.get('files', []):
-                print(f'    {fl}')
-        print()
+
 
     # Status
     ready = report['ready'] and all_pass
@@ -328,12 +326,14 @@ def main():
 
     # ── 1. 基线校验 ──
     if iv_bind and version != iv_bind:
+        mismatch = {
+            'version': version,
+            'intent': {'file': iv_name, 'sprint': iv_sprint, 'bind_version': iv_bind},
+            'baseline_check': {'context_version': version, 'intent_bind': iv_bind, 'match': False},
+            'status': 'BLOCKED', 'reason': 'baseline_mismatch', 'ready': False,
+        }
         if json_mode:
-            rep = build_report(version, intent_info, domains, [], [], all_pass)
-            rep['status'] = 'BLOCKED'
-            rep['reason'] = 'baseline_mismatch'
-            rep['ready'] = False
-            print(json.dumps(rep))
+            print(json.dumps(mismatch, ensure_ascii=False, indent=2))
         else:
             print()
             print('=' * 50)
@@ -393,14 +393,13 @@ def main():
         display_human(report)
 
     # ── 6. 退出码 ──
-    if not report.get('ready', False):
-        if not all_pass:
-            sys.exit(EXIT_ASSET_MISSING)
-        elif report.get('risks', {}).get('level3'):
-            sys.exit(EXIT_RISK_BLOCKED)
-        elif not report.get('baseline_check', {}).get('match', True):
-            sys.exit(EXIT_BASELINE_MISMATCH)
-    sys.exit(EXIT_READY)
+    final_code = EXIT_READY
+    if not report['ready']:
+        if not report['all_pass']:
+            final_code = EXIT_ASSET_MISSING
+        elif len(report['risks']['level3']) > 0:
+            final_code = EXIT_RISK_BLOCKED
+    sys.exit(final_code)
 
 
 if __name__ == '__main__':
