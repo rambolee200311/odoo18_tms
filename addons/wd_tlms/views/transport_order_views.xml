@@ -183,6 +183,24 @@
                                  </list>
                              </field>
                          </page>
+                         <page string="Attachments" name="attachments_page">
+                             <group string="CMR Documents">
+                                 <field name="cmr_attachment_ids" widget="many2many_binary"
+                                        options="{'no_create': True}"/>
+                             </group>
+                             <group string="Transport Events (incl. POD)">
+                                 <field name="event_attachment_ids" widget="many2many_binary"
+                                        options="{'no_create': True}"/>
+                             </group>
+                             <group string="Exceptions">
+                                 <field name="exception_attachment_ids" widget="many2many_binary"
+                                        options="{'no_create': True}"/>
+                             </group>
+                             <group string="Extra Charges">
+                                 <field name="charge_attachment_ids" widget="many2many_binary"
+                                        options="{'no_create': True}"/>
+                             </group>
+                         </page>
                          <page string="Notes" name="notes_page">
                              <field name="notes"/>
                          </page>

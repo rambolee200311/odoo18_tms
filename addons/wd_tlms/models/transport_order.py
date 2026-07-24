@@ -78,6 +78,41 @@ class TransportOrder(models.Model):
     transport_event_ids = fields.One2many('tlmp.transport.event', 'order_id', string='Transport Events')
     exception_ids = fields.One2many('tlmp.transport.exception', 'order_id', string='Exceptions')
     extra_charge_ids = fields.One2many('tlmp.transport.extra.charge', 'order_id', string='Extra Charges')
+    # Sprint19: computed attachment aggregates for categorized display
+    cmr_attachment_ids = fields.Many2many(
+        'ir.attachment', string='CMR Attachments',
+        compute='_compute_category_attachments')
+    event_attachment_ids = fields.Many2many(
+        'ir.attachment', string='Event Attachments',
+        compute='_compute_category_attachments')
+    exception_attachment_ids = fields.Many2many(
+        'ir.attachment', string='Exception Attachments',
+        compute='_compute_category_attachments')
+    charge_attachment_ids = fields.Many2many(
+        'ir.attachment', string='Charge Attachments',
+        compute='_compute_category_attachments')
+
+    @api.depends('cmr_ids', 'transport_event_ids', 'exception_ids', 'extra_charge_ids')
+    def _compute_category_attachments(self):
+        Attachment = self.env['ir.attachment']
+        for r in self:
+            r.cmr_attachment_ids = Attachment
+            r.event_attachment_ids = Attachment
+            r.exception_attachment_ids = Attachment
+            r.charge_attachment_ids = Attachment
+            # CMR: gather from cmr record attachments
+            for cmr in r.cmr_ids:
+                r.cmr_attachment_ids |= cmr.attachment_ids
+            # Events: gather from event attachments
+            for evt in r.transport_event_ids:
+                r.event_attachment_ids |= evt.attachment_ids
+            # Exceptions: gather from exception attachments
+            for exc in r.exception_ids:
+                r.exception_attachment_ids |= exc.attachment_ids
+            # Charges: gather from charge attachments
+            for chg in r.extra_charge_ids:
+                r.charge_attachment_ids |= chg.attachment_ids
+
     total_base_fee = fields.Monetary(string='Base Fee')
     total_surcharge = fields.Monetary(string='Total Surcharge', compute='_compute_surcharge_total')
     total_carrier_cost = fields.Monetary(string='Carrier Cost')

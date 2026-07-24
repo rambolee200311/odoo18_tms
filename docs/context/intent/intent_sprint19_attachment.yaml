@@ -1,0 +1,69 @@
+# ==============================================================
+# 【Sprint19 正式意图契约】
+# 功能：transport_order 归档附件分类视图
+# 前置基线：Sprint18 MRN/T1/ADR 松耦合 → Sprint19 统一附件归档
+# 基线版本：context_version: 1.0.28 → 1.0.29
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT19-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: transport_order 归档附件分类视图
+target_scope: 完成运输跟踪 P0 最后一项"CMR/POD 统一附件归档"——在 transport_order 表单新增分类附件展示页面
+
+accept_criteria:
+  - "transport_order 表单新增 Attachments notebook 页面"
+  - "附件按分类展示：CMR / POD / MRN / T1 / ADR / General"
+  - "每个分类显示对应的 ir.attachment 列表（可上传/查看/下载）"
+  - "CUSTOMS_CHECK 事件图片自动归入 Customs 分类"
+  - "DELIVERY_COMPLETED 上传的附件自动归入 POD 分类"
+  - "CMR 打印生成的 PDF 自动归入 CMR 分类"
+  - "不修改附件存储逻辑，仅做展示归类"
+  - "verify.py + odoo_check.py 双检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/海关合规
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+bind_context_version: "1.0.29"
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+
+affected_assets:
+  business:
+    - transport_order (attachment categorization)
+    - cmr (CMR PDF attachment link)
+    - transport_event (POD/CUSTOMS_CHECK attachment link)
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - business_review
+  required_pass: all
+
+deliverables:
+  - transport_order views 更新（Attachments notebook 页面）
+  - 附件分类展示逻辑（按 source/document_type 分组）
+  - 完整 Intent 执行记录文件夹
+
+limit_constraints: |
+  不改附件存储逻辑（ir.attachment 保持不变）
+  分类通过 tag/document_type 字段或 domain 过滤实现
+  不新建附件管理模型
+
+risk_precheck:
+  - "已有附件功能（CMR/POD/Event）不受影响"
+  - "附件分类只做过滤展示，不修改存储结构和权限"
