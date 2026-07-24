@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.30
+context_version: 1.0.31
 update_time: 2026-07-23
-adapt_sprint: Sprint20
+adapt_sprint: Sprint21
 update_author: AI-Engineering-Team
 
 version_log:
@@ -198,6 +198,21 @@ valid_rule:
       - transport_quote _auto_create_order 同步拷贝 scene_id
     update_type: 新功能开发 + 架构改造
     effect_scope: transport_scene + transport_event_type + scene_event + field migration
+
+
+  1.0.31:
+    update_content: |
+      Sprint21 架构冻结验证 — 全量测试覆盖
+      - 6 个测试文件，44 个 TestCase
+      - test_transport_scene: scene/event/scene_event/cargo_rule 覆盖
+      - test_transport_event: event 状态机/时序/exception/charge 覆盖
+      - test_transport_cargo: cargo line/cmr sync/snapshot 覆盖
+      - test_product_adr: product ADR/MRN/T1 覆盖
+      - test_transport_security: 权限隔离覆盖
+      - test_transport_flow: 端到端链路 + 附件聚合覆盖
+      - verify 8/8 PASS, odoo_check PASS
+    update_type: 测试覆盖
+    effect_scope: Sprint16-20 全模块测试加固
 
 
 bind_asset_folder:

@@ -4,3 +4,9 @@ from . import test_pickup_plan
 from . import test_inquiry_quote
 from . import test_transport_order
 from . import test_cmr
+from . import test_transport_scene
+from . import test_transport_event
+from . import test_transport_cargo
+from . import test_product_adr
+from . import test_transport_security
+from . import test_transport_flow

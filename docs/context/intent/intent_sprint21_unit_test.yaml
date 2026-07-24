@@ -1,0 +1,90 @@
+# ==============================================================
+# 【Sprint21 正式意图契约】
+# 功能：Sprint16-20 架构冻结验证 — 全量单元测试覆盖
+# 前置基线：Sprint20 Cargo Line → Sprint21 测试加固
+# 基线版本：context_version: 1.0.30 → 1.0.31
+# ==============================================================
+
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: INT-TMS-SPRINT21-001
+intent_work_type: Governance
+intent_change_type: Risk Audit
+title: Sprint16-20 架构冻结验证
+target_scope: >
+  为 Sprint16-20 新增的 Transport Event/Exception/Charge、Scene/EventType/SceneEvent/CargoRule、
+  Cargo Line、Product ADR、CMR 联动等全部功能的模型层、状态流转、配置驱动、
+  快照冻结、权限安全、历史兼容、端到端业务链编写 Odoo TestCase 单元测试。
+  零改动任何业务模型、视图、菜单、权限、报表、manifest。
+accept_criteria:
+  - "TransportEvent 测试：状态机、unlink 拦截、POD 强制、配置驱动时序"
+  - "TransportException 测试：4 态生命周期、归档前 CLOSED 校验"
+  - "ExtraCharge 测试：CRUD、金额汇总"
+  - "TransportScene/EventType/SceneEvent/CargoRule 测试：配置 CRUD、路径变化即时生效"
+  - "CargoLine 测试：CRUD、request→order 复制隔离、source_type 含 outbound 拦截"
+  - "CMR 测试：cargo 同步、source 追溯、防重复、快照冻结"
+  - "端到端测试：Terminal→Warehouse / Empty Depot / Warehouse→Customer 三条链路"
+  - "权限测试：非 admin 不可删 event、不可改 cargo_line"
+  - "历史兼容：旧 cargo_* 字段可用、配置变化不影响历史订单"
+  - "verify.py + test_runner 全量通过"
+
+# ── 需求来源溯源 ──────────────────────────────────
+source:
+  type: architecture_upgrade
+  origin_team: QA
+
+# ── 上下文认知配置 ────────────────────────────────
+asset_snapshot_profile: governance
+asset_snapshot_mode: human
+
+# ── 迭代循环管控策略 ──────────────────────────────
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - risk_block
+
+# ── 受影响资产清单 ────────────────────────────────
+affected_assets:
+  business:
+    - "transport_tracking（event/exception/charge）"
+    - "transport_scene（scene/event_type/scene_event/cargo_rule）"
+    - "transport_cargo（cargo_line/cmr_sync）"
+    - "cmr（cargo sync / snapshot）"
+  architecture:
+    - transport_model_architecture
+  governance:
+    - security_permission
+
+# ── 分层校验策略 ──────────────────────────────────
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+  required_pass: all
+
+# ── 交付产出要求 ──────────────────────────────────
+deliverables:
+  - "test_transport_event.py（Event/Exception/Charge, ~13 cases）"
+  - "test_transport_scene.py（Scene/EventType/SceneEvent/CargoRule, ~8 cases）"
+  - "test_transport_cargo.py（CargoLine/CMR sync/Snapshot, ~12 cases）"
+  - "test_product_adr.py（Product ADR/MRN/T1, ~3 cases）"
+  - "test_transport_security.py（权限隔离, ~3 cases）"
+  - "test_transport_flow.py（端到端链路 + 附件聚合, ~5 cases）"
+  - "tests/__init__.py 增量引入"
+  - "完整 Intent 执行记录文件夹"
+
+# ── 约束与风险前置校验 ────────────────────────────
+limit_constraints: >
+  零改动任何业务模型、视图、菜单、权限、报表、manifest。
+  不修改存量测试文件。二进制附件使用 mock 或 addCleanup 清理。
+  测试数据在 setUp 中自包含，不依赖预灌数据。
+risk_precheck: |
+  新模型在测试环境下可被正确发现
+  test_runner 测试计数正确反映新增用例数
+  权限测试不影响 admin 默认用户
