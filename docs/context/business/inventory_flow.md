@@ -245,3 +245,23 @@ transport_order.tracking_state（新增 6 态，用于运输跟踪）
    ──→ 草稿(draft) → 待提货(pending_pickup) → 运输中(in_transit)
         → 待签收(pending_signoff) → 已闭环(completed) → 异常搁置(exception_hold)
 ```
+
+### 3.7 场景-事件路径配置流（Sprint17 新增）
+```
+Configuration → Transport Scenes（管理 8 场景）
+                     ↓
+              → Event Types（管理 8 事件类型）
+                     ↓
+              → Scene-Event Paths（配置映射）
+
+每个 Scene-Event 记录包含：
+  scene_id + event_type_id + sequence + is_mandatory + pod_required
+
+时序约束执行流程：
+  transport_event.create()
+    → 读取 order_id.scene_id
+    → 查询 tlmp.transport.scene.event（按 sequence 排序）
+    → 获取 event_type_id 有序列表
+    → 校验当前事件后面是否有已发生的事件
+    → 无则通过，有则拦截
+```

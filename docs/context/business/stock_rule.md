@@ -197,3 +197,32 @@ Transport Event 替代固定流程节点，全量动态记录
 | 6 | 客户 → 仓库退货 | 商务报价 | quote 确认 auto |
 | 7 | 柜到仓换柜 | 柜级扩展 | 依附现有订单扩展字段 |
 | 8 | 空柜 Depo ↔ 仓库 | 计划驱动 | 手动 action_create |
+
+## 6. 场景-事件路径配置铁律（Sprint17 新增）
+
+### 6.1 场景/事件配置化管理
+```
+tlmp.transport.scene（场景档案）
+  └── tlmp.transport.scene.event（路径映射）
+        └── tlmp.transport.event.type（事件档案）
+```
+- 8 种场景和 8 种事件类型通过 data xml 预设，后台可增删改
+- 新增场景/事件只需在档案中创建记录，无需修改代码
+- 场景-事件路径配置决定每个场景的可用事件列表和时序顺序
+
+### 6.2 时序约束配置驱动
+- `_check_sequential_order` 不再依赖硬编码 `BASE_EVENT_ORDER` 列表
+- 改为读取 `tlmp.transport.scene.event` 路径记录，按 sequence 排序
+- 时序仅约束 is_base_event=True 的事件类型，OTHER 类型无顺序限制
+- 修改路径配置后即时生效，不影响已在进行中的运输订单
+
+### 6.3 scene_id 全链路贯穿
+```
+transport_request.scene_id
+  → pickup.plan / quote（继承）
+  → transport_order.scene_id（自动填充）
+  → transport_event._check_sequential_order（按场景路径校验）
+```
+- request 阶段选定场景后，order 创建时自动继承
+- 商务报价和计划驱动两类均支持自动继承
+- 缺失 scene_id 的存量订单不执行时序约束（跳过校验）

@@ -485,3 +485,29 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 ### 已知问题
 1. `action_print_cmr()` 在 test 环境中调用 `self.env.ref('wd_tlms.report_cmr')` 因 report XML ID 未完全加载而失败，已改为 `hasattr` 检查避免假阴性
 2. `test_21_cmr_number_required` 使用 `cmr_number=False` 触发 PostgreSQL NOT NULL 约束，`assertRaises` 正确捕获
+
+---
+## Sprint17 — 运输场景/事件类型/场景路径可配置化管理
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT17-001
+**基线**: context_version 1.0.26 → 1.0.27
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/transport_scene.py` | tlmp.transport.scene / event.type / scene.event |
+| 预设数据 | `data/transport_scene_data.xml` | 8 场景 + 8 事件类型预灌 |
+| 字段重构 | `models/transport_order.py` | transport_scene Selection → scene_id Many2one |
+| 字段重构 | `models/transport_tracking.py` | event_type Selection → event_type_id Many2one |
+| 时序重构 | `models/transport_tracking.py` | BASE_EVENT_ORDER 硬编码 → config 驱动 |
+| 全链路 | `models/transport_request.py` | 新增 scene_id（request→order 贯穿） |
+| 全链路 | `models/transport_quote.py` | _auto_create_order 拷贝 scene_id |
+| 视图 | `views/transport_scene_views.xml` | 3 档案 tree/form 视图 |
+| 菜单 | `views/tlmp_menus.xml` | Configuration 下 3 子菜单 |
+| 测试 | `tests/test_transport_scene.py` | 23 测试用例 |
+
+### 关键架构决策
+1. **场景/事件配置化**: 从硬编码 Selection 改为独立档案模型，后台可配置无需改代码
+2. **时序约束配置化**: `_check_sequential_order` 不再依赖硬编码 `BASE_EVENT_ORDER`，改读 `tlmp.transport.scene.event` 路径记录
+3. **scene_id 全链路贯穿**: request → plan/quote → order，确保 Event 时序约束在正确的场景路径下执行
+4. **存量兼容**: 新增 Many2one 字段，旧 Selection 值通过预设数据的 code 匹配自动映射

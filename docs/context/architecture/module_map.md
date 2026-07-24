@@ -105,7 +105,12 @@ wd_tlms/
 下游单据（执行层）:
   tlmp.transport.order          —— 运输订单
   tlmp.transport.container      —— 运输订单集装箱明细
-  tlmp.transport.tracking       —— 运输追踪
+  tlmp.transport.tracking       —— 运输追踪（Event/Exception/Charge）
+
+场景/事件配置层:
+  tlmp.transport.scene          —— 运输场景档案（8 场景可配置）
+  tlmp.transport.event.type     —— 事件类型档案（8 事件可配置）
+  tlmp.transport.scene.event    —— 场景-事件路径映射（决定时序顺序）
 
 签收/结算层:
   tlmp.pod                      —— 签收凭证

@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.26
+context_version: 1.0.27
 update_time: 2026-07-23
-adapt_sprint: Sprint16
+adapt_sprint: Sprint17
 update_author: AI-Engineering-Team
 
 version_log:
@@ -183,6 +183,21 @@ valid_rule:
       - MRN/T1/ADR 留待 Sprint17 分批落地
     update_type: 新功能开发
     effect_scope: transport_order 扩展 + transport_tracking 新模块（event/exception/charge）
+
+
+  1.0.27:
+    update_content: |
+      Sprint17 场景/事件类型/场景路径可配置化管理 + scene_id 贯穿
+      - 新增 tlmp.transport.scene 场景档案（8 预设 + CRUD）
+      - 新增 tlmp.transport.event.type 事件类型档案（8 预设 + CRUD）
+      - 新增 tlmp.transport.scene.event 场景-事件路径映射
+      - transport_order: transport_scene Selection → scene_id Many2one
+      - transport_event: event_type Selection → event_type_id Many2one
+      - BASE_EVENT_ORDER 硬编码 → 基于 scene.event 路径配置驱动时序约束
+      - transport_request 新增 scene_id（request→order 全链路贯穿）
+      - transport_quote _auto_create_order 同步拷贝 scene_id
+    update_type: 新功能开发 + 架构改造
+    effect_scope: transport_scene + transport_event_type + scene_event + field migration
 
 
 bind_asset_folder:
