@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.21
+context_version: 1.0.25
 update_time: 2026-07-23
-adapt_sprint: Sprint15-CMR-Test
+adapt_sprint: Sprint16
 update_author: AI-Engineering-Team
 
 version_log:
@@ -139,6 +139,50 @@ valid_rule:
       - test_runner: 30/30 CMR case PASS, 1 pre-existing pickup_plan fail
     update_type: 单元测试覆盖
     effect_scope: tlmp.cmr + tlmp.cmr.line + tlmp.cmr.coordinate
+
+
+  1.0.22:
+    update_content: |
+      Intent 管理体系升级至 5.x（基建改造类）
+      - intent_contract.template.yaml 升级至 v2.0: 添加 intent_type/sub_type 分类
+      - 新增 bind_asset_list（按 Domain 懒加载）/ deliverables / risk_precheck
+      - cognition_asset_map.md: 新增 5.x 分类模型章节
+      - cognition_rule.yaml: step 8 扩展为分类加载
+      - cognition_refresh.yaml: 新增按 intent_type 沉淀规则
+      - cognition_consistency_check.yaml: 新增 intent 类型一致性校验（5项）
+    update_type: 基建改造
+    effect_scope: intent 模板 + cognition 4 资产 + context_loader
+
+
+  1.0.23:
+    update_content: |
+      Intent 管理体系 5.x 最终规范全量落地（基建改造类）
+      核心改动：
+      1. intent_contract.template.yaml v3.0 全量重写
+         - work_type（4类）+ change_type（10枚举）双层分类
+         - 移除 bind_asset_list, 改为 asset_snapshot_profile
+         - 新增 loop_policy（含 retry_scope affected_asset_only）
+         - 新增 affected_assets / validation_strategy / source
+         - 移除旧 input/output/workflow 块
+         - limit_constraints 替代 limit_points
+      2. 新建 profiles/ 目录 + 4 个 Profile yaml（含 include/exclude/load_strategy）
+      3. 新建 intent_records/ 目录（执行记录归档）
+      4. 4 个认知资产全面对齐新术语
+      5. 状态机简化为: CREATED→PREPARED→EXECUTING→VALIDATING→REWORK→ACCEPTED→ARCHIVED
+         异常态: BLOCKED / REJECTED / CANCELLED
+    update_type: 基建改造
+    effect_scope: intent 模板 + profiles/ + cognition 4资产 + intent_records/n
+
+  1.0.24:
+    update_content: |
+      Sprint16 运输订单跟踪核心基座 — 意图契约定义
+      - transport_order 增量扩展（场景枚举/柜号集合/三层地址/tracking_state）
+      - Transport Event 动态运输事件（8 类型 + 3 层时间 + 时序约束）
+      - Transport Exception 异常闭环（4 态 + 12 类型）
+      - Extra Charge 途中额外费用台账（9 费用类型）
+      - MRN/T1/ADR 留待 Sprint17 分批落地
+    update_type: 新功能开发
+    effect_scope: transport_order 扩展 + transport_tracking 新模块（event/exception/charge）
 
 
 bind_asset_folder:

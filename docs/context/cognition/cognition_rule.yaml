@@ -13,11 +13,20 @@ pre_dev_load_order:
   1: "读取 context_version.yaml 锁定当前项目基线版本"
   2: "读取 architecture/module_map.md 架构分层认知"
   3: "读取 architecture/dependency.yaml 模块依赖认知"
-  4: "读取 business/ 全部业务规则认知"
-  5: "读取 history/decision_note.md 历史架构决策认知"
-  6: "读取 history/bug_record.md 历史缺陷规避认知"
-  7: "读取 constraints/forbidden_change.yaml 刚性约束认知"
-  8: "读取本次迭代意图契约，对齐任务边界"
+  4: "读取 profiles/{work_type}.yaml 匹配当前 Work Type 的 Profile 配置"
+  5: "读取 business/ 对应 Profile include 域业务规则认知"
+  6: "读取 history/decision_note.md 历史架构决策认知"
+  7: "读取 history/bug_record.md 历史缺陷规避认知"
+  8: "读取 constraints/forbidden_change.yaml 刚性约束认知"
+  9: "读取本次迭代意图契约 —— 核对 work_type/change_type 匹配 Profile，对齐 accept_criteria"
+
+# ========== Profile 加载隔离规则 ==========
+profile_isolation:
+  - Development/Maintenance: 加载业务域资产，按需引入基础配置
+  - Infrastructure: 仅加载底层工具/脚本资产，屏蔽所有业务单据
+  - Governance: 加载业务基线 + 合规规范，完全屏蔽基建源码
+  - load_strategy.forbidden 文件禁止加载、禁止读取
+  - full_read.allowed 文件支持按需完整读取，非 allowed 仅摘要快照
 
 # ========== 认知一致性铁律（禁止推翻存量设计） ==========
 consistency_law:

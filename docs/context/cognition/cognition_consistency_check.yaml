@@ -27,5 +27,17 @@ check_rule_set:
     - 严格匹配 forbidden_change.yaml 禁止清单
     - 禁止任何绕过、重写、篡改底层逻辑
 
+  # 5. Intent 分类一致性校验（5.x 最终规范）
+  intent_check:
+    - intent_work_type 必填（Development / Maintenance / Infrastructure / Governance 四选一）
+    - intent_change_type 必须匹配支持的 Work Type（见 5.3.2 表格映射）
+    - asset_snapshot_profile 必须匹配 work_type（Development→development.yaml，余类推）
+    - loop_policy 必填
+    - validation_strategy.layers 至少包含 static_check + build_verify + auto_test
+    - accept_criteria 至少包含一条可量化验收标准
+    - source.type / source.origin_team 必填（需求可追溯）
+    - affected_assets 必填（用于 retry_scope 判定）
+    - 禁止 Development/Infrastructure 任务跳过 human_accept 终止条件
+
 # 校验不通过直接拦截迭代
 fail_strategy: intercept_and_rollback

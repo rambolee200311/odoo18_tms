@@ -31,8 +31,15 @@
     <menuitem id="menu_tlmp_exec_group" name="Transport Execution" parent="menu_tlmp_operations" sequence="30"/>
     <menuitem id="menu_tlmp_orders" name="Orders" parent="menu_tlmp_exec_group"
               action="action_tlmp_order" sequence="20"/>
-    <menuitem id="menu_tlmp_tracking" name="Tracking" parent="menu_tlmp_exec_group"
-              action="action_tlmp_tracking" sequence="30"/>
+    <menuitem id="menu_tlmp_tracking_group" name="Tracking" parent="menu_tlmp_exec_group" sequence="25"/>
+    <menuitem id="menu_tlmp_tracking" name="Order Tracking" parent="menu_tlmp_tracking_group"
+              action="action_tlmp_tracking" sequence="10"/>
+    <menuitem id="menu_tlmp_transport_events" name="Events" parent="menu_tlmp_tracking_group"
+              action="action_tlmp_transport_event" sequence="20"/>
+    <menuitem id="menu_tlmp_exceptions" name="Exceptions" parent="menu_tlmp_tracking_group"
+              action="action_tlmp_transport_exception" sequence="30"/>
+    <menuitem id="menu_tlmp_extra_charges" name="Extra Charges" parent="menu_tlmp_tracking_group"
+              action="action_tlmp_extra_charge" sequence="40"/>
 
     <!-- Finance -->
     <menuitem id="menu_tlmp_finance" name="Finance" parent="menu_tlmp_root" sequence="20"/>

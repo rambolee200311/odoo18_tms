@@ -1,0 +1,140 @@
+# ==============================================================
+# 【Sprint16 正式意图契约】
+# 功能：运输订单跟踪核心基座 — Transport Event + 异常闭环
+# 前置基线：Sprint15 CMR 测试 → Sprint16 运输跟踪 P0 分批一期
+# 基线版本：context_version: 1.0.23 → 1.0.24
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT16-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 运输订单跟踪核心基座 — Transport Event + 异常闭环 + 费用台账
+target_scope: 荷兰跨境陆运订单全生命周期跟踪，覆盖码头入仓/仓间调拨/门到门派送/退货/空柜流转/柜换八大场景
+
+accept_criteria:
+  - "transport_order 增量扩展字段可用（场景枚举/柜号集合/三层地址）"
+  - "Transport Event 8 种事件类型可创建/推进/跳过/取消，禁止物理删除"
+  - "三层时间（计划/预估/实际）完整录入和展示"
+  - "基础运输事件时序约束正确拦截逆序操作"
+  - "transport_exception 4 态生命周期（OPEN→PROCESSING→RESOLVED→CLOSED）完整"
+  - "归档前强制校验所有异常 CLOSED，未闭环不可归档"
+  - "extra_charge 途中费用台账可增删改，归档时自动汇总"
+  - "DELIVERY_COMPLETED 事件强制 POD 附件上传"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/商务/财务/海关合规
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+bind_context_version: "1.0.24"
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_order
+    - transport_tracking
+    - transport_event
+    - transport_exception
+  architecture:
+    - transport_order model
+  governance:
+    - forbidden_change
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - model 代码/视图/菜单/权限/报表
+  - 自动化测试用例
+  - Intent 执行记录文件夹
+
+  在 wd_tlms 模块中增量扩展运输订单跟踪核心能力（P0 分批一期）：
+  
+  1. transport_order 增量扩展
+     - 新增 transport_scene 8 场景枚举（兼容现有 transport_type）
+     - 新增 tracking_state 6 态跟踪状态机（draft→待提货→运输中→待签收→已闭环→异常搁置）
+     - 新增 container_no_set / swap_container 柜号集合字段
+     - 新增 place_of_departure / place_of_destination / transit_places 三层地址
+     - 新增 cargo_detail_ids 货物明细子表（独立于现有字段）
+  
+  2. Transport Event 动态运输事件（tlmp.transport.event）
+     - 8 种事件类型枚举
+     - 3 层时间（planned / estimated / actual）
+     - 5 态事件状态（待执行/执行中/完成/跳过/取消）
+     - 禁止物理删除 unlink → 仅状态作废 + skip_cancel_reason 必填
+     - 基础事件时序约束（抵达→装车→离开→抵达→签收）
+     - OTHER 事件无顺序限制自由新增
+  
+  3. Transport Exception 运输异常（tlmp.transport.exception）
+     - 4 态全生命周期（OPEN→PROCESSING→RESOLVED→CLOSED）
+     - 12 种异常类型枚举
+     - 绑定 Transport Event ID
+     - 归档前强制校验所有异常 CLOSED
+  
+  4. Extra Charge 途中额外费用（tlmp.transport.extra.charge）
+     - 9 种费用类型枚举
+     - 绑定 Transport Event ID
+     - 归档时自动汇总至月度对账
+  
+  5. 归档附件统一管理
+     - CMR/POD/MRN/T1/ADR 分类归档位
+     - DELIVERY_COMPLETED 强制 POD 附件
+     - 通用附件上传（现场照片、司机单据）
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_order.py（增量扩展：场景/柜号/地址/状态机）"
+    - "addons/wd_tlms/models/transport_tracking.py（新增：transport_event + exception + extra_charge）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/views/transport_order_views.xml（更新跟踪相关字段布局）"
+    - "addons/wd_tlms/views/transport_tracking_views.xml（新增：事件/异常/费用视图）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（可选：新增跟踪相关菜单）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增 3 个模型权限）"
+    - "addons/wd_tlms/__manifest__.py（增量注册新视图）"
+    - "addons/wd_tlms/tests/test_transport_tracking.py（新增）"
+    - "docs/context/architecture/module_map.md（更新）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.23→1.0.24）"
+    - "docs/context/validation/test_exec_records.yaml"
+
+  forbid:
+    - 禁止修改非 transport_order / transport_tracking 的业务模型文件
+    - 禁止修改 CMR / POD / inquiry / quote / pickup.plan 等非本迭代模块
+    - 禁止修改已有 transport_type 枚举值（新增场景枚举兼容共存）
+    - 禁止删除 transport_order 现有字段（仅增量扩展）
+    - 禁止修改 __manifest__.py 的 depends
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止物理删除 Transport Event 记录（只能逻辑作废）
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止本期落地 P1/P2 范围功能（排期日历/门户/自动化提醒/报表）
+
+limit_constraints:
+  - "运输事件禁止物理删除（强制逻辑作废+跳过原因必填）"
+  - "异常未 CLOSED 禁止订单归档"
+  - "POD 附件未上传禁止 DELIVERY_COMPLETED"
+  - "跨境保税（MRN/T1）/ADR 校验留待 Sprint17"
+  - "基础事件时序约束逆序拦截"
+
+risk_precheck:
+  - "transport_order 现有 10 态状态机与新增 tracking_state 兼容性"
+  - "现有视图、智能按钮、action 方法不受影响"
+  - "已有测试用例（test_transport_order.py）不因增量扩展失败"

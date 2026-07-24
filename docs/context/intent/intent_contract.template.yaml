@@ -1,30 +1,83 @@
 # ==============================================================
-# 【AI Agent 意图控制工程 · 标准化契约模板】
+# 【Intent 控制工程 · 标准化执行模板（v3.0）】
 # 适用项目：Odoo18 TMS 欧洲3PL运输物流管理系统
-# 用途：所有AI迭代、功能开发、需求变更、Bug修复强制使用
+# 版本：3.0 — 对齐 5.x Intent Driven AI Engineering 最终规范
+# 用途：新功能/需求变更/Bug修复/数据运维/基建改造/合规审计
+# 更新：2026-07-24
+# ==============================================================
+#
+# 使用说明：
+#   1. 新建 Intent 时复制本文件完整填充
+#   2. intent_work_type 和 intent_change_type 决定 Profile 和校验策略
+#   3. asset_snapshot_profile 引用 profiles/*.yaml，不直接指定文件路径
+#   4. loop_policy 管控多轮迭代上限和增量重试范围
+#   5. ACCEPTED 后自动生成 Asset Proposal → 人工审核后方可更新基线
+#
+# Work Type 与 Profile 映射：
+#   Development    → profiles/development.yaml
+#   Maintenance    → profiles/maintenance.yaml
+#   Infrastructure → profiles/infrastructure.yaml
+#   Governance     → profiles/governance.yaml
 # ==============================================================
 
-contract_meta:
-  contract_id: ""
-  create_time: ""
-  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
-  sprint_version: ""
-  contract_type: ["新功能开发", "需求迭代", "Bug修复", "规则优化"]
-  context_load_profile: "development"  # development / testing / bugfix / infrastructure / full
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: ""                              # 全局唯一编号
+intent_work_type: ""                       # Development / Maintenance / Infrastructure / Governance
+intent_change_type: ""                     # New Feature / Change Request / Functional Bug Fix
+                                           # Data Correction / Configuration Change
+                                           # Performance Optimization / Legacy Migration
+                                           # Architecture Upgrade / Compliance Review / Risk Audit
+title: ""                                  # 任务简短描述
+target_scope: ""                           # 变更边界、影响模块、单据/资产范围
+accept_criteria:                           # 量化验收标准
+  - ""
 
-goal: ""
+# ── 需求来源溯源 ──────────────────────────────────
+source:
+  type: ""                                 # customer_demand / online_bug / architecture_upgrade
+                                          # regular_audit / legacy_migration
+  origin_team: ""                          # 需求提出方
 
-scope:
-  allow: []
-  forbid: []
+# ── 上下文认知配置（仅引用 Profile，不直接指定文件或读取权限） ──
+asset_snapshot_profile: ""                 # development / maintenance / infrastructure / governance
+asset_snapshot_mode: "human"               # human / json / full
 
-workflow:
-  step_0: "python3 execution/scripts/context_loader.py  # 加载认知 + 基线校验 + 风险提示"
-  step_1: "读取 docs/context 四层上下文资产"
-  step_2: "基于契约约束开发"
-  step_3: "verify.py + odoo_check.py + test_runner.py 三检"
-  step_4: "更新 decision_note.md + test_lessons.yaml（如有新教训）"
-  step_5: "git commit"
+# ── 迭代循环管控策略 ──────────────────────────────
+loop_policy:
+  max_iteration: 5                         # 最大迭代次数
+  retry_scope:
+    mode: "affected_asset_only"            # 仅加载缺陷关联资产，增量局部重试
+  escalation:
+    after_failed_iteration: 3              # 3次失败后升级
+    require_human: true
+  stop_condition:                          # 终止条件
+    - all_validation_pass
+    - human_accept
+    - risk_block
 
-bind_context_version: ""
-bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+# ── 受影响资产清单（用于增量重试范围判定） ─────────
+affected_assets:
+  business: []
+  architecture: []
+  governance: []
+
+# ── 分层校验策略 ──────────────────────────────────
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+# ── 交付产出要求 ──────────────────────────────────
+deliverables:
+  - ""
+  # 代码/配置/打印模板/审计报告/迁移脚本
+  # 自动化校验用例、测试数据
+  # 完整 Intent 执行记录文件夹（intent_records/intent_xxx/）
+
+# ── 约束与风险前置校验 ────────────────────────────
+limit_constraints: ""                      # 认知边界约束、打印精度、跨境合规强制要求
+risk_precheck: ""                          # 前置风险快照自动校验项

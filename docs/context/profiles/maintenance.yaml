@@ -1,0 +1,30 @@
+# ==============================================
+# Context Profile: Maintenance
+# 适用 Work Type: Maintenance
+# 子变更类型: Data Correction / Configuration Change / Performance Optimization / Legacy Migration
+# 加载策略: 轻量化业务 + 配置资产
+# ==============================================
+name: maintenance
+
+include:
+  - architecture
+  - business
+  - constraints
+  - history
+
+exclude:
+  - business/inventory_flow
+  - governance
+  - validation
+
+load_strategy:
+  mode: selective
+  summary:
+    enabled: true
+  full_read:
+    allowed:
+      - architecture
+      - constraints
+      - business/stock_rule
+  forbidden:
+    - business/inventory_flow

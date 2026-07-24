@@ -61,17 +61,25 @@
 ### 2.7 迭代意图契约
 | 文件 | 说明 |
 |------|------|
-| `intent/intent_contract.template.yaml` | 意图契约模板 |
-| `intent/intent_sprint1_pickup_plan.yaml` | Sprint1: pickup.plan 提货需求基座 |
-| `intent/intent_sprint2_calendar.yaml` | Sprint2: 排期日历调度系统 |
-| `intent/intent_sprint3_arch_refactor.yaml` | Sprint3: transport.request 统一入口 |
-| `intent/intent_sprint4_transport_order.yaml` | Sprint4: transport.order 收敛闭环 |
-| `intent/intent_sprint5_fee_base.yaml` | Sprint5: 费用/费率底层底座 |
-| `intent/intent_sprint6_fee_billing.yaml` | Sprint6: 费用模型重构 + 双向计费 |
-| `intent/intent_sprint7_inquiry_quote_flow.yaml` | Sprint7: 商业报价流程完善 |
-| `intent/intent_sprint8_plan_driven_flow.yaml` | Sprint8: 计划驱动链路闭环 |
+| `intent/intent_contract.template.yaml` | **v3.0** — 对齐 5.x Intent Driven AI Engineering 最终规范 |
+| `intent/intent_sprint1~15.yaml` | 历史 Sprint 契约（沿用旧 v1.0 格式，可读兼容） |
 
-### 2.8 版本基线
+### 2.8 Context Profiles（5.x 新增）
+| 文件 | 说明 |
+|------|------|
+| `profiles/development.yaml` | Development Work Type 资产加载黑白名单 + 读取策略 |
+| `profiles/maintenance.yaml` | Maintenance Work Type 资产加载黑白名单 + 读取策略 |
+| `profiles/infrastructure.yaml` | Infrastructure Work Type 资产加载黑白名单 + 读取策略 |
+| `profiles/governance.yaml` | Governance Work Type 资产加载黑白名单 + 读取策略 |
+
+### 2.9 Intent 执行记录（5.x 新增）
+| 文件 | 说明 |
+|------|------|
+| `intent_records/intent_xxx/` | 每 Intent 独立归档（decision/validation/defect/patch/summary） |
+
+### 2.10 版本基线
+
+### 2.10 版本基线
 | 文件 | 说明 |
 |------|------|
 | `context_version.yaml` | 上下文版本管理中心（当前 v1.0.9） |
@@ -92,3 +100,56 @@ graph LR
 1. 不懂项目架构乱开发
 2. 遗忘历史决策重复踩坑
 3. 不懂业务规则乱写逻辑
+
+## 5. Intent 分类管理体系（5.x 最终规范）
+
+### 5.1 Work Type + Change Type 双层分类
+按照 5.3 节规范，Work Type 分为四类：Development / Maintenance / Infrastructure / Governance。
+每个 Work Type 配套独立 Context Profile（profiles/{work_type}.yaml），Profile 定义 include/exclude 过滤规则和 load_strategy 读取策略。
+Intent 仅声明 asset_snapshot_profile 引用 Profile 标识，不直接指定文件路径、不控制读取权限。
+Change Type 为二级变更动因统一枚举：New Feature / Change Request / Functional Bug Fix / Data Correction / Configuration Change / Performance Optimization / Legacy Migration / Architecture Upgrade / Compliance Review / Risk Audit。
+
+| Work Type | Change Type 适配 | 适用场景 | Profile 域 | 快照体量 |
+|------|--------|----------|-------------------|----------|
+| **Development** | New Feature / Change Request / Functional Bug Fix / Legacy Migration | 业务功能迭代、逻辑修复 | 业务域 | 轻量 |
+| **Maintenance** | Data Correction / Configuration Change / Performance Optimization / Legacy Migration | 存量数据修正、参数调整 | 轻量业务+配置 | 极轻量 |
+| **Infrastructure** | Architecture Upgrade | 底层框架、PDF引擎、loader改造 | 基建域 | 极轻量 |
+| **Governance** | Compliance Review / Risk Audit | 合规校验、风险巡检（只读不改） | 合规+业务基线 | 按需 |
+
+| 分类 | 子类型 | 适用场景 | context_loader 域 | 快照体量 |
+|------|--------|----------|-------------------|----------|
+| **Development** | New Feature / Change Request / Functional Bug Fix | 业务代码迭代、字段调整、逻辑修复 | 业务域（订单/CMR/货品规则） | 轻量 |
+| **Infrastructure** | （自有子类型） | 底层框架、loader迭代、PDF生成、工具改造 | 基建域（脚本/工具/配置） | 极轻量 |
+| **Audit** | （自有子类型） | 合规校验、数据核对、风险巡检（只读不改） | 业务域 + 合规域 | 按需 |
+
+### 5.2 生命周期闭环（Intent Execution Loop）
+
+- **Intent**: 绑定 Profile，设定 loop_policy + validation_strategy
+- **Implement**: 严格懒加载，仅快照常驻，原文临时调取，遵循 Profile 读取权限
+- **Engineering Validation Loop**: 分层校验（static → build → auto_test → runtime → business → human），失败时增量局部重试
+- **Correct**: retry_scope 限定仅加载缺陷关联资产，不重建全量快照
+- **Accepted → Asset Proposal**: 自动生成提案 + 完整执行记录
+- **Human Asset Review**: 人工复核，通过则 Merge 更新基线，驳回则退回修正
+
+### 5.3 资产绑定规则
+- 强绑定：Intent 必须勾选依赖的 Domain 资产，未绑定资产完全不加载
+- 懒加载：绑定资产仅摘要快照常驻，完整原文按需读取
+- 分类隔离：Development 仅绑定业务资产，Infrastructure 仅绑定基建资产，Audit 绑定业务+合规
+- 解绑：Accept 后清除本次快照，新 Intent 重新绑定
+
+### 5.4 沉淀规则（按类型）
+- 整体流程：ACCEPTED → Asset Proposal → Human Asset Review → Merge Asset / 驳回修正
+- **Development / Maintenance / Infrastructure**: 代码/配置归档 + 摘要入快照库 + 故障教训入风险资产
+- **Governance**: 合规校验项 + 核查标准入合规资产（无代码变更产出）
+- 所有沉淀仅存摘要/规则/配置元数据，不冗余存储完整文件
+- 每次沉淀更新对应 Domain 资产版本号
+
+### 5.5 相关文件
+| 文件 | 说明 |
+|------|------|
+|  | **v2.0** — 升级后模板（含分类/绑定/交付/风险字段） |
+|  | 历史契约（沿用旧格式，可读兼容） |
+|  | 认知加载规则（含分类检查） |
+|  | 按 intent_type 沉淀规则 |
+|  | 类型一致性校验 |
+

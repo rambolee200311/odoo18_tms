@@ -169,3 +169,79 @@ wd_bonded_wms 接收信号：
 | 6. 客户 → 仓库 (退货) | 商务报价 | ❌ | ✅ | auto |
 | 7. 柜到仓换柜 | 柜级标记 | — | — | 字段扩展 |
 | 8. Depot ↔ 仓库 (空柜) | 计划驱动 | ❌ | ❌ | action_create |
+
+## 3. Transport Event 动态运输事件（Sprint16 新增）
+
+### 3.1 Transport Event 全生命周期
+```
+废弃固定节点模式，任意事件可动态插入
+
+transport.order（已确认状态）
+  │
+  ├── Transport Event 1: PICKUP_ARRIVED ────────── [planned/estimated/actual 三层时间]
+  ├── Transport Event 2: LOADING_COMPLETED ─────── [planned/estimated/actual]
+  ├── Transport Event 3: DEPARTED ──────────────── [planned/estimated/actual]
+  │   └── OTHER: 换司机（自定义事件，无顺序限制）
+  ├── Transport Event 4: CUSTOMS_CHECK ─────────── [海关查验，绑定 MRN/T1]
+  ├── Transport Event 5: DELIVERY_ARRIVED ──────── [planned/estimated/actual]
+  ├── Transport Event 6: DELIVERY_COMPLETED ────── [强制 POD 附件]
+  │
+  ├── Transport Exception 1: 货物破损 [OPEN→PROCESSING→RESOLVED→CLOSED]
+  │   └── 绑定 Transport Event ID: 6
+  ├── Transport Exception 2: 高速拥堵 [OPEN→CLOSED]
+  │
+  ├── Extra Charge 1: 滞柜费 [绑定 Event ID: 6]
+  └── Extra Charge 2: 海关杂费 [绑定 Event ID: 4]
+```
+
+### 3.2 事件状态流转
+```
+                    ┌─→ 跳过(skipped) ──→ [skip_cancel_reason 必填]
+待执行(pending) ────┼─→ 取消(cancelled) ──→ [skip_cancel_reason 必填]
+                    └─→ 执行中(in_progress) ──→ 完成(completed)
+```
+
+### 3.3 异常全生命周期
+```
+OPEN ──→ PROCESSING ──→ RESOLVED ──→ CLOSED
+  ↑                        │              │
+  └────────────────────────┴──────────────┘
+  可回退: RESOLVED → PROCESSING → OPEN（未闭环前）
+
+业务强约束：
+  订单归档前 → 强制校验所有异常 CLOSED → 未闭环拦截归档操作
+  异常可绑定 Transport Event ID 或 T1 单据
+```
+
+### 3.4 费用台账附加流
+```
+Extra Charge ── 绑定 Transport Event
+  ├── 费用类型（9 枚举）
+  ├── 金额 / 币种 EUR / 数量 / 计费单位
+  ├── 费用承担方（客户/我方/承运商）
+  └── 归档时自动汇总 → 关联承运商月度对账单
+```
+
+### 3.5 MRN/T1/ADR 合规流（Sprint17 细化）
+```
+MRN 主申报（订单级）
+  └── T1 子表（多行，每行绑定柜号集合）
+       ├── T1 截止时限监控 → 超时自动生成异常
+       └── 核销闭环时间 → T1 闭环标识
+
+ADR 危险品（订单级子表）
+  ├── UN 编号 / 品名 / 危险分类 / 包装等级
+  ├── 司机资质 / 车辆校验
+  └── 自动同步 CMR 打印模板
+```
+
+### 3.6 订单整体状态与 tracking_state 映射
+``` 
+transport_order.state（原 10 态，用于结算/计费，不动）
+   ──→ draft → confirmed → assigned → in_transit → delivered → signed
+        → billed → settled → closed / cancelled
+
+transport_order.tracking_state（新增 6 态，用于运输跟踪）
+   ──→ 草稿(draft) → 待提货(pending_pickup) → 运输中(in_transit)
+        → 待签收(pending_signoff) → 已闭环(completed) → 异常搁置(exception_hold)
+```

@@ -90,3 +90,12 @@ access_tlmp_cmr_line_all,tlmp.cmr.line.all,model_tlmp_cmr_line,base.group_user,1
 access_tlmp_cmr_coordinate_manager,tlmp.cmr.coordinate.manager,model_tlmp_cmr_coordinate,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_cmr_coordinate_operator,tlmp.cmr.coordinate.operator,model_tlmp_cmr_coordinate,wd_tlms.group_tlm_operator,1,0,0,0
 access_tlmp_cmr_coordinate_all,tlmp.cmr.coordinate.all,model_tlmp_cmr_coordinate,base.group_user,1,0,0,0
+access_tlmp_event_manager,tlmp.event.manager,model_tlmp_transport_event,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_event_operator,tlmp.event.operator,model_tlmp_transport_event,wd_tlms.group_tlm_operator,1,1,1,0
+access_tlmp_event_all,tlmp.event.all,model_tlmp_transport_event,base.group_user,1,0,0,0
+access_tlmp_exception_manager,tlmp.exception.manager,model_tlmp_transport_exception,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_exception_operator,tlmp.exception.operator,model_tlmp_transport_exception,wd_tlms.group_tlm_operator,1,1,1,0
+access_tlmp_exception_all,tlmp.exception.all,model_tlmp_transport_exception,base.group_user,1,0,0,0
+access_tlmp_extra_charge_manager,tlmp.extra.charge.manager,model_tlmp_transport_extra_charge,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_extra_charge_operator,tlmp.extra.charge.operator,model_tlmp_transport_extra_charge,wd_tlms.group_tlm_operator,1,1,1,0
+access_tlmp_extra_charge_all,tlmp.extra.charge.all,model_tlmp_transport_extra_charge,base.group_user,1,0,0,0

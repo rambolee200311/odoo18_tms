@@ -18,6 +18,16 @@ class TransportOrder(models.Model):
         ('warehouse_transfer', 'Warehouse Transfer'),
         ('reverse_logistics', 'Reverse Logistics'),
     ], string='Transport Type', required=True)
+    transport_scene = fields.Selection([
+        ('terminal_to_warehouse', 'Terminal → Warehouse'),
+        ('terminal_to_customer', 'Terminal → Customer'),
+        ('warehouse_to_customer', 'Warehouse → Customer'),
+        ('customer_to_customer', 'Customer A → Customer B'),
+        ('warehouse_transfer', 'Warehouse ↔ Warehouse'),
+        ('customer_to_warehouse', 'Customer → Warehouse (Return)'),
+        ('container_swap', 'Container Swap'),
+        ('empty_depot', 'Empty Depo ↔ Warehouse'),
+    ], string='Transport Scene')
     fleet_operation_mode = fields.Selection([
         ('own_fleet', 'Own Fleet'),
         ('contracted', 'Contracted'),
@@ -53,6 +63,9 @@ class TransportOrder(models.Model):
     carrier_phone = fields.Char(string='Carrier Phone')
     pickup_location_id = fields.Many2one('res.partner', string='Pickup Location')
     delivery_location_id = fields.Many2one('res.partner', string='Delivery Location')
+    place_of_departure = fields.Char(string='Place of Departure')
+    place_of_destination = fields.Char(string='Place of Destination')
+    transit_places = fields.Text(string='Transit Places')
     planned_pickup_date = fields.Datetime(string='Planned Pickup')
     planned_delivery_date = fields.Datetime(string='Planned Delivery')
     actual_pickup_date = fields.Datetime(string='Actual Pickup')
@@ -66,7 +79,14 @@ class TransportOrder(models.Model):
     pallet_count = fields.Integer(string='Pallets')
     package_count = fields.Integer(string='Packages')
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
+    container_no_set = fields.Char(string='Container No. Set')
+    swap_container = fields.Boolean(string='Swap Container')
+    original_container_no = fields.Char(string='Original Container No.')
+    new_container_no = fields.Char(string='New Container No.')
     surcharge_ids = fields.One2many('tlmp.surcharge', 'order_id', string='Surcharges')
+    transport_event_ids = fields.One2many('tlmp.transport.event', 'order_id', string='Transport Events')
+    exception_ids = fields.One2many('tlmp.transport.exception', 'order_id', string='Exceptions')
+    extra_charge_ids = fields.One2many('tlmp.transport.extra.charge', 'order_id', string='Extra Charges')
     total_base_fee = fields.Monetary(string='Base Fee')
     total_surcharge = fields.Monetary(string='Total Surcharge', compute='_compute_surcharge_total')
     total_carrier_cost = fields.Monetary(string='Carrier Cost')
@@ -89,6 +109,16 @@ class TransportOrder(models.Model):
     pod_id = fields.Many2one('tlmp.pod', string='POD', readonly=True)
     trip_id = fields.Many2one('container.transport.plan', string='Trip Plan', index=True)
     settlement_locked = fields.Boolean(string='Settlement Locked', default=False)
+    tracking_state = fields.Selection([
+        ('draft', 'Draft'),
+        ('pending_pickup', 'Pending Pickup'),
+        ('in_transit', 'In Transit'),
+        ('pending_signoff', 'Pending Sign-off'),
+        ('completed', 'Completed'),
+        ('exception_hold', 'Exception Hold'),
+    ], string='Tracking Status', default='draft',
+       help='6-state tracking status')
+
     state = fields.Selection([
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed'),
@@ -259,7 +289,14 @@ class TransportOrder(models.Model):
         self.ensure_one()
         if self.pod_id and self.pod_id.state not in (False, "confirmed"):
             raise UserError(_('Cannot close order: POD must be confirmed first.'))
-        self.write({'state': 'closed'})
+        # Sprint16: validate all exceptions CLOSED
+        open_ex = self.exception_ids.filtered(lambda e: e.exception_state != 'closed')
+        if open_ex:
+            raise UserError(_(
+                'Cannot close order: %d exception(s) are not CLOSED. '
+                'All exceptions must be resolved and closed before archiving.'
+            ) % len(open_ex))
+        self.write({'state': 'closed', 'tracking_state': 'completed'})
         return True
 
     def action_cancel(self, reason=None):
@@ -272,6 +309,15 @@ class TransportOrder(models.Model):
             raise UserError(_('Only confirmed orders can be rejected to draft.'))
         self.write({'state': 'draft'})
         return True
+
+    def action_archive(self):
+        self.ensure_one()
+        open_ex = self.exception_ids.filtered(lambda e: e.exception_state != 'closed')
+        if open_ex:
+            raise UserError(_(
+                'Cannot archive: %d exception(s) are not CLOSED.'
+            ) % len(open_ex))
+        self.write({'tracking_state': 'completed', 'state': 'closed'})
 
     def action_void(self, reason=None):
         self.ensure_one()

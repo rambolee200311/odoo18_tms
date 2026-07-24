@@ -1,0 +1,27 @@
+# ==============================================
+# Context Profile: Infrastructure
+# 适用 Work Type: Infrastructure
+# 子变更类型: Architecture Upgrade
+# 加载策略: 仅基建资产，完全屏蔽业务单据
+# ==============================================
+name: infrastructure
+
+include:
+  - architecture
+  - constraints
+  - governance
+
+exclude:
+  - business
+  - validation
+
+load_strategy:
+  mode: selective
+  summary:
+    enabled: true
+  full_read:
+    allowed:
+      - architecture
+      - governance
+  forbidden:
+    - business

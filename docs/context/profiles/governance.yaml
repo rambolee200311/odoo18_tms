@@ -1,0 +1,37 @@
+# ==============================================
+# Context Profile: Governance
+# 适用 Work Type: Governance
+# 子变更类型: Compliance Review / Risk Audit
+# 加载策略: 业务基线 + 合规规范，屏蔽基建源码
+# ==============================================
+name: governance
+
+include:
+  - architecture
+  - business
+  - constraints
+  - governance
+  - history
+
+exclude:
+  - governance/rules
+  - governance/human_loop
+  - governance/workflow_risk
+  - governance/bug_fix_workflow
+  - governance/tool_governance
+  - governance/check_view_fields
+  - validation
+
+load_strategy:
+  mode: selective
+  summary:
+    enabled: true
+  full_read:
+    allowed:
+      - business
+      - governance/compliance
+      - governance/audit_spec
+      - architecture
+      - constraints
+  forbidden:
+    - validation

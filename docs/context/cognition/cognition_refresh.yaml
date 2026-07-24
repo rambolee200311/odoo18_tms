@@ -65,4 +65,69 @@ precipitation_elements:
   1: "本次迭代新增业务认知"
   2: "本次迭代架构认知加固"
   3: "本次迭代规避的风险认知"
-  4: "本次迭代新增工程决策认知"
+ 4: "本次迭代新增工程决策认知"
+
+# ==============================================
+# 按 Intent 类型的资产沉淀规则（5.x 最终规范）
+# 整体流程：
+#   ACCEPTED（任务验收）
+#       → Asset Proposal（自动生成提案 + 完整执行记录）
+#       → Human Asset Review（人工复核）
+#       → Merge Asset（更新基线）/ 驳回修正
+# ==============================================
+intent_based_precipitation:
+
+  development:
+    work_type: "Development"
+    desc: "业务功能开发/需求变更/Bug修复"
+    precipitate:
+      - "新增/修改的代码、打印坐标、模板归档至对应 Domain 资产目录"
+      - "自动生成元数据摘要存入快照库，同类 Intent 加载 Profile 时可复用"
+      - "缺陷根因/规避规则写入风险教训资产；对应 Profile 默认加载同模块历史故障快照"
+
+  maintenance:
+    work_type: "Maintenance"
+    desc: "数据修正/配置调整/性能优化"
+    precipitate:
+      - "配置变更/迁移规则归档至对应 Domain 目录"
+      - "性能测试数据存入审计资产"
+      - "摘要入快照库供后续同类任务复用"
+
+  infrastructure:
+    work_type: "Infrastructure"
+    desc: "底层框架、工具、loader、打印服务改造"
+    precipitate:
+      - "工具/脚本/配置文件归档至基建资产目录"
+      - "配置模板摘要入快照库"
+
+  governance:
+    work_type: "Governance"
+    desc: "合规校验、风险巡检（只读不改）"
+    precipitate:
+      - "新增合规校验项/核查标准存入合规资产"
+      - "后续 Governance Profile 自动加载新规则"
+      - "审计报告归档，无代码变更产出"
+
+# ==============================================
+# 沉淀轻量化原则
+# ==============================================
+precipitation_lightweight:
+  - "仅归档摘要、规则、配置元数据、差异补丁"
+  - "完整原始文件不重复冗余存储"
+  - "每次合并资产自动更新 Domain 版本号"
+  - "context_loader 可识别基线变更、区分新旧规则"
+  - "执行记录仅存 decision/validation/defect 信息 + 资产差异补丁"
+  - "完整代码由 Git 源码管理，执行记录不重复存储"
+
+# ==============================================
+# Intent 执行记录目录约束
+# ==============================================
+execution_record:
+  base_dir: "docs/context/intent_records/"
+  structure:
+    - "intent_xxx/intent.yaml            原始意图完整配置"
+    - "intent_xxx/decision.md            技术方案、选型、边界约束说明"
+    - "intent_xxx/validation.yaml        每轮分层校验结果、测试数据"
+    - "intent_xxx/defect.yaml            迭代过程缺陷、根因、修复方案"
+    - "intent_xxx/asset_diff.patch       资产变更差异补丁"
+    - "intent_xxx/summary.md             任务整体交付总结"
