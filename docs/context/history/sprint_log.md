@@ -384,3 +384,22 @@
 ### 验收
 - verify.py 8/8: ✅ PASS
 - odoo_check: ✅ PASS
+
+## Sprint21: Sprint16-20 架构冻结验证 — 全量单元测试覆盖
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT21-001
+**状态**: 已完成
+
+### 迭代目标
+为 Sprint16-20 新增的全部模型和业务链编写 Odoo 单元测试，验证配置驱动、快照冻结、权限安全、历史兼容、端到端闭环。
+
+### 完成成果
+- 6 个测试文件，44 个 TestCase
+- 零改动业务代码
+- 113 tests 全量通过（0 failures, 0 errors）
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS
+- test_runner: 113 tests, 0 failures, 0 errors ✅

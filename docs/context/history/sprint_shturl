@@ -241,3 +241,19 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 ## 验证
 - verify.py: 8/8 ✅
 - odoo_check: PASS ✅
+
+# Sprint21 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT21-001
+# 基线: context v1.0.31  |  manifest: wd_tlms v1.0.52
+
+## 变更摘要
+- 6 test files: scene/event/cargo/product_adr/security/flow
+- 44 new TestCases, 113 total
+- intent: intent_sprint21_unit_test.yaml（v3.0 模板格式）
+- context_version: 1.0.30 → 1.0.31
+- verify: 8/8 ✅ | odoo_check: PASS ✅ | test: 113/113 ✅
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅
+- test_runner: 0 failures, 0 errors of 113 tests ✅

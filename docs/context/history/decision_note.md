@@ -549,3 +549,25 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 2. **request/order 复制隔离**：request_id XOR order_id 互斥，复制不共享记录
 3. **场景规则可配置**：通过 tlmp.transport.scene.cargo.rule 模型，非代码级 if/else
 4. **CMR 快照隔离**：CMR line 修改不反向影响 cargo_line
+
+---
+## Sprint21 — Sprint16-20 架构冻结验证 — 全量单元测试覆盖
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT21-001
+**基线**: context_version 1.0.30 → 1.0.31
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 测试文件 | `tests/test_transport_scene.py` | 8 cases (scene/event/scene_event/cargo_rule) |
+| 测试文件 | `tests/test_transport_event.py` | 13 cases (event/exception/charge) |
+| 测试文件 | `tests/test_transport_cargo.py` | 12 cases (cargo/cmr sync/snapshot) |
+| 测试文件 | `tests/test_product_adr.py` | 3 cases (product ADR/MRN/T1) |
+| 测试文件 | `tests/test_transport_security.py` | 3 cases (权限隔离) |
+| 测试文件 | `tests/test_transport_flow.py` | 5 cases (端到端链路/附件/tracking) |
+| 意图契约 | `intent/intent_sprint21_unit_test.yaml` | v3.0 模板格式 |
+
+### 关键决策
+1. **零改动业务代码**：仅添加测试文件，不修改任何模型/视图/权限/manifest
+2. **44 个 TestCase** 覆盖 8 大维度：模型层/状态流转/配置驱动/数据隔离/快照冻结/权限安全/历史兼容/业务链闭环
+3. **113 tests 全量通过**：0 failures, 0 errors（含 69 个存量测试）
