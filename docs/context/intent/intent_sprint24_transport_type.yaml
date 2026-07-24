@@ -13,8 +13,7 @@ title: 运输主数据治理 — Transport Classification & Carrier Capability B
 target_scope: >
   将 transport_type 从散落在 4 个模型中的重复 Selection 枚举统一重构为
   Many2one → tlmp.transport.type 档案模型，消除冗余定义。
-  旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly），
-  避免字段名冲突。
+  旧 Selection 字段直接替换为 Many2one，无遗留数据兼容需求。
 
   同时创建 tlmp.carrier.service 承运商能力档案，增加 carrier_id
   （Many2one → res.partner）实现承运商公司 ↔ 服务分层。
@@ -34,7 +33,7 @@ accept_criteria:
   - "8 个预设运输类型覆盖 FTL(5) + Parcel(1) + LTL(1) + All(1)"
   - "tlmp.carrier.service 档案完整（code/name/carrier_id/tracking_url_template/is_active）"
   - "4 个通用服务预设（parcel_standard/parcel_express/road_standard/road_priority），不使用 DHL/UPS 名"
-  - "旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly + invisible）"
+  - "旧 Selection 字段直接替换为 Many2one（无遗留数据）"
   - "transport_type_id Many2one 迁移期 DB nullable，create/write 强制必填"
   - "transport_order / transport_request / transport_rate_base / pricing_rule 四模型迁移"
   - "pickup_plan / container_service type_map 改为带缓存的 database lookup"
@@ -94,24 +93,22 @@ deliverables:
   - "迁移：transport_order / transport_request / rate_base / pricing_rule"
   - "迁移：pickup_plan / pickup_plan_fix / container_service type_map"
   - "迁移：6 处视图字段替换"
-  - "addons/wd_tlms/tests/test_transport_type_migration.py（迁移测试）"
-  - "addons/wd_tlms/tests/test_transport_type_regression.py（回归测试）"
+  - "addons/wd_tlms/tests/test_transport_type.py（单元测试）"
+  - "addons/wd_tlms/tests/test_transport_type_full_chain.py（全链路测试）"
   - "docs/architecture/adr/adr_024_transport_type_master_data.md（架构决策记录）"
   - "docs/context/context_version.yaml（1.0.35 → 1.0.36）"
   - "docs/context/history/decision_note.md"
 
 limit_constraints: >
-  旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly invisible）。
-  不在同一字段名上做 Selection ↔ Many2one 共存，避免字段名歧义。
-  transport_type_id DB 允许空（迁移期兼容），但 create/write 业务层强制必填。
+  transport_type_id 为必填（required=True），无遗留数据兼容需求。
   pricing_rule 仅做字段迁移，不改业务计算逻辑（留待 Sprint30 费用引擎重构）。
   type_map 增加模块级缓存，不重复 SQL。
   Carrier Service 不预设具体承运商名（DHL/UPS/DPD/GLS/PostNL），仅使用通用服务代码。
   Carrier Adapter / Shipment Label 留待 Sprint25。
 
 risk_precheck: |
-  字段重命名 legacy_transport_type 对现有 domain 查询的兼容影响
-  type_map 缓存与数据库实时一致性（迁移期数据不同步风险）
+  字段变更对现有 domain 查询的兼容影响
+  type_map 缓存与数据库实时一致性
   pricing_rule 数据迁移但逻辑不改——旧 domain 筛选兼容
   pickup_plan 中 destination_type → transport_type 映射的准确性
 
@@ -126,7 +123,7 @@ goal: >
   建立统一业务分类语言。
   同时创建 Carrier Service 档案（含 carrier_id 实现承运商公司↔服务分层），
   作为 Sprint25 Shipment Label + Carrier Adapter 的前置数据基座。
-  旧字段重命名 legacy_transport_type 避免歧义。
+  字段直接替换为 Many2one，无兼容负担。
 
   FTL 场景（5 类）保持现有流程不变。parcel/groupage 新增类型
   在 Sprint25 中才实际使用。pricing_rule 仅做字段迁移，不改计算逻辑。
@@ -135,9 +132,9 @@ scope:
   allow:
     - "addons/wd_tlms/models/transport_type.py"
     - "addons/wd_tlms/models/carrier_service.py"
-    - "addons/wd_tlms/models/transport_order.py（legacy_ 重命名 + transport_type_id）"
-    - "addons/wd_tlms/models/transport_request.py（legacy_ 重命名 + transport_type_id）"
-    - "addons/wd_tlms/models/transport_rate_base.py（legacy_ 重命名 + transport_type_id）"
+    - "addons/wd_tlms/models/transport_order.py（transport_type Selection → Many2one）"
+    - "addons/wd_tlms/models/transport_request.py（transport_type Selection → Many2one）"
+    - "addons/wd_tlms/models/transport_rate_base.py（transport_type Selection → Many2one）"
     - "addons/wd_tlms/models/pricing_rule.py（仅字段迁移，不改逻辑）"
     - "addons/wd_tlms/models/pickup_plan.py（type_map + 缓存）"
     - "addons/wd_tlms/models/pickup_plan_fix.py（type_map + 缓存）"
@@ -200,9 +197,9 @@ scope:
 #
 # 迁移策略:
 #   各模型字段:
-#     legacy_transport_type = fields.Selection(...deprecated=True...)
+#     (removed - directly use transport_type_id)
 #     transport_type_id = fields.Many2one('tlmp.transport.type', ...)
-#   旧 Selection 字段重命名为 legacy_transport_type 开头
+#   原 Selection 字段直接从模型定义中移除
 #   DB: transport_type_id nullable（迁移期）
 #   create/write: transport_type_id 强制必填（business required）
 #   pickup_plan type_map: 模块级 _transport_type_cache dict(code→id)
@@ -210,7 +207,7 @@ scope:
 # 测试:
 #   迁移测试:
 #     - 旧数据 transport_type='parcel' → transport_type_id.code='parcel'
-#     - legacy_transport_type 兼容读取
+#     - transport_type_id 赋值正确
 #   回归测试:
 #     - request → quote → order → pickup → rate 全链路
 #     - type_map 映射准确性
