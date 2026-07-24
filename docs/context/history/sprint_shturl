@@ -168,3 +168,45 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 ## Bug修复工作流 & BUG-001
 # 新增 governance/bug_fix_workflow.yaml — Bug修复标准7步流程
 # 新建 history/bug_record.md — BUG-001 transport_request.py前导空格
+
+# Sprint16 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT16-001
+# 基线: context v1.0.25  |  manifest: wd_tlms v1.0.48
+
+## 变更摘要
+- models/transport_tracking.py: +275 行（TransportEvent / TransportException / ExtraCharge）
+- models/transport_order.py: 增量扩展（scene/tracking_state/容器/地址/O2M/archive）
+- views/transport_tracking_views.xml: +254 行 Event/Exception/Charge 视图
+- views/transport_order_views.xml: +41 行 Tracking notebook 页
+- views/tlmp_menus.xml: 重构 Tracking 组（Order/Events/Exceptions/Extra Charges）
+- security: 3 模型 × 3 级权限
+- data/sequences.xml: 新增 seq_tlmp_transport_event
+- tests/test_transport_tracking.py: +23 测试用例
+- context_loader.py: v4 升级（Profile 文件驱动）
+- profiles/ + intent_records/ 目录新建
+- context_version: 1.0.23 → 1.0.25
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅
+- test_runner: 93 tests, 23 tracking PASS, 1 pre-existing error
+
+# Sprint17 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT17-001
+# 基线: context v1.0.26  |  manifest: wd_tlms v1.0.49
+
+## 变更摘要
+- models/transport_scene.py: +80 行（TransportScene / TransportEventType / TransportSceneEvent）
+- data/transport_scene_data.xml: 8 场景 + 8 事件预设数据
+- views/transport_scene_views.xml: 3 档案的 tree/form 视图
+- models/transport_order.py: transport_scene Selection → scene_id Many2one
+- models/transport_tracking.py: event_type Selection → event_type_id Many2one + BASE_EVENT_ORDER 重构
+- models/transport_request.py: 新增 scene_id Many2one
+- models/transport_quote.py: _auto_create_order 拷贝 scene_id
+- views/tlmp_menus.xml: Configuration 下 3 子菜单
+- security: 3 模型 × 3 级权限
+- context_version: 1.0.25 → 1.0.27
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅

@@ -288,3 +288,57 @@
 - pickup.plan → order 自动创建 fee.line: ✅
 - transport.request 可见 schedule 列表: ✅
 - 不破坏 S1-S7: ✅
+
+## Sprint16: 运输订单跟踪核心基座 — Transport Event + 异常 + 费用
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT16-001
+**状态**: 已完成
+
+### 迭代目标
+搭建运输订单全生命周期跟踪系统核心基座：Transport Event 动态运输事件、运输异常闭环管理、途中额外费用台账、transport_order 增量扩展。
+
+### 完成成果
+- transport_order 增量扩展：transport_scene 8 场景枚举、tracking_state 6 态跟踪状态机、容器/地址字段
+- Transport Event 动态运输事件：8 类型 + 3 层时间（planned/estimated/actual）+ 5 态事件状态 + 时序约束 + POD 附件强制
+- Transport Exception 异常闭环：4 态生命周期（OPEN→PROCESSING→RESOLVED→CLOSED）+ 12 类型 + 归档前 CLOSED 强制
+- Extra Charge 额外费用台账：9 费用类型 + 承担方 + 自动汇总
+- 归档附件：DELIVERY_COMPLETED 强制 POD 附件上传
+- context_loader.py v4：Profile 文件驱动、include/exclude/load_strategy、--profile/--skip-baseline CLI
+
+### 关键决策
+1. 运输事件禁止物理删除 → 逻辑作废（state=skipped/cancelled + reason 必填）
+2. 异常强制闭环后归档 → action_close 校验所有 exception.state=CLOSED
+3. 与原有 transport_type/state 共存，不破坏存量逻辑
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS
+- test_runner: 93 tests, 23 tracking tests PASS, 1 pre-existing pickup_plan ERROR
+
+## Sprint17: 运输场景/事件类型/场景路径可配置化管理
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT17-001
+**状态**: 已完成
+
+### 迭代目标
+将运输场景和事件类型从硬编码 Selection 改造为独立档案模型，新增场景-事件路径映射，后台可配置管理且无需改代码。
+
+### 完成成果
+- 3 个新档案模型：tlmp.transport.scene（8 场景预设）、tlmp.transport.event.type（8 事件预设）、tlmp.transport.scene.event（路径映射）
+- transport_order.transport_scene Selection → scene_id Many2one
+- transport_event.event_type Selection → event_type_id Many2one
+- TransportEvent.BASE_EVENT_ORDER 硬编码 → 基于 scene.event 路径配置驱动时序约束
+- transport_request 新增 scene_id，plan→order 和 quote→order 全链路自动拷贝
+- Configuration 菜单下 3 个子菜单管理档案
+
+### 关键决策
+1. 场景/事件配置化：新增档案只需在 model 中添加记录，无需改 Python 代码
+2. 时序约束配置驱动：_check_sequential_order 改读 tlmp.transport.scene.event 路径记录
+3. scene_id 全链路贯穿：request → plan/quote → order，确保 Event 在正确场景路径下约束
+4. 存量兼容：新增 Many2one 字段，旧值通过预设 data xml 的 code 匹配映射
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS
