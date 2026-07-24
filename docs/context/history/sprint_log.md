@@ -403,3 +403,22 @@
 - verify.py 8/8: ✅ PASS
 - odoo_check: ✅ PASS
 - test_runner: 113 tests, 0 failures, 0 errors ✅
+
+## Sprint22: P1 Dashboard 监控 + 时效异常报表 + Cargo Rule 配置化
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT22-001
+**状态**: 已完成
+
+### 迭代目标
+建设运输运营监控能力，Dashboard 实时展示超时，不建设主动通知机制。完成 Cargo Rule 配置化。
+
+### 完成成果
+- Dashboard Service + 3 类超时卡片
+- 时效报表（pivot/graph） + 异常报表（pivot/graph）
+- Cargo Rule 配置化（8 场景预设）
+- timeout_hours 字段 + t1_deadline 字段
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS

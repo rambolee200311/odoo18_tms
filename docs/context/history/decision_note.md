@@ -571,3 +571,29 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 1. **零改动业务代码**：仅添加测试文件，不修改任何模型/视图/权限/manifest
 2. **44 个 TestCase** 覆盖 8 大维度：模型层/状态流转/配置驱动/数据隔离/快照冻结/权限安全/历史兼容/业务链闭环
 3. **113 tests 全量通过**：0 failures, 0 errors（含 69 个存量测试）
+
+---
+## Sprint22 — P1 Dashboard 监控 + 时效异常报表 + Cargo Rule 配置化
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT22-001
+**基线**: context_version 1.0.31 → 1.0.32
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/transport_dashboard.py` | AbstractModel Service + TransientModel 监控 |
+| 新增模型 | `models/transport_exception.py` | timeout_hours 字段 |
+| 视图 | `views/transport_dashboard_views.xml` | Dashboard 3 卡片 + 跳转 |
+| 视图 | `views/transport_report_views.xml` | 时效/异常 pivot+graph |
+| 数据 | `data/transport_scene_data.xml` | 8 Cargo Rule 预设 |
+| 字段 | `transport_order.t1_deadline` | T1 超期监控 |
+| 配置 | `transport_cargo_line.py` | priority + condition_domain |
+| 测试 | `tests/test_sprint22_dashboard.py` | 7 TestCase |
+
+### 关键决策
+1. **Dashboard 不推送**：只展示不通知，不建 cron/邮件/消息中心
+2. **Service 层封装**：tlmp.transport.dashboard.service (AbstractModel) 封装查询逻辑，View 不直接执行复杂统计
+3. **超时规则不硬编码**：event 超时 = state not in completed/cancelled/skipped + planned_time < now
+4. **异常超时预设**：driver_delay=4h / document_missing=24h / cargo_damage=72h / customs=168h
+5. **报表轻量**：基于现有模型 tree/pivot/graph，不建事实表
+6. **Cargo Rule 预留**：priority + condition_domain 字段（Sprint22 不评估）

@@ -257,3 +257,23 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 - verify.py: 8/8 ✅
 - odoo_check: PASS ✅
 - test_runner: 0 failures, 0 errors of 113 tests ✅
+
+# Sprint22 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT22-001
+# 基线: context v1.0.32  |  manifest: wd_tlms v1.0.53
+
+## 变更摘要
+- models/transport_dashboard.py: AbstractModel + TransientModel
+- models/transport_exception.py: timeout_hours
+- views/transport_dashboard_views.xml: Dashboard 3 卡片
+- views/transport_report_views.xml: 时效/异常 pivot+graph
+- transport_order: t1_deadline
+- transport_cargo_line: priority + condition_domain
+- tlmp_menus.xml: Dashboard + Reports 菜单
+- data: 8 Cargo Rule presets
+- tests: test_sprint22_dashboard.py (7 cases)
+- context_version: 1.0.31 → 1.0.32
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅
