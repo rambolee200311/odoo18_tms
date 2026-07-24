@@ -342,3 +342,26 @@
 ### 验收
 - verify.py 8/8: ✅ PASS
 - odoo_check: ✅ PASS
+
+## Sprint18: MRN/T1 单据号记录 + 产品 ADR 属性扩展（松耦合）
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT18-001
+**状态**: 已完成
+
+### 迭代目标
+运输跟踪 P0 合规模块松耦合实现：MRN/T1 仅记录单据号，ADR 扩展产品属性。
+
+### 完成成果
+- transport_order 新增 5 个简单字段：mrn_code / t1_ref / dg_file_ref / adr_quantity / adr_weight
+- product_adr.py: product.product ADR 属性扩展（un_number / class / packing_group / is_dangerous_good）
+- product_adr_views.xml: 产品表单 ADR 标签页（仅 manager 组可见）
+
+### 关键决策
+1. MRN/T1 不建档不绑定，松耦合记录单据号
+2. ADR 不建独立模型，扩展产品属性
+3. 存量字段全部保留不动
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS

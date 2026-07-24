@@ -210,3 +210,18 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 ## 验证
 - verify.py: 8/8 ✅
 - odoo_check: PASS ✅
+
+# Sprint18 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT18-001
+# 基线: context v1.0.28  |  manifest: wd_tlms v1.0.50
+
+## 变更摘要
+- models/product_adr.py: product.product ADR 属性扩展（松耦合）
+- models/transport_order.py: +5 字段（mrn_code/t1_ref/dg_file_ref/adr_quantity/adr_weight）
+- views/product_adr_views.xml: 产品 ADR 标签页
+- intent: intent_sprint18_compliance.yaml（修正为松耦合方案）
+- context_version: 1.0.27 → 1.0.28
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅

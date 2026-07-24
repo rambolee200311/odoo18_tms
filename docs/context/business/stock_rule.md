@@ -226,3 +226,15 @@ transport_request.scene_id
 - request 阶段选定场景后，order 创建时自动继承
 - 商务报价和计划驱动两类均支持自动继承
 - 缺失 scene_id 的存量订单不执行时序约束（跳过校验）
+
+## 7. MRN/T1/ADR 松耦合规则（Sprint18 新增）
+
+### 7.1 MRN/T1 单据号记录
+- transport_order 仅记录 `mrn_code` 和 `t1_ref` 两个字段
+- 完整的 MRN 海关申报 / T1 转运单据管理由独立保税模块负责
+- CUSTOMS_CHECK 事件不绑定 MRN/T1（松耦合设计）
+
+### 7.2 ADR 产品属性化
+- `product.product` 扩展 ADR 属性：un_number / class / packing_group / is_dangerous_good
+- transport_order 记录 ADR 数量/重量/文件编号
+- 不建独立 ADR 明细模型，产品属性 + order 字段满足合规要求

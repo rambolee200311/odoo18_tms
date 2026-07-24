@@ -511,3 +511,21 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 2. **时序约束配置化**: `_check_sequential_order` 不再依赖硬编码 `BASE_EVENT_ORDER`，改读 `tlmp.transport.scene.event` 路径记录
 3. **scene_id 全链路贯穿**: request → plan/quote → order，确保 Event 时序约束在正确的场景路径下执行
 4. **存量兼容**: 新增 Many2one 字段，旧 Selection 值通过预设数据的 code 匹配自动映射
+
+---
+## Sprint18 — MRN/T1 单据号记录 + 产品 ADR 属性扩展（松耦合）
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT18-001
+**基线**: context_version 1.0.27 → 1.0.28
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 模型扩展 | `models/product_adr.py` | product.product ADR 属性（un/class/packing） |
+| 字段新增 | `models/transport_order.py` | mrn_code / t1_ref / dg_file_ref / adr_quantity / adr_weight |
+| 视图 | `views/product_adr_views.xml` | 产品表单 ADR 标签页 |
+
+### 关键架构决策
+1. **松耦合原则**: MRN/T1 仅记录单据号，保税另有独立模块管理，不建模型不绑定事件
+2. **ADR 产品属性化**: ADR 信息扩展 product.product，order 记录数量/重量/文件编号
+3. **不破坏存量**: 已有 customs_transit_ref / customs_declaration_ref / adr_* 字段保持不动
