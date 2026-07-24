@@ -3,7 +3,7 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.34
+context_version: 1.0.35
 update_time: 2026-07-24
 adapt_sprint: Sprint23-DGD
 update_author: AI-Engineering-Team
@@ -258,6 +258,15 @@ valid_rule:
       - 20 个自动化测试用例（UN/DGD/生命周期/校验/防重复/快照隔离/作废重生成）
     update_type: 新功能开发
     effect_scope: compliance domain - DGD 模块
+
+
+  1.0.35:
+    update_content: |
+      Bug Fix: transport_event @depends('event_type') → event_type_id
+      Sprint16 字段改名残留：@depends/方法名/@constrains 共 3 处 event_type 引用未同步迁移
+      - 修复后级联解决 ir.model.access.csv model_tlmp_transport_tracking 无法解析问题
+    update_type: Bug修复
+    effect_scope: transport_tracking 模块加载修复
 
 bind_asset_folder:
   - architecture

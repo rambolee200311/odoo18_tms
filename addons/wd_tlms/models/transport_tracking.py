@@ -43,13 +43,13 @@ class TransportEvent(models.Model):
 
     display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
 
-    @api.depends('event_type', 'event_state', 'sequence')
+    @api.depends('event_type_id', 'event_state', 'sequence')
     def _compute_display_name(self):
         for r in self:
             r.display_name = '%s - %s' % (r.get_event_type_id_label(), r.get_event_state_label())
 
-    def get_event_type_label(self):
-        return dict(self._fields['event_type'].selection).get(self.event_type, self.event_type)
+    def get_event_type_id_label(self):
+        return dict(self._fields['event_type_id'].selection).get(self.event_type_id, self.event_type_id)
 
     def get_event_state_label(self):
         return dict(self._fields['event_state'].selection).get(self.event_state, self.event_state)
@@ -75,7 +75,6 @@ class TransportEvent(models.Model):
         ], order='sequence, id')
         return list(paths.mapped('event_type_id.id'))
 
-    @api.constrains('event_type', 'sequence', 'event_state')
     @api.constrains('event_type_id', 'sequence', 'event_state')
     def _check_sequential_order(self):
         for r in self:

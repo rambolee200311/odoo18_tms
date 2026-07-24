@@ -107,3 +107,21 @@ development_environment:
     odoo_check.py、odoo-bin -u 等运行时操作必须使用 venv/bin/python3，
     否则会因找不到 pytz、babel 等依赖导致 ModuleNotFoundError。
     系统全局 Python（/usr/bin/python3 或 /Library/...）不含项目依赖。
+  database:
+    host: "127.0.0.1"
+    port: 5555
+    user: "odoo"
+    password: "odoo"
+    name: "odoo18e_tms"
+    pg_install: "/Library/PostgreSQL/16/"
+    psql_bin: "/Library/PostgreSQL/16/bin/psql"
+    pg_ctl_bin: "/Library/PostgreSQL/16/bin/pg_ctl"
+    data_dir: "/Library/PostgreSQL/16/data"
+    start_cmd: "/Library/PostgreSQL/16/bin/pg_ctl start -D /Library/PostgreSQL/16/data -l /Library/PostgreSQL/16/data/pg_log.log"
+    note: |
+      PostgreSQL 16 本地安装，数据目录权限归 postgres 用户。
+      odoo.conf 配置端口 5555（非标准端口）。
+      odoo_check.py / test_runner.py 需要数据库运行。
+      如果数据库未启动，运行 start_cmd（需 postgres 用户权限）。
+      启动前先通过 lsof -i :5555 确认端口未被占用。
+      context_loader 在 pre-check 阶段应提示数据库状态。

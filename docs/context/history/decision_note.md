@@ -629,3 +629,22 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 5. **一单一生效约束**：同一 order 同一时间 active_dgd_count <= 1
 6. **Sprint23-A/B 拆分**：A 期模型+生命周期+视图+测试，B 期 PDF 模板
 7. **Sprint23-B 暂缓**：ADR PDF 生成模板（report_dgd.xml）未纳入本轮
+
+## Bug Fix: transport_event @depends('event_type') → event_type_id
+**时间**: 2026-07-24 (Sprint23 附带修复)
+**关联契约**: INT-TMS-SPRINT23-001
+
+### 问题
+`transport_tracking.py` 中 TransportEvent 模型的 `@api.depends('event_type')` 引用了不存在的字段名，导致运行时报：
+> ValueError: Wrong @depends on '_compute_display_name'. Dependency field 'event_type' not found in model tlmp.transport.event.
+
+### 根因
+Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id`（Many2one），但 `@depends`、方法名、`@constrains` 中留下了 3 处残留引用。
+
+### 修复项
+1. L46: `@api.depends('event_type', ...)` → `@api.depends('event_type_id', ...)`
+2. L51-52: 方法名 `get_event_type_label` → `get_event_type_id_label` + 内部 `self._fields['event_type']` → `self._fields['event_type_id']` + `self.event_type` → `self.event_type_id`
+3. L78: 删除残留的 `@api.constrains('event_type', ...)` 重复行（L79 已有正确版本）
+
+### 连带发现
+`ir.model.access.csv` 中 `model_tlmp_transport_tracking` 外部 ID 因该模型加载失败而无法解析，级联导致 3 条权限记录失败。
