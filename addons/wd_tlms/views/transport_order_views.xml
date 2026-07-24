@@ -142,6 +142,47 @@
                                  <field name="customs_declaration_ref"/>
                              </group>
                          </page>
+                         <page string="Tracking" name="tracking_page">
+                             <group string="Transport Events">
+                                 <field name="tracking_state" widget="badge"
+                                        decoration-success="tracking_state == 'completed'"
+                                        decoration-info="tracking_state == 'in_transit'"
+                                        decoration-warning="tracking_state == 'pending_pickup'"
+                                        decoration-danger="tracking_state == 'exception_hold'"/>
+                             </group>
+                             <field name="transport_event_ids" nolabel="1" colspan="2">
+                                 <list>
+                                     <field name="sequence" widget="handle"/>
+                                     <field name="event_type"/>
+                                     <field name="event_state" widget="badge"/>
+                                     <field name="location"/>
+                                     <field name="planned_time"/>
+                                     <field name="estimated_time" optional="hide"/>
+                                     <field name="actual_time"/>
+                                     <field name="skip_cancel_reason" optional="hide"/>
+                                 </list>
+                             </field>
+                             <separator string="Exceptions"/>
+                             <field name="exception_ids" nolabel="1" colspan="2">
+                                 <list>
+                                     <field name="exception_type"/>
+                                     <field name="exception_state" widget="badge"/>
+                                     <field name="description"/>
+                                     <field name="handler"/>
+                                     <field name="closed_time"/>
+                                 </list>
+                             </field>
+                             <separator string="Extra Charges"/>
+                             <field name="extra_charge_ids" nolabel="1" colspan="2">
+                                 <list>
+                                     <field name="charge_type"/>
+                                     <field name="amount" sum="Total"/>
+                                     <field name="currency_id"/>
+                                     <field name="party_type"/>
+                                     <field name="reason"/>
+                                 </list>
+                             </field>
+                         </page>
                          <page string="Notes" name="notes_page">
                              <field name="notes"/>
                          </page>
