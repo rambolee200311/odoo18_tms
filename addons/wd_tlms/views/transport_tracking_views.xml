@@ -9,7 +9,7 @@
         <field name="arch" type="xml">
             <list string="Transport Events" multi_edit="1" editable="bottom">
                 <field name="sequence" widget="handle"/>
-                <field name="event_type"/>
+                <field name="event_type_id"/>
                 <field name="event_state" widget="badge"
                        decoration-success="event_state == 'completed'"
                        decoration-info="event_state == 'in_progress'"
@@ -48,7 +48,7 @@
                     <group>
                         <group>
                             <field name="order_id" options="{'no_create': True}"/>
-                            <field name="event_type"/>
+                            <field name="event_type_id"/>
                             <field name="sequence"/>
                         </group>
                         <group>
@@ -81,12 +81,12 @@
         <field name="arch" type="xml">
             <search>
                 <field name="order_id"/>
-                <field name="event_type"/>
+                <field name="event_type_id"/>
                 <field name="event_state"/>
                 <filter string="Pending" name="pend" domain="[('event_state','=','pending')]"/>
                 <filter string="Completed" name="done" domain="[('event_state','=','completed')]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Type" name="group_type" context="{'group_by':'event_type'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by':'event_type_id'}"/>
                     <filter string="Status" name="group_state" context="{'group_by':'event_state'}"/>
                 </group>
             </search>

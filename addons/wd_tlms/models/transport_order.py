@@ -18,16 +18,7 @@ class TransportOrder(models.Model):
         ('warehouse_transfer', 'Warehouse Transfer'),
         ('reverse_logistics', 'Reverse Logistics'),
     ], string='Transport Type', required=True)
-    transport_scene = fields.Selection([
-        ('terminal_to_warehouse', 'Terminal → Warehouse'),
-        ('terminal_to_customer', 'Terminal → Customer'),
-        ('warehouse_to_customer', 'Warehouse → Customer'),
-        ('customer_to_customer', 'Customer A → Customer B'),
-        ('warehouse_transfer', 'Warehouse ↔ Warehouse'),
-        ('customer_to_warehouse', 'Customer → Warehouse (Return)'),
-        ('container_swap', 'Container Swap'),
-        ('empty_depot', 'Empty Depo ↔ Warehouse'),
-    ], string='Transport Scene')
+    scene_id = fields.Many2one('tlmp.transport.scene', string='Transport Scene')
     fleet_operation_mode = fields.Selection([
         ('own_fleet', 'Own Fleet'),
         ('contracted', 'Contracted'),

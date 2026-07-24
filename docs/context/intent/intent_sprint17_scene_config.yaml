@@ -1,0 +1,148 @@
+# ==============================================================
+# 【Sprint17 正式意图契约】
+# 功能：运输场景 / 事件类型 / 场景路径 可配置管理
+# 前置基线：Sprint16 运输跟踪核心基座 → Sprint17 配置化改造
+# 基线版本：context_version: 1.0.25 → 1.0.26
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT17-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: 运输场景/事件类型/场景路径 可配置档案管理
+target_scope: 将 transport_scene、event_type 从硬编码 Selection 改造为独立档案模型，新增场景-事件路径映射，后台可配置
+
+accept_criteria:
+  - "tlmp.transport.scene 档案模型完整（8 场景预设 + CRUD 权限）"
+  - "tlmp.transport.event.type 档案模型完整（8 事件预设 + CRUD 权限）"
+  - "tlmp.transport.scene.event 路径映射完整（场景×事件多对多 + 顺序/必填/POD 标记）"
+  - "transport_order.transport_scene 从 Selection 改造为 Many2one → tlmp.transport.scene"
+  - "transport_event.event_type 从 Selection 改造为 Many2one → tlmp.transport.event.type"
+  - "TransportEvent 时序约束从硬编码 BASE_EVENT_ORDER 改为读取 scene.event 路径配置"
+  - "历史数据兼容：存量订单的 transport_scene / event_type 值不丢失"
+  - "Configuration 菜单下可管理全部 3 个档案"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: architecture_upgrade
+  origin_team: 调度/运维
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+bind_context_version: "1.0.26"
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_order
+    - transport_event
+    - transport_scene
+  architecture:
+    - transport_tracking model
+  governance:
+    - forbidden_change
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - 3 个档案模型 + 视图/菜单/权限
+  - transport_scene / event_type 字段迁移脚本（Selection→Many2one）
+  - 场景-事件路径预设数据（8 场景 × 对应事件）
+  - 时序约束重构为 config 驱动
+  - 自动化测试用例
+  - 完整 Intent 执行记录文件夹
+
+# ==============================================================
+# Goal
+# ==============================================================
+
+goal: >
+  将 Sprint16 硬编码的 transport_scene（8 枚举）和 event_type（8 枚举）改造为独立档案模型，
+  新增场景-事件路径映射模型，实现后台可配置管理，无需改代码即可新增/修改运输场景和事件类型。
+
+  1. 新建 tlmp.transport.scene 档案模型
+     - name / code / scene_type (plan_driven/commercial/mixed)
+     - creation_method (manual|quote_auto)
+     - active / description
+     - 预设 8 条场景数据（通过 data xml 灌入）
+
+  2. 新建 tlmp.transport.event.type 档案模型
+     - name / code / is_base_event
+     - sequence_order（基础事件排序用）
+     - active / description
+     - 预设 8 条事件类型数据
+
+  3. 新建 tlmp.transport.scene.event 路径映射模型
+     - scene_id → tlmp.transport.scene
+     - event_type_id → tlmp.transport.event.type
+     - sequence（在该场景中排序）
+     - is_mandatory / pod_required
+     - active
+
+  4. 字段重构
+     - transport_order.transport_scene Selection → Many2one → tlmp.transport.scene
+     - transport_event.event_type Selection → Many2one → tlmp.transport.event.type
+     - TransportEvent.BASE_EVENT_ORDER 硬编码 → 从 tlmp.transport.scene.event 读取
+
+  5. 数据兼容
+     - 预设数据确保存量 orders 的 transport_scene 值正确映射
+     - 算法: 存量值的 code 匹配场景档案的 code
+
+  6. 视图与菜单
+     - 3 个档案模型的 tree/form/search 视图
+     - Configuration 菜单下新增 3 个子菜单
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_tracking.py（重构 event_type + BASE_EVENT_ORDER）"
+    - "addons/wd_tlms/models/transport_order.py（重构 transport_scene 字段）"
+    - "addons/wd_tlms/models/__init__.py（增量引入新模型）"
+    - "addons/wd_tlms/data/transport_scene_data.xml（新增预设数据）"
+    - "addons/wd_tlms/views/transport_scene_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_order_views.xml（更新 scene 字段引用）"
+    - "addons/wd_tlms/views/transport_tracking_views.xml（更新 event_type 字段引用）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（新增 3 个配置菜单）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增权限）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/tests/test_transport_scene.py（新增）"
+    - "docs/context/architecture/module_map.md"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.25→1.0.26）"
+    - "docs/context/validation/test_exec_records.yaml"
+
+  forbid:
+    - 禁止修改非 transport_scene / event_type / scene_event 范围的文件
+    - 禁止修改 CMR / POD / inquiry / quote / pickup.plan 等非本迭代模块
+    - 禁止修改 transport_order 非 transport_scene 字段以外的任何字段
+    - 禁止修改 transport_event 的 event_state / 时序约束以外的字段
+    - 禁止删除或修改已有 ir.sequence 等基础设施
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+
+limit_constraints:
+  存量数据兼容：已存在的 transport_scene 和 event_type 枚举值必须在迁移后正确指向新档案
+  预设数据必须包含全部 8 场景和 8 事件，确保新老数据无缝衔接
+  场景-事件路径预设决定时序，删除路径配置不影响已完成的运输订单
+
+risk_precheck:
+  - "transport_scene 字段类型变更（Selection→Many2one）对已有测试用例的影响"
+  - "event_type 字段类型变更（Selection→Many2one）对已有测试用例的影响"
+  - "BASE_EVENT_ORDER 硬编码移除后时序约束逻辑的正确性"
+  - "存量数据的迁移兼容转换"

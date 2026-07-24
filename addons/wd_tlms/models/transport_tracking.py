@@ -15,16 +15,8 @@ class TransportEvent(models.Model):
     order_id = fields.Many2one('tlmp.transport.order', string='Transport Order',
                                required=True, index=True, ondelete='cascade')
     sequence = fields.Integer(string='Sequence', default=10)
-    event_type = fields.Selection([
-        ('PICKUP_ARRIVED', 'Pickup Arrived'),
-        ('LOADING_COMPLETED', 'Loading Completed'),
-        ('DEPARTED', 'Departed'),
-        ('DELIVERY_ARRIVED', 'Delivery Arrived'),
-        ('DELIVERY_COMPLETED', 'Delivery Completed'),
-        ('EMPTY_RETURN', 'Empty Return'),
-        ('CUSTOMS_CHECK', 'Customs Check'),
-        ('OTHER', 'Other'),
-    ], string='Event Type', required=True)
+    event_type_id = fields.Many2one(
+        'tlmp.transport.event.type', string='Event Type', required=True)
     event_state = fields.Selection([
         ('pending', 'Pending'),
         ('in_progress', 'In Progress'),
@@ -54,7 +46,7 @@ class TransportEvent(models.Model):
     @api.depends('event_type', 'event_state', 'sequence')
     def _compute_display_name(self):
         for r in self:
-            r.display_name = '%s - %s' % (r.get_event_type_label(), r.get_event_state_label())
+            r.display_name = '%s - %s' % (r.get_event_type_id_label(), r.get_event_state_label())
 
     def get_event_type_label(self):
         return dict(self._fields['event_type'].selection).get(self.event_type, self.event_type)
@@ -72,43 +64,50 @@ class TransportEvent(models.Model):
                 ) % r.get_event_state_label())
 
     # ── Constraint: base event sequential ordering ──
-    BASE_EVENT_ORDER = [
-        'PICKUP_ARRIVED',
-        'LOADING_COMPLETED',
-        'DEPARTED',
-        'DELIVERY_ARRIVED',
-        'DELIVERY_COMPLETED',
-        'EMPTY_RETURN',
-        'CUSTOMS_CHECK',
-    ]
-    BASE_EVENT_RANK = {e: i for i, e in enumerate(BASE_EVENT_ORDER)}
+    def _get_scene_event_type_ids(self):
+        """Return ordered event type IDs for this order's scene."""
+        self.ensure_one()
+        if not self.order_id or not self.order_id.scene_id:
+            return []
+        paths = self.env['tlmp.transport.scene.event'].search([
+            ('scene_id', '=', self.order_id.scene_id.id),
+            ('active', '=', True),
+        ], order='sequence, id')
+        return list(paths.mapped('event_type_id.id'))
 
     @api.constrains('event_type', 'sequence', 'event_state')
+    @api.constrains('event_type_id', 'sequence', 'event_state')
     def _check_sequential_order(self):
         for r in self:
-            if r.event_type == 'OTHER' or r.event_state == 'cancelled':
+            if not r.event_type_id or r.event_state == 'cancelled':
                 continue
-            rank = self.BASE_EVENT_RANK.get(r.event_type, -1)
-            if rank < 0:
+            if not r.event_type_id.is_base_event:
                 continue
-            # Check no later-ranked event exists for the same order
+            event_order = r._get_scene_event_type_ids()
+            if not event_order:
+                continue
+            try:
+                pos = event_order.index(r.event_type_id.id)
+            except ValueError:
+                return
+            later_ids = event_order[pos + 1:]
+            if not later_ids:
+                return
             later_events = self.search([
                 ('order_id', '=', r.order_id.id),
-                ('event_type', 'in', self.BASE_EVENT_ORDER[rank + 1:]),
+                ('event_type_id', 'in', later_ids),
                 ('id', '!=', r.id),
                 ('event_state', 'not in', ('cancelled',)),
             ])
             if later_events:
                 raise ValidationError(_(
-                    'Cannot record "%s" after "%s" has already occurred. '
-                    'Transport events must follow sequential order.'
-                ) % (r.get_event_type_label(), later_events[0].get_event_type_label()))
+                    'Cannot record event after "%s" has already occurred.'
+                ) % later_events[0].event_type_id.name)
 
-    # ── Constraint: POD attachment required for DELIVERY_COMPLETED ──
-    @api.constrains('event_type', 'event_state', 'attachment_ids')
+    @api.constrains('event_type_id', 'event_state', 'attachment_ids')
     def _check_pod_attachment(self):
         for r in self:
-            if r.event_type == 'DELIVERY_COMPLETED' and r.event_state == 'completed':
+            if r.event_type_id and r.event_type_id.code == 'DELIVERY_COMPLETED' and r.event_state == 'completed':
                 if not r.attachment_ids:
                     raise ValidationError(_(
                         'POD attachment is required to complete the Delivery Completed event.'
