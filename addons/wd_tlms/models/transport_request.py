@@ -50,7 +50,8 @@ class TransportRequest(models.Model):
    ], string='Cargo Type', default='container', required=True)
 
    # ---- Cargo fields (pallet goes to pickup.plan, container mgmt at pickup.plan level) ----
-   pallet_count = fields.Integer(string='Pallets')
+   cargo_line_ids = fields.One2many("tlmp.transport.cargo.line", "request_id", string="Cargo Lines")
+   pallet_count = fields.Integer(string="Pallets")
    package_count = fields.Integer(string='Packages')
    cargo_weight = fields.Float(string='Weight (kg)', digits='Stock Weight')
    cargo_volume = fields.Float(string='Volume (m3)', digits='Volume')

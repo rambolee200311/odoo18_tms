@@ -68,6 +68,7 @@ class TransportOrder(models.Model):
     cargo_weight = fields.Float(string='Weight (kg)')
     cargo_volume = fields.Float(string='Volume (m3)')
     pallet_count = fields.Integer(string='Pallets')
+    cargo_line_ids = fields.One2many('tlmp.transport.cargo.line', 'order_id', string='Cargo Lines')
     package_count = fields.Integer(string='Packages')
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
     container_no_set = fields.Char(string='Container No. Set')

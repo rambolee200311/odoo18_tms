@@ -26,3 +26,4 @@ from . import cmr_coordinate
 from . import transport_tracking
 from . import transport_scene
 from . import product_adr
+from . import transport_cargo_line

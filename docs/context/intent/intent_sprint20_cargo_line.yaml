@@ -1,0 +1,181 @@
+# ==============================================================
+# 【Sprint20 正式意图契约 v2】
+# 功能：transport_request/order 运输货物明细 + 场景规则 + CMR 联动
+# 前置基线：Sprint19 附件分类 → Sprint20 运输货物事实模型
+# 基线版本：context_version: 1.0.29 → 1.0.30
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT20-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: transport_request/order 运输货物明细 + 场景规则 + CMR 联动
+
+target_scope: >
+  为 transport_request 和 transport_order 新增运输货物明细子表（Cargo Line），
+  Cargo Line 为运输执行快照而非库存事实，
+  通过 tlmp.transport.scene.cargo.rule 配置模型决定场景的货物来源策略，
+  支持非库存货物手工录入及业务单据引用两种来源模式，
+  CMR 生成时自动读取运输货物快照并保持数据隔离。
+
+accept_criteria:
+  - "tlmp.transport.cargo.line 运输货物明细模型完整（description/commodity/qty/packages/weight/volume/container/source）"
+  - "tlmp.transport.scene.cargo.rule 配置模型完整（scene_id/allowed_source/container_required/cargo_required）"
+  - "Cargo Line 不强制关联 product.product，支持无库存产品运输场景"
+  - "Cargo Line 的 request_id 与 order_id 互斥（请求阶段→request，执行阶段→order）"
+  - "request→order 创建时复制 cargo line 为独立记录，后续修改互不影响"
+  - "Cargo Line 支持三种来源模式：manual / outbound_order / system"
+  - "transport_order 表单可配置场景货物规则（Cargo Rule page）"
+  - "场景校验：empty_depot 场景禁止输入 cargo line，terminal 场景强制 container_no"
+  - "CMR action_create_from_order 自动拉取 order.cargo_line_ids → cmr.line_ids（含 source_cargo_line_id 追溯）"
+  - "CMR 重复创建不产生重复 cargo line（先查后建）"
+  - "CMR line 修改不反向修改 cargo_line"
+  - "container_no 仅用于运输文件快照，不替代 container_tracking 主数据"
+  - "存量订单兼容：已有 cargo_* 字段保留，新订单优先使用 cargo_line_ids"
+  - "verify.py + odoo_check.py 双检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/商务
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+bind_context_version: "1.0.30"
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+
+affected_assets:
+  business:
+    - transport_request (cargo_lines)
+    - transport_order (cargo_lines)
+    - transport_cargo_line
+    - transport_scene (cargo_rule)
+    - cmr_line_sync
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - tlmp.transport.cargo.line 模型代码
+  - tlmp.transport.scene.cargo.rule 配置模型代码 + 预设数据
+  - transport_request/order 关联字段 + 复制逻辑
+  - view 更新（Cargo Lines tab + Cargo Rule config）
+  - CMR action_create_from_order + source_cargo_line_id 追溯 + 防重复
+  - 场景校验逻辑（non-interrupting hint + blocking error）
+  - 自动化测试（3 文件：cargo_line / scene_rule / cmr_sync）
+  - 完整 Intent 执行记录文件夹
+
+limit_constraints: |
+  Cargo Line 是运输执行快照（snapshot），不是库存事实——不产生库存移动
+  container_no 仅用于运输文件打印，不替代 container_tracking 主数据
+  scene cargo rule 配置变化影响新订单，不影响已在途订单
+  outbound_ref_id 不绑定具体模型（按现有业务单据确认）
+  CMR 与 Cargo Line 为复制关系，修改 CMR 不反向修改 Cargo Line
+
+risk_precheck:
+  - "非库存运输场景无法关联 product.product"
+  - "cargo_line 与 container_tracking 的职责边界（文件快照 vs 主数据）"
+  - "CMR 快照与运输货物数据一致性由 source_cargo_line_id 追溯保证"
+  - "scene cargo rule 配置变化影响新订单"
+  - "request→order 复制隔离的正确性"
+
+# ==============================================================
+# Goal
+# ==============================================================
+
+goal: >
+  新增运输货物明细子模型 + 场景货物规则配置，贯穿 request → order → CMR 全链路。
+
+  1. 新建 tlmp.transport.cargo.line 模型（运输执行快照）
+     - 归属: request_id XOR order_id（互斥约束，复制关系不共享记录）
+     - 货物描述: description (required) / commodity
+     - 数量: qty / uom
+     - 包装: packages (Integer)
+     - 重量体积: gross_weight / net_weight / volume_m3
+     - 柜参考: container_no（仅运输文件快照，不替代 container_tracking）
+     - 来源: source_type（manual / outbound_order / system）
+     - 业务引用: outbound_ref_id（Many2one，根据现有 Outbound 模型确认，只读不修改）
+     - 危险品标记: has_dangerous_goods（Boolean，预留 ADR 联动点位）
+
+  2. 新建 tlmp.transport.scene.cargo.rule 配置模型（避免代码级 if/else）
+     - scene_id (Many2one → tlmp.transport.scene)
+     - allowed_source_type (manual / outbound_order / both / none)
+     - container_required (Boolean)
+     - cargo_required (Boolean)
+     - 预设 8 条场景规则数据（data xml）
+
+  3. transport_request 扩展
+     - cargo_line_ids One2many → tlmp.transport.cargo.line（request_id 关联）
+     - request 创建 order 时复制 cargo lines（新记录，共享取消）
+
+  4. transport_order 扩展
+     - cargo_line_ids One2many → tlmp.transport.cargo.line（order_id 关联）
+     - 场景规则 UI：根据 scene_id.cargo_rule 控制是否可以输入/需要柜号
+     - 已有 cargo_* 字段保留兼容，禁止新增逻辑依赖
+
+  5. CMR 联动
+     - action_create_from_order 复制 order.cargo_line_ids → cmr.line_ids
+     - cmr.line 新增 source_cargo_line_id（形成 CMR → Cargo Snapshot → Order 链）
+     - 防重复：同 order 的 cargo_line_id 已存在于目标 CMR 时跳过
+     - CMR line 修改不反向影响 cargo_line
+
+  6. 场景规则映射（通过 cargo.rule 配置，非代码级 switch）
+     | scene.code | allowed_source | container_required | cargo_required |
+     | terminal_to_warehouse | manual | true | true |
+     | terminal_to_customer | manual | true | true |
+     | warehouse_to_customer | outbound_order + manual | false | true |
+     | customer_to_customer | manual | false | true |
+     | warehouse_transfer | outbound_order + manual | false | true |
+     | customer_to_warehouse | manual | false | true |
+     | container_swap | manual | true | true |
+     | empty_depot | none | true | false |
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_cargo_line.py（新增：cargo.line + scene.cargo.rule）"
+    - "addons/wd_tlms/models/transport_request.py（增量：cargo_line_ids）"
+    - "addons/wd_tlms/models/transport_order.py（增量：cargo_line_ids + 场景规则 UI）"
+    - "addons/wd_tlms/models/cmr.py（增量：action_create_from_order + source_cargo_line_id + 防重复）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/data/transport_scene_cargo_rule.xml（新增预设数据）"
+    - "addons/wd_tlms/views/transport_request_views.xml（更新：Cargo Lines tab）"
+    - "addons/wd_tlms/views/transport_order_views.xml（更新：Cargo Lines tab）"
+    - "addons/wd_tlms/views/transport_scene_views.xml（更新：Cargo Rule notebook page）"
+    - "addons/wd_tlms/views/cmr_views.xml（更新：source_cargo_line_id）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增 cargo.line / cargo.rule 权限）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/tests/test_transport_cargo_line.py（新增）"
+    - "addons/wd_tlms/tests/test_transport_scene_rule.py（新增）"
+    - "addons/wd_tlms/tests/test_cmr_cargo_sync.py（新增）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.29→1.0.30）"
+
+  forbid:
+    - 禁止自动创建库存产品 product.product
+    - 禁止根据 cargo line 反向生成库存移动
+    - 禁止修改 stock.move / stock.picking 逻辑
+    - 禁止修改 container_tracking 主数据逻辑
+    - 禁止改变 outbound.order 业务流程
+    - 禁止强制引入 product.product 作为 cargo_line 必填字段
+    - 禁止将 cargo_line 设计为库存移动模型
+    - 禁止修改 transport_event / exception / extra_charge 等跟踪模型
+    - 禁止修改 transport_scene / event.type 等已有配置化档案
+    - 禁止在 cargo_line 校验中使用代码级别的 scene.code if/else（使用 cargo.rule 配置）
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止删除 transport_order 已有的 cargo_* 平铺字段
+    - 禁止本期落地排期日历/承运商门户/GPS/AI/结算等 P1/P2 功能

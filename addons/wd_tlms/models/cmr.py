@@ -157,8 +157,6 @@ class CMR(models.Model):
     def action_create_from_order(self):
         """Open a CMR form pre-filled from the selected transport order."""
         action = self.env['ir.actions.act_window']._for_xml_id('wd_tlms.action_tlmp_cmr')
-        # The caller should pass context with active_id set to transport.order
-        # We'll handle this from the transport order's smart button
         ctx = dict(self.env.context or {})
         order_id = ctx.get('active_id') or ctx.get('default_order_id')
         if not order_id:
@@ -168,7 +166,18 @@ class CMR(models.Model):
         if not order.exists():
             raise UserError(_('Transport order not found.'))
 
-        # Build display name for places
+        # Sprint20: check for existing CMR to prevent duplicate cargo sync
+        existing_cmr = self.search([('order_id', '=', order.id)], limit=1)
+        if existing_cmr and not ctx.get('force_new'):
+            cargo_exists = self.env['tlmp.cmr.line'].search([
+                ('cmr_id', '=', existing_cmr.id),
+            ], limit=1)
+            if cargo_exists:
+                raise UserError(_(
+                    'CMR already exists for this order with cargo lines. '
+                    'Use "force_new" context to override.'
+                ))
+
         pickup_addr = order.pickup_location_id
         delivery_addr = order.delivery_location_id
         place_taking = pickup_addr.display_name if pickup_addr else ''
@@ -186,6 +195,42 @@ class CMR(models.Model):
         }
         action['context'] = dict(ctx, **defaults)
         return action
+
+    @api.model
+    def create_cmr_with_cargo(self, order):
+        """Create CMR and sync cargo lines from transport order.
+        Returns the created CMR record."""
+        existing = self.search([('order_id', '=', order.id)], limit=1)
+        if existing:
+            return existing
+        CMR = self.create({
+            'order_id': order.id,
+            'cmr_number': order.name or self.env['ir.sequence'].next_by_code('tlmp.cmr.seq'),
+            'sender_id': order.pickup_location_id.id or order.partner_id.id,
+            'consignee_id': order.delivery_location_id.id or False,
+            'carrier_id': order.carrier_id.id or False,
+            'copy_number': '1',
+            'place_of_taking_over': order.pickup_location_id.display_name or '',
+            'place_of_delivery': order.delivery_location_id.display_name or '',
+        })
+        # Copy cargo lines → cmr lines
+        CMRL = self.env['tlmp.cmr.line']
+        for cl in order.cargo_line_ids:
+            existing_line = CMRL.search([
+                ('cmr_id', '=', CMR.id),
+                ('source_cargo_line_id', '=', cl.id),
+            ], limit=1)
+            if existing_line:
+                continue
+            CMRL.create({
+                'cmr_id': CMR.id,
+                'source_cargo_line_id': cl.id,
+                'commodity': cl.description or cl.commodity or '',
+                'qty': cl.qty or 0,
+                'gross_weight': cl.gross_weight or 0,
+                'gross_weight_per_unit': (cl.gross_weight / cl.qty) if cl.qty and cl.gross_weight else 0,
+            })
+        return CMR
     # ── PDF overlay helpers ──────────────────────────────
     def _get_cmr_field_values(self):
         """Return dict mapping field_identifier → display value for PDF overlay."""
