@@ -1,0 +1,157 @@
+# ==============================================================
+# 【Sprint18 正式意图契约】
+# 功能：MRN/T1 保税合规 + ADR 危险品合规 + 归档附件规范
+# 前置基线：Sprint17 场景配置化 → Sprint18 P0 合规模块收尾
+# 基线版本：context_version: 1.0.26 → 1.0.27
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT18-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: MRN/T1 保税合规 + ADR 危险品合规 + 归档附件规范
+target_scope: 完成运输跟踪 P0 剩余合规模块，包括 MRN 海关申报、T1 转运单据、ADR 危险品全字段、归档附件分类
+
+accept_criteria:
+  - "tlmp.transport.mrn MRN 主申报模型完整（含有效期监控）"
+  - "tlmp.transport.t1 T1 转运多行子表完整（绑定柜号/截止时限/核销）"
+  - "transport_order 关联 MRN/T1 字段正确（跨境场景自动展示，本地场景隐藏）"
+  - "T1 超截止时限自动生成逾期异常"
+  - "tlmp.transport.adr ADR 危险品子表完整（UN编号/分类/包装/资质校验）"
+  - "ADR 勾选后子表字段必填 + 司机资质校验拦截"
+  - "归档附件统一分类（CMR/POD/MRN/T1/ADR/通用独立分类）"
+  - "CUSTOMS_CHECK 海关查验事件可绑定 MRN/T1 单号"
+  - "CMR 打印模板自动读取 MRN/T1/ADR 信息"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/海关合规
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+bind_context_version: "1.0.27"
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_order (MRN/T1/ADR 字段)
+    - transport_event (CUSTOMS_CHECK 绑定)
+    - transport_tracking (异常关联 T1)
+    - report_cmr (套打模板联动)
+  architecture:
+    - transport_order
+    - transport_event
+    - cmr_report
+  governance:
+    - compliance_rule
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - MRN/T1/ADR 3 个模型完整代码 + 视图/菜单/权限/预设数据
+  - transport_order 关联字段扩展
+  - CUSTOMS_CHECK 事件绑定 MRN/T1
+  - CMR 打印模板联动（保税字段+ADR 信息）
+  - 归档附件分类视图
+  - 自动化测试用例
+  - 完整 Intent 执行记录文件夹
+
+limit_constraints: |
+  MRN 和 T1 仅跨境保税场景展示，荷兰境内完税订单隐藏
+  ADR 子表勾选后全必填，司机资质/车辆校验强制拦截
+  T1 超期自动生成运输异常
+  附件分类只做展示归类，不修改附件存储逻辑
+
+risk_precheck:
+  - "MRN/T1 字段对现有 transport_order 测试用例的影响"
+  - "ADR 字段必填校验对现有 transport_event 测试的影响"
+  - "CMR 打印模板的向下兼容性"
+
+# ==============================================================
+# Goal
+# ==============================================================
+
+goal: >
+  完成运输跟踪 P0 剩余 3 个合规模块：
+
+  1. MRN 海关主申报 + T1 保税转运子表（tlmp.transport.bond）
+     - MRN 主模型：mrn_code / issue_date / customs_origin / customs_dest
+       / valid_until / bond_status（未申报/转运中/已核销/逾期）
+     - T1 多行子表：t1_ref / t1_file_no / container_list / transit_limit
+       / arrival_cert / close_time
+     - T1 超期自动生成逾期异常
+     - CUSTOMS_CHECK 事件可绑定 MRN/T1
+     - MRN 到期预警（后续版本）
+  
+  2. ADR 危险品合规（tlmp.transport.adr）
+     - 多行明细：un_number / proper_shipping_name / primary_class / subsidiary_class
+       / packing_group / tunnel_code / total_net_weight
+     - environmental_hazard / emergency_phone
+     - 司机资质校验标记 / 车辆校验标记
+     - 勾选「含危险品」后全必填 + 校验拦截
+     - ADR 信息自动同步 CMR 打印模板
+  
+  3. 归档附件统一分类
+     - 在 transport_order 表单新增 Attachments 分类视图
+     - 分类标签：CMR / POD / MRN / T1 / ADR / General
+     - 不修改附件存储逻辑，仅做展示归类
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_bond.py（新增：MRN + T1 模型）"
+    - "addons/wd_tlms/models/transport_adr.py（新增：ADR 模型）"
+    - "addons/wd_tlms/models/transport_order.py（增量：MRN/T1/ADR 关联字段 + 状态）"
+    - "addons/wd_tlms/models/transport_tracking.py（增量：CUSTOMS_CHECK 绑定 + T1 超期异常）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/data/transport_bond_data.xml（新增预设数据）"
+    - "addons/wd_tlms/views/transport_bond_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_adr_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_order_views.xml（更新：归档附件分类页）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（可选：新增合规配置菜单）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增权限）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/reports/report_cmr.xml（增量：MRN/T1/ADR 打印字段）"
+    - "addons/wd_tlms/tests/test_transport_bond.py（新增）"
+    - "addons/wd_tlms/tests/test_transport_adr.py（新增）"
+    - "docs/context/architecture/module_map.md"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.26→1.0.27）"
+    - "docs/context/validation/test_exec_records.yaml"
+
+  forbid:
+    - 禁止修改非 MRN/T1/ADR 范围的文件
+    - 禁止修改现有 transport_event 非 event_type / 时序约束以外的字段
+    - 禁止修改 transport_exception / extra_charge 模型
+    - 禁止修改 transport_scene / event.type 等已配置化档案
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止本期落地 P1/P2 范围（排期日历/门户/驾驶员档案/GPS/AI/结算）
+
+limit_constraints: |
+  MRN/T1 仅跨境保税场景展示（scene_id.code 含 terminal/customer/bonded 判定）
+  ADR 字段必填校验在新订单上强制，已有存量订单按需补填
+  T1 超期异常复用 transport_exception 模型，不新建异常逻辑
+  归档附件分类仅做标签分组展示，不改附件存储结构
+
+risk_precheck:
+  - "transport_order 新增 MRN/T1/ADR 字段对现有测试用例的影响"
+  - "CUSTOMS_CHECK 事件绑定 MRN/T1 对现有 event 测试的影响"
+  - "CMR 打印模板新增保税字段对已有模板兼容性"

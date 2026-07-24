@@ -133,6 +133,11 @@ class TransportOrder(models.Model):
     ], string='Tunnel Code')
     customs_transit_ref = fields.Char(string='T1 MRN')
     customs_declaration_ref = fields.Char(string="Customs Decl. Ref.")
+    mrn_code = fields.Char(string='MRN Code')
+    t1_ref = fields.Char(string='T1 Reference')
+    dg_file_ref = fields.Char(string='DG File Reference')
+    adr_quantity = fields.Float(string='ADR Quantity')
+    adr_weight = fields.Float(string='ADR Weight (kg)')
     t1_state = fields.Selection([
         ('none', 'None'),
         ('declared', 'Declared'),
@@ -281,7 +286,7 @@ class TransportOrder(models.Model):
         self.ensure_one()
         if self.pod_id and self.pod_id.state not in (False, "confirmed"):
             raise UserError(_('Cannot close order: POD must be confirmed first.'))
-        # Sprint16: validate all exceptions CLOSED
+        # # Sprint16: validate all exceptions CLOSED
         open_ex = self.exception_ids.filtered(lambda e: e.exception_state != 'closed')
         if open_ex:
             raise UserError(_(
