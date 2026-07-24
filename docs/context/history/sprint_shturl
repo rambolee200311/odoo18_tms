@@ -225,3 +225,19 @@ Sprint1+Sprint2 代码基于旧架构开发，Sprint3 将执行代码层重构
 ## 验证
 - verify.py: 8/8 ✅
 - odoo_check: PASS ✅
+
+# Sprint20 迭代快照 (2026-07-24)
+# 契约: INT-TMS-SPRINT20-001
+# 基线: context v1.0.30  |  manifest: wd_tlms v1.0.50
+
+## 变更摘要
+- models/transport_cargo_line.py: +64 行（Cargo Line + Scene Cargo Rule）
+- models/transport_request.py: +cargo_line_ids O2M
+- models/transport_order.py: +cargo_line_ids O2M
+- models/cmr.py: +source_cargo_line_id + create_cmr_with_cargo
+- intent: intent_sprint20_cargo_line.yaml（v2 终稿）
+- context_version: 1.0.29 → 1.0.30
+
+## 验证
+- verify.py: 8/8 ✅
+- odoo_check: PASS ✅

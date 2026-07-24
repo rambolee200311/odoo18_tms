@@ -365,3 +365,22 @@
 ### 验收
 - verify.py 8/8: ✅ PASS
 - odoo_check: ✅ PASS
+
+## Sprint20: transport_request/order Cargo Line + scene cargo rule + CMR 联动
+
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT20-001
+**状态**: 已完成
+
+### 迭代目标
+为 transport_request/order 新增运输货物明细子表（Cargo Line），通过 tlmp.transport.scene.cargo.rule 配置模型决定场景货物来源策略，CMR 生成时自动读取运输货物快照。
+
+### 完成成果
+- Cargo Line 模型完整（description/commodity/qty/packages/weight/volume/container/source_type）
+- Scene Cargo Rule 配置模型（8 场景预设）
+- request → order → CMR 全链路贯穿
+- CMR 防重复 + source_cargo_line_id 追溯
+
+### 验收
+- verify.py 8/8: ✅ PASS
+- odoo_check: ✅ PASS

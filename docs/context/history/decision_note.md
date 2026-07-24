@@ -529,3 +529,23 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 1. **松耦合原则**: MRN/T1 仅记录单据号，保税另有独立模块管理，不建模型不绑定事件
 2. **ADR 产品属性化**: ADR 信息扩展 product.product，order 记录数量/重量/文件编号
 3. **不破坏存量**: 已有 customs_transit_ref / customs_declaration_ref / adr_* 字段保持不动
+
+---
+## Sprint20 — transport_request/order Cargo Line + scene cargo rule + CMR 联动
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT20-001
+**基线**: context_version 1.0.29 → 1.0.30
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新建模型 | `models/transport_cargo_line.py` | Cargo Line + Scene Cargo Rule |
+| 模型扩展 | `models/transport_request.py` | cargo_line_ids |
+| 模型扩展 | `models/transport_order.py` | cargo_line_ids |
+| CMR 联动 | `models/cmr.py` | source_cargo_line_id + 防重复 |
+
+### 关键架构决策
+1. **Cargo Line = 运输事实快照**：不强制关联 product.product，不产生库存移动
+2. **request/order 复制隔离**：request_id XOR order_id 互斥，复制不共享记录
+3. **场景规则可配置**：通过 tlmp.transport.scene.cargo.rule 模型，非代码级 if/else
+4. **CMR 快照隔离**：CMR line 修改不反向影响 cargo_line
