@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.32
+context_version: 1.0.33
 update_time: 2026-07-23
-adapt_sprint: Sprint22
+adapt_sprint: Sprint22-DGD-Analysis
 update_author: AI-Engineering-Team
 
 version_log:
@@ -227,6 +227,18 @@ valid_rule:
       - verify 8/8 PASS, odoo_check PASS
     update_type: 新功能开发
     effect_scope: Dashboard + Report + Cargo Rule config
+
+
+  1.0.33:
+    update_content: |
+      DGD 需求分析 + 知识资产更新（Sprint23 前序调研）
+      - 阅读 DGD 需求说明书 + 实拍表单图片
+      - stock_rule.md: §8 DGD 危险品申报单规则
+      - inventory_flow.md: §3.8 DGD 申报流程
+      - module_map.md: 新增合规文件层（transport.un_dictionary/dgd/dgd.line/dgd_void_log）
+      - core insight: DGD cargo line 复用 cargo_line 数据源（非新建模型）
+    update_type: 知识沉淀
+    effect_scope: business + architecture 资产更新
 
 
 bind_asset_folder:

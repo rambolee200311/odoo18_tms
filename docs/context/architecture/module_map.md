@@ -112,6 +112,12 @@ wd_tlms/
   tlmp.transport.event.type     —— 事件类型档案（8 事件可配置）
   tlmp.transport.scene.event    —— 场景-事件路径映射（决定时序顺序）
 
+合规文件层:
+  transport.un_dictionary      —— UN 危险品字典库（全局合规主数据）
+  transport.dgd                —— DGD 危险品申报单（一对一绑定 transport_order）
+  transport.dgd.line           —— DGD 货物明细行（可编辑副本，源于 cargo_line）
+  transport.dgd_void_log       —— DGD 作废日志（强制留痕，不可删除）
+
 签收/结算层:
   tlmp.pod                      —— 签收凭证
   tlmp.cmr                      —— CMR 运单（运输管理侧生成）

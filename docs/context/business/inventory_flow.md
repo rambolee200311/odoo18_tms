@@ -265,3 +265,31 @@ Configuration → Transport Scenes（管理 8 场景）
     → 校验当前事件后面是否有已发生的事件
     → 无则通过，有则拦截
 ```
+
+### 3.8 DGD 危险品申报单流程（Sprint23 规划）
+
+```
+transport_order（含危险品标记）
+       │
+       ├── cargo_line_ids（has_dangerous_goods=True 的行）
+       │         │
+       │         ↓
+       │   transport.un_dictionary（UN 字典库）
+       │         │
+       │         ↓
+       │   transport.dgd（一键生成/自动填充）
+       │         │
+       │         ├── dgd.line（可编辑，源于 cargo_line）
+       │         ├── 系统校验（UN/重量/隧道代码）
+       │         ├── ADR 标准 PDF 生成
+       │         └── 订单归档（CMR/POD/MRN 同级）
+       │
+       └── transport.dgd_void_log（作废留痕）
+```
+
+DGD 与 CMR 使用相同的数据模式：
+```
+cargo_line（运输事实快照）
+   ├── cmr.line（可编辑副本，Sprint14/20）
+   └── dgd.line（可编辑副本，Sprint23）
+```

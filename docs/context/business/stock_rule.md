@@ -238,3 +238,36 @@ transport_request.scene_id
 - `product.product` 扩展 ADR 属性：un_number / class / packing_group / is_dangerous_good
 - transport_order 记录 ADR 数量/重量/文件编号
 - 不建独立 ADR 明细模型，产品属性 + order 字段满足合规要求
+
+## 8. DGD 危险品申报单规则（Sprint23 规划）
+
+### 8.1 DGD 法律定位
+- DGD（Dangerous Goods Declaration）是欧盟 ADR 法规强制要求的随车法律文件
+- 与 CMR 的关系：CMR = 货物物权+运输合同，DGD = 危险品属性+法律申报
+- 缺 DGD 上路 → 扣车、罚款、企业合规处罚
+
+### 8.2 核心设计原则
+- **Cargo Line 数据源**：DGD 货物明细从 transport_order.cargo_line_ids 读取，非新建独立模型
+- **可编辑副本**：DGD line 从 cargo line 复制后允许手工编辑（类似 CMR line 的设计）
+- **UN 字典校验**：`transport.un_dictionary` 作为全局 UN 危险品代码库，DGD 填写时校验 UN 编号合法性
+- **隧道代码自动计算**：多货品混装时取最严格隧道代码
+- **生命周期**：Draft → Generated（PDF 生成） → Archived → Void
+- **物理不可删除**：作废仅状态标记 + 写入 `transport.dgd_void_log`
+
+### 8.3 DGD 模型架构（规划）
+```
+transport.un_dictionary（全局 UN 字典库）
+       ↓
+transport_order → cargo_line_ids（含 has_dangerous_goods 标记）
+       ↓
+transport.dgd（一对一绑定 order）
+  ├── dgd.line（可编辑副本，源于 cargo_line）
+  ├── dgd.pdf（系统生成的标准 ADR PDF）
+  └── dgd_void_log（作废日志，强制留痕）
+```
+
+### 8.4 ADR 合规校验规则
+- UN 编号必须存在于启用状态的 UN 字典内
+- 单件净重 < 单件毛重
+- 隧道代码值域：A/B/C/D/E
+- 一单同一时间仅能存在一份非作废有效 DGD
