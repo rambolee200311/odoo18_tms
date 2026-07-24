@@ -190,6 +190,7 @@ class TransportOrder(models.Model):
                     'customer': 'to_customer', 'self_pickup': 'to_customer'}
         tr_type = type_map.get(pickup_plan.destination_type, 'port_to_warehouse')
         val = {
+            'scene_id': pickup_plan.transport_request_id.scene_id.id if pickup_plan.transport_request_id and pickup_plan.transport_request_id.scene_id else False,
             'transport_type': tr_type,
             'fleet_operation_mode': 'subcontracted',
             'pickup_plan_id': pickup_plan.id,

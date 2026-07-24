@@ -103,6 +103,7 @@ class TransportQuote(models.Model):
     def _auto_create_order(self):
         self.ensure_one()
         order = self.env['tlmp.transport.order'].create({
+            'scene_id': self.request_id.scene_id.id if self.request_id and self.request_id.scene_id else False,
             'request_id': self.request_id.id,
             'quote_id': self.id,
             'inquiry_id': self.inquiry_id.id,
