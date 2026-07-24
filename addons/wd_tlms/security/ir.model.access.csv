@@ -99,3 +99,7 @@ access_tlmp_exception_all,tlmp.exception.all,model_tlmp_transport_exception,base
 access_tlmp_extra_charge_manager,tlmp.extra.charge.manager,model_tlmp_transport_extra_charge,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_extra_charge_operator,tlmp.extra.charge.operator,model_tlmp_transport_extra_charge,wd_tlms.group_tlm_operator,1,1,1,0
 access_tlmp_extra_charge_all,tlmp.extra.charge.all,model_tlmp_transport_extra_charge,base.group_user,1,0,0,0
+access_dashboard_service_manager,dashboard.service.manager,model_tlmp_transport_dashboard_service,wd_tlms.group_tlm_manager,1,0,0,0
+access_dashboard_service_operator,dashboard.service.operator,model_tlmp_transport_dashboard_service,wd_tlms.group_tlm_operator,1,0,0,0
+access_dashboard_manager,dashboard.manager,model_tlmp_transport_dashboard,wd_tlms.group_tlm_manager,1,0,0,0
+access_dashboard_operator,dashboard.operator,model_tlmp_transport_dashboard,wd_tlms.group_tlm_operator,1,0,0,0

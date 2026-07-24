@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Timeliness Report: planned vs actual time by scene/carrier/route/month -->
+    <record id="view_timeliness_report_pivot" model="ir.ui.view">
+        <field name="name">tlmp.transport.order.timeliness.pivot</field>
+        <field name="model">tlmp.transport.order</field>
+        <field name="arch" type="xml">
+            <pivot string="Delivery Timeliness" disable_linking="1">
+                <field name="scene_id" type="row"/>
+                <field name="carrier_id" type="row"/>
+                <field name="planned_pickup_date" interval="month" type="col"/>
+                <field name="planned_delivery_date" type="measure"/>
+                <field name="actual_delivery_date" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_timeliness_report_graph" model="ir.ui.view">
+        <field name="name">tlmp.transport.order.timeliness.graph</field>
+        <field name="model">tlmp.transport.order</field>
+        <field name="arch" type="xml">
+            <graph string="Delivery Timeliness" type="bar">
+                <field name="scene_id"/>
+                <field name="planned_delivery_date" type="measure"/>
+                <field name="actual_delivery_date" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_timeliness_report" model="ir.actions.act_window">
+        <field name="name">Delivery Timeliness</field>
+        <field name="res_model">tlmp.transport.order</field>
+        <field name="view_mode">pivot,graph</field>
+    </record>
+
+    <!-- Exception Report: distribution by type/scene/carrier -->
+    <record id="view_exception_report_pivot" model="ir.ui.view">
+        <field name="name">tlmp.transport.exception.report.pivot</field>
+        <field name="model">tlmp.transport.exception</field>
+        <field name="arch" type="xml">
+            <pivot string="Exception Summary" disable_linking="1">
+                <field name="exception_type" type="row"/>
+                <field name="order_id.scene_id" type="row"/>
+                <field name="exception_state" type="col"/>
+                <field name="id" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_exception_report_graph" model="ir.ui.view">
+        <field name="name">tlmp.transport.exception.report.graph</field>
+        <field name="model">tlmp.transport.exception</field>
+        <field name="arch" type="xml">
+            <graph string="Exceptions by Type" type="bar">
+                <field name="exception_type"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_exception_report" model="ir.actions.act_window">
+        <field name="name">Exception Summary</field>
+        <field name="res_model">tlmp.transport.exception</field>
+        <field name="view_mode">pivot,graph</field>
+    </record>
+</odoo>

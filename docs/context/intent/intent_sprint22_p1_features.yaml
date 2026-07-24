@@ -1,0 +1,185 @@
+# ==============================================================
+# 【Sprint22 正式意图契约】
+# 功能：P1 — 运输运营监控 Dashboard + 时效分析 + Cargo Rule 配置化
+# 前置基线：Sprint21 测试加固 → Sprint22 运营监控增强
+# 基线版本：context_version: 1.0.31 → 1.0.32
+# ==============================================================
+
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: INT-TMS-SPRINT22-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: P1 — 运输运营监控 Dashboard + 时效分析 + Cargo Rule 配置化
+target_scope: >
+  建设运输运营监控能力，通过 Dashboard 实时展示运输执行超时、T1 超期风险、
+  未闭环异常。
+  不建设主动通知机制，不发送邮件/消息/推送，不建 cron，不强提醒。
+  同时完成 Cargo Rule 配置化，将运输场景对应货物规则由代码逻辑迁移为后台配置。
+accept_criteria:
+  - "Dashboard 展示 3 类超时数据（事件/T1/异常），数据实时计算"
+  - "超时事件：event_state not in (completed/cancelled/skipped) + planned_time < now"
+  - "T1 超期：close_time=空 + transit_limit < now"
+  - "未闭环异常：exception_state=open/processing + 超过异常类型对应阈值"
+  - "各卡片可点击跳转到对应模型过滤列表"
+  - "Dashboard 查询通过 Service 层封装，View 不直接执行复杂统计"
+  - "时效报表：按 scene/carrier/route/month 统计 planned vs actual 时间差"
+  - "异常报表：按 exception_type/scene/carrier 统计分布和平均处理时长"
+  - "报表使用 Odoo tree/pivot/graph，不开发复杂报表引擎，导出用标准 export"
+  - "Cargo Rule 配置化：场景表单可管理 cargo rule（allowed_source/container_required/cargo_required/priority）"
+  - "Cargo Rule 修改后新订单生效，旧订单不受影响"
+  - "调度角色可查看 Dashboard、处理异常；管理层可查看全部报表"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/商务
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+
+affected_assets:
+  business:
+    - transport_tracking (event timeout / T1 overdue)
+    - transport_exception (timeout_hours)
+    - transport_scene (cargo rule config)
+  architecture:
+    - dashboard_service
+    - report_views
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+  required_pass: all
+
+deliverables:
+  - Dashboard Service 层（3 个统计接口封装）
+  - Dashboard 监控视图（form 视图 + 动作按钮）
+  - 超时事件/T1/未闭环异常 3 类卡片
+  - transport_exception.timeout_hours 字段
+  - 时效报表（tree/pivot/graph，按 scene/carrier/route/month）
+  - 异常报表（tree/pivot/graph，按 type/scene/carrier）
+  - Cargo Rule 配置化（集成到场景表单 + priority 字段）
+  - 预设数据更新（8 场景 cargo rule）
+  - 权限配置（dashboard/service/report）
+  - 自动化测试（dashboard + cargo rule + report）
+  - 完整 Intent 执行记录文件夹
+
+limit_constraints: >
+  Dashboard 不建通知/推送/cron，所有数据实时计算
+  报表使用 Odoo tree/pivot/graph 标准视图，不开发复杂报表引擎
+  运输费用报表不开发（费用极端复杂，归入 Sprint30）
+  承运商门户不开发
+  T1 overdue only uses transport_order.t1_deadline (on transport_order, not event planned_time)
+  异常 timeout_hours 字段新增，配置界面 Sprint23
+
+risk_precheck: |
+  Dashboard 实时查询对大量历史数据的性能影响
+  异常 timeout_hours 默认值设置
+  Cargo Rule 配置变化对存量订单的影响（须不影响）
+
+# ══════════════════════════════════════════════════════
+# Goal（详细说明）
+# ══════════════════════════════════════════════════════
+
+goal: >
+  建设运输运营监控能力，通过 Dashboard 实时展示运输执行超时、T1 超期风险和未闭环异常。
+  不建设主动通知机制，不发送邮件/消息/推送。
+  同时完成 Cargo Rule 配置化，将运输场景对应货物规则由代码逻辑迁移为后台配置。
+
+# ══════════════════════════════════════════════════════
+# 设计细节
+# ══════════════════════════════════════════════════════
+
+design:
+
+  dashboard:
+    approach: "Dashboard 基于业务模型实时计算，通过 Dashboard Service 封装查询逻辑"
+    service_name: "tlmp.transport.dashboard.service"
+    service_type: "AbstractModel (no database table)"
+    methods:
+      - get_event_timeout_summary()
+      - get_t1_overdue_summary()
+      - get_exception_overdue_summary()
+    dashboard_actions:
+      - action_event_timeout_list
+      - action_t1_overdue_list
+      - action_exception_overdue_list
+    event_timeout_rule: "event_state not in (completed,cancelled,skipped) AND planned_time < now"
+    t1_rule: "close_time IS NULL AND transport_order.t1_deadline < now"
+    exception_rule: "exception_state in (open,processing) AND now - create_date > timeout_hours"
+
+  timeout_hours:
+    description: "exception.timeout_hours 按异常类型预设默认值，可手动调整"
+    defaults:
+      driver_delay: 4
+      document_missing: 24
+      cargo_damage: 72
+      customs_issue: 168
+      other: 48
+
+  cargo_rule:
+    model: "tlmp.transport.scene.cargo.rule（已有模型）"
+    new_fields:
+      - priority (Integer)
+      - condition_domain (Char, 预留, Sprint22 不评估不执行)
+    ui: "集成到 Scene 表单 Event Paths 页面旁（新增 notebook page）"
+    preset: "8 场景 cargo rule 预设数据"
+
+  reports:
+    timeliness:
+      dimensions: [scene, carrier, route, month]
+      metrics: [planned_time, actual_time, diff_hours]
+    exception:
+      dimensions: [exception_type, scene, carrier]
+      metrics: [count, avg_resolution_hours]
+
+  permissions:
+    dispatcher: "dashboard: view / exception: handle (menu+action groups)"
+    manager: "dashboard: view all / report: view all"
+    finance: "no dashboard access (menu hidden via groups)"
+
+security:
+  model_access: "ir.model.access.csv: Dashboard Service read-only for dispatcher+manager"
+  menu_groups: "dashboard menu dispatcher+manager only / finance hidden"
+  action_groups: "action_event_timeout_list dispatcher+manager / report actions manager only"
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_dashboard.py（新增：Dashboard Service，无表模型）"
+    - "addons/wd_tlms/models/transport_exception.py（增量：timeout_hours 字段，独立文件或集成到 tracking）"
+    - "addons/wd_tlms/views/transport_dashboard_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_scene_views.xml（更新：Cargo Rule 页面）"
+    - "addons/wd_tlms/views/transport_report_views.xml（新增：时效+异常报表）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（新增：监控菜单 + 报表菜单）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/data/transport_scene_cargo_rule.xml（更新预设）"
+    - "addons/wd_tlms/security/ir.model.access.csv（Dashboard 权限）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/tests/test_sprint22_dashboard.py（新增：dashboard service/card/action + cargo rule + report）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.31→1.0.32）"
+
+  forbid:
+    - 禁止建设通知/推送/cron/邮件/消息中心
+    - 禁止开发运输费用报表
+    - 禁止开发承运商门户
+    - 禁止评估或执行 condition_domain（Sprint22 仅预留字段）
+    - 禁止修改 transport_event/order/exception 的核心字段
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止将 dashboard 查询逻辑写在 View 层（必须通过 Service）
+    - 禁止创建报表数据库事实表（基于现有模型 tree/pivot/graph 直接查询）

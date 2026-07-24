@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.31
+context_version: 1.0.32
 update_time: 2026-07-23
-adapt_sprint: Sprint21
+adapt_sprint: Sprint22
 update_author: AI-Engineering-Team
 
 version_log:
@@ -213,6 +213,20 @@ valid_rule:
       - verify 8/8 PASS, odoo_check PASS
     update_type: 测试覆盖
     effect_scope: Sprint16-20 全模块测试加固
+
+
+  1.0.32:
+    update_content: |
+      Sprint22 运输运营监控 + 时效异常报表 + Cargo Rule 配置化
+      - Dashboard Service AbstractModel + TransientModel 监控视图
+      - 3 类超时卡片：事件超时/T1 超期/异常超时
+      - 时效报表（scene/carrier/month）+ 异常报表（type/scene/carrier）
+      - Cargo Rule 配置化 + priority + condition_domain（预留）
+      - timeout_hours 字段按异常类型预设默认值
+      - t1_deadline 字段 + T1 超期 Dashboard 监控
+      - verify 8/8 PASS, odoo_check PASS
+    update_type: 新功能开发
+    effect_scope: Dashboard + Report + Cargo Rule config
 
 
 bind_asset_folder:

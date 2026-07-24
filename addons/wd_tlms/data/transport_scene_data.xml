@@ -108,4 +108,62 @@
         <field name="is_base_event" eval="False"/>
         <field name="sequence_order">999</field>
     </record>
+    <!-- Scene Cargo Rules (Sprint22) -->
+    <record id="cargo_rule_terminal_wh" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_terminal_to_warehouse"/>
+        <field name="allowed_source_type">manual</field>
+        <field name="container_required" eval="True"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_terminal_cust" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_terminal_to_customer"/>
+        <field name="allowed_source_type">manual</field>
+        <field name="container_required" eval="True"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_wh_cust" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_warehouse_to_customer"/>
+        <field name="allowed_source_type">both</field>
+        <field name="container_required" eval="False"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_cust_cust" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_customer_to_customer"/>
+        <field name="allowed_source_type">manual</field>
+        <field name="container_required" eval="False"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_wh_transfer" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_warehouse_transfer"/>
+        <field name="allowed_source_type">both</field>
+        <field name="container_required" eval="False"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_return" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_customer_return"/>
+        <field name="allowed_source_type">manual</field>
+        <field name="container_required" eval="False"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_swap" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_container_swap"/>
+        <field name="allowed_source_type">manual</field>
+        <field name="container_required" eval="True"/>
+        <field name="cargo_required" eval="True"/>
+        <field name="priority">10</field>
+    </record>
+    <record id="cargo_rule_empty" model="tlmp.transport.scene.cargo.rule">
+        <field name="scene_id" ref="scene_empty_depot"/>
+        <field name="allowed_source_type">none</field>
+        <field name="container_required" eval="True"/>
+        <field name="cargo_required" eval="False"/>
+        <field name="priority">10</field>
+    </record>
+
 </odoo>

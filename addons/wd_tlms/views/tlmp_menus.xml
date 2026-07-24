@@ -28,6 +28,7 @@
               action="action_tlmp_quote" sequence="30"/>
 
     <!-- Group 3: Transport Execution -->
+    <menuitem id="menu_tlmp_dashboard" name="Dashboard" parent="menu_tlmp_root" sequence="15" action="action_dashboard" groups="wd_tlms.group_tlm_manager,wd_tlms.group_tlm_operator"/>
     <menuitem id="menu_tlmp_exec_group" name="Transport Execution" parent="menu_tlmp_operations" sequence="30"/>
     <menuitem id="menu_tlmp_orders" name="Orders" parent="menu_tlmp_exec_group"
               action="action_tlmp_order" sequence="20"/>
@@ -42,6 +43,9 @@
               action="action_tlmp_extra_charge" sequence="40"/>
 
     <!-- Finance -->
+    <menuitem id="menu_tlmp_reports" name="Reports" parent="menu_tlmp_root" sequence="25" groups="wd_tlms.group_tlm_manager"/>
+    <menuitem id="menu_tlmp_timeliness_report" name="Delivery Timeliness" parent="menu_tlmp_reports" action="action_timeliness_report" sequence="10"/>
+    <menuitem id="menu_tlmp_exception_report" name="Exception Summary" parent="menu_tlmp_reports" action="action_exception_report" sequence="20"/>
     <menuitem id="menu_tlmp_finance" name="Finance" parent="menu_tlmp_root" sequence="20"/>
     <menuitem id="menu_tlmp_bills" name="Customer Bills" parent="menu_tlmp_finance"
               action="action_tlmp_bill" sequence="25"/>

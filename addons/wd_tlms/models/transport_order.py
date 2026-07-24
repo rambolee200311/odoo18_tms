@@ -174,6 +174,13 @@ class TransportOrder(models.Model):
     dg_file_ref = fields.Char(string='DG File Reference')
     adr_quantity = fields.Float(string='ADR Quantity')
     adr_weight = fields.Float(string='ADR Weight (kg)')
+    t1_deadline = fields.Datetime(string='T1 Transit Deadline',
+                                   help='Customs transit deadline for T1 documents')
+    t1_deadline = fields.Datetime(string='T1 Transit Deadline',
+                                   help='Customs transit deadline for T1 documents')
+    t1_deadline = fields.Datetime(string='T1 Transit Deadline',
+                                   help='Customs transit deadline for T1 documents')
+    cargo_line_ids
     t1_state = fields.Selection([
         ('none', 'None'),
         ('declared', 'Declared'),

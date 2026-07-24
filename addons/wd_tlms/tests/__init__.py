@@ -10,3 +10,4 @@ from . import test_transport_cargo
 from . import test_product_adr
 from . import test_transport_security
 from . import test_transport_flow
+from . import test_sprint22_dashboard

@@ -61,4 +61,7 @@ class TransportSceneCargoRule(models.Model):
     ], string='Allowed Source', required=True, default='manual')
     container_required = fields.Boolean(string='Container Required', default=False)
     cargo_required = fields.Boolean(string='Cargo Required', default=True)
+    priority = fields.Integer(string='Priority', default=10)
+    condition_domain = fields.Char(string='Condition Domain',
+                                   help='Reserved for future use. Not evaluated in Sprint22.')
     active = fields.Boolean(string='Active', default=True)
