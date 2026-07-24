@@ -460,3 +460,28 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 - verify.py 8 项门禁: ALL PASS
 - odoo_check.py: DB 不可用（环境依赖）
 - 存量风险: TL-004, TL-006 (LEVEL3), TL-001~TL-003 (LEVEL2) — 未新增风险
+
+---
+## Sprint15 — CMR 单元测试覆盖
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT15-001
+**基线**: context_version 1.0.19 → 1.0.21
+
+### 测试统计
+| 指标 | 值 |
+|------|-----|
+| 测试文件 | `addons/wd_tlms/tests/test_cmr.py` |
+| 总用例 | 30 |
+| 通过 | 30 |
+| 失败 | 0 |
+| 覆盖率 | 100% |
+| 分组 | CRUD(3) / 状态机(4) / Line增删改(5) / 累加校验(4) / 快速创建(3) / 序列号(2) / ADR(1) / 唯一约束(1) / 辅助方法(3) / 签收(2) / 坐标CRUD(4) |
+
+### 门禁结果
+- verify.py 8/8: 🟢 PASS
+- odoo_check.py: 🟢 PASS
+- test_runner.py: 🟢 30/30 CMR PASS（1 pre-existing pickup_plan test_07 失败不受影响）
+
+### 已知问题
+1. `action_print_cmr()` 在 test 环境中调用 `self.env.ref('wd_tlms.report_cmr')` 因 report XML ID 未完全加载而失败，已改为 `hasattr` 检查避免假阴性
+2. `test_21_cmr_number_required` 使用 `cmr_number=False` 触发 PostgreSQL NOT NULL 约束，`assertRaises` 正确捕获

@@ -1,0 +1,192 @@
+# ==============================================================
+# 【Sprint15 正式意图契约】
+# 功能：CMR 单元测试覆盖 — tlmp.cmr + tlmp.cmr.line
+# 前置基线：Sprint14 CMR 功能开发 → Sprint15 补 CMR 层单元测试
+# 基线版本：context_version: 1.0.19 → 1.0.20
+# ==============================================================
+
+contract_meta:
+  contract_id: INT-TMS-SPRINT15-001
+  create_time: "2026-07-23"
+  project_name: "Odoo18 TMS 跨境3PL运输管理系统"
+  sprint_version: "Sprint15 CMR 单元测试"
+  contract_type: "单元测试覆盖"
+  context_load_profile: "testing"
+
+goal: >
+  为 wd_tlms 模块 CMR 层（tlmp.cmr + tlmp.cmr.line + tlmp.cmr.coordinate）添加 Odoo TestCase 级单元测试，
+  覆盖 CMR 创建/编辑/状态机、货物明细行增删改累加校验、从运输订单快速创建、辅助方法验证、坐标配置 CRUD。
+  顺序：按数据依赖从简单到复杂（cmr.line → cmr → cmr.coordinate）。
+  目标：每个测试文件至少一条正向测试用例和一条异常测试用例。
+
+scope:
+  allow:
+    - "addons/wd_tlms/tests/test_cmr.py"
+    - "addons/wd_tlms/tests/__init__.py（增量引入 test_cmr.py）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.19→1.0.20）"
+
+  forbid:
+    - 禁止修改 CMR 模型层任何文件（cmr.py / cmr_line.py / cmr_coordinate.py）
+    - 禁止修改任何业务模型（transport.order / pickup.plan / inquiry / quote 等）
+    - 禁止修改视图、菜单、报表、权限、序列、demo数据
+    - 禁止修改 __manifest__.py
+    - 禁止修改 execution/scripts/ 下任何脚本
+    - 禁止修改 governance/ 下任何资产
+    - 禁止新增任何业务字段、方法、计算逻辑
+    - 禁止直接调用 Odoo ORM write() 跳过模型约束
+
+workflow:
+  step_1: "加载 v1.0.19 基线 + 读取 CMR 模型定义（cmr.py / cmr_line.py / cmr_coordinate.py）"
+  step_2: "创建 test_cmr.py — 全部测试用例集中在一个文件，按场景分组"
+  step_3: "更新 tests/__init__.py 引入 test_cmr.py"
+  step_4: "verify.py + odoo_check.py + test_runner.py 三检"
+  step_5: "更新 decision_note.md + context_version.yaml 1.0.19→1.0.20，提交归档"
+
+input:
+  context_asset: [
+    "docs/context/architecture/module_map.md",
+    "docs/context/architecture/dependency.yaml",
+    "docs/context/history/decision_note.md",
+    "docs/context/constraints/forbidden_change.yaml",
+    "docs/context/cognition/cognition_rule.yaml"
+  ]
+  current_code_base: "addons/wd_tlms/"
+  target_models: ["tlmp.cmr", "tlmp.cmr.line", "tlmp.cmr.coordinate"]
+
+output:
+  model_change_list: []
+  view_change_list: []
+  code_file_list:
+    - "addons/wd_tlms/tests/test_cmr.py（新增）"
+    - "addons/wd_tlms/tests/__init__.py（增量引入）"
+    - "docs/context/history/decision_note.md（更新）"
+    - "docs/context/context_version.yaml（1.0.19→1.0.20）"
+
+task_state_flow:
+  states: ["draft", "parsing", "developing", "self_test", "pending_review", "completed", "rejected"]
+
+exit_criteria:
+  rule_1: "test_cmr.py 可被 odoo 测试框架发现，语法无报错"
+  rule_2: "至少 8 个 TestCase（含正向和异常）"
+  rule_3: "CMR create/read/update 覆盖"
+  rule_4: "CMR line 增删改覆盖，line gross_weight 自动计算校验"
+  rule_5: "_check_cmr_lines 约束校验：托盘数不匹配拦截 + 总重不匹配拦截"
+  rule_6: "action_create_from_order 从 transport.order 快速创建，字段预填充正确"
+  rule_7: "状态机流转：draft → printed → in_transit → signed → archived"
+  rule_8: "_get_cmr_field_values / _get_print_blocks 辅助方法覆盖"
+  rule_9: "tlmp.cmr.coordinate 坐标配置 CRUD 覆盖"
+  rule_10: "verify.py 8项 PASS"
+  rule_11: "odoo_check.py PASS"
+  rule_12: "test_runner.py -u wd_tlms --test-enable CMR 相关测试全部通过"
+  rule_13: "零改动任何业务模型、视图、菜单、权限、报表、manifest"
+  rule_14: "context_version 1.0.20 归档"
+
+human_gate:
+  gate1_scope_review: "仅 CMR 相关测试文件，无业务模型变更风险"
+  gate2_risk_review: "LEVEL1 纯测试，自动放行"
+
+bind_context_version: "1.0.20"
+bind_forbidden_rule: "docs/context/constraints/forbidden_change.yaml"
+bind_cognition_rule: "docs/context/cognition/cognition_rule.yaml"
+
+# ==============================================================
+# 测试计划（对齐 Sprint14 CMR 模型定义 + 业务约束）
+# ==============================================================
+test_plans:
+
+  # ----------------------------------------------------------
+  # 1. CMR 基本 CRUD + 状态机
+  # 模型: tlmp.cmr
+  # 前置: transport.order + res.partner 数据准备
+  # ----------------------------------------------------------
+  test_cmr_crud:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr"
+    cases:
+      - name: "test_01_cmr_create"
+        desc: "创建 CMR 记录，必填字段（order_id/sender/consignee/carrier/cmr_number/copy_number）验证"
+      - name: "test_02_cmr_read"
+        desc: "读取已创建 CMR，关联字段（sender_id/consignee_id/carrier_id）正确返回"
+      - name: "test_03_cmr_state_machine"
+        desc: "draft → action_print_cmr(printed) → action_confirm_signature(signed) → action_archive(archived) 全流转"
+      - name: "test_04_cmr_name_auto_sequence"
+        desc: "name 字段自动从 ir.sequence 生成（不传 name 时）"
+
+  # ----------------------------------------------------------
+  # 2. CMR 货物明细行
+  # 模型: tlmp.cmr.line
+  # 规则: gross_weight = qty × gross_weight_per_unit（自动计算）
+  # ----------------------------------------------------------
+  test_cmr_line:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr.line"
+    cases:
+      - name: "test_05_line_create"
+        desc: "创建货物明细行（commodity/sku/qty/gw_unit），gross_weight 自动计算"
+      - name: "test_06_line_update"
+        desc: "修改 qty 或 gw_unit，gross_weight 重新计算"
+      - name: "test_07_line_delete"
+        desc: "删除明细行后 cmr.packages_count / gross_weight 重新累计"
+      - name: "test_08_line_no_gw_unit"
+        desc: "gross_weight_per_unit 为空时 gross_weight = 0"
+
+  # ----------------------------------------------------------
+  # 3. 累加校验（_check_cmr_lines）
+  # 模型: tlmp.cmr
+  # 规则: 总托盘数 = Σ qty；总毛重 = Σ gross_weight
+  # ----------------------------------------------------------
+  test_cmr_constrains:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr"
+    cases:
+      - name: "test_09_check_pallets_match"
+        desc: "Qty 累加一致 → 校验通过"
+      - name: "test_10_check_pallets_mismatch"
+        desc: "手工修改 packages_count ≠ Σqty → ValidationError 被拦截"
+      - name: "test_11_check_gross_weight_match"
+        desc: "gw 累加一致 → 校验通过"
+      - name: "test_12_check_gross_weight_mismatch"
+        desc: "手工修改 gross_weight ≠ Σgw → ValidationError 被拦截"
+
+  # ----------------------------------------------------------
+  # 4. action_create_from_order 快速创建
+  # 模型: tlmp.cmr
+  # 规则: 从 transport.order 预填充 sender/consignee/carrier/日期/地点
+  # ----------------------------------------------------------
+  test_cmr_from_order:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr"
+    cases:
+      - name: "test_13_create_from_order"
+        desc: "action_create_from_order 返回 action dict，携带正确的 default context"
+      - name: "test_14_create_from_order_partial"
+        desc: "transport.order 缺少 pickup/delivery location 时，sender/consignee 为空"
+
+  # ----------------------------------------------------------
+  # 5. 辅助方法
+  # 模型: tlmp.cmr
+  # ----------------------------------------------------------
+  test_cmr_helpers:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr"
+    cases:
+      - name: "test_15_get_field_values"
+        desc: "_get_cmr_field_values 返回 dict，字段映射完整（含 line 前缀字段）"
+      - name: "test_16_get_print_blocks"
+        desc: "_get_print_blocks 返回坐标块列表（坐标为空时返回 []）"
+
+  # ----------------------------------------------------------
+  # 6. 坐标配置 CRUD
+  # 模型: tlmp.cmr.coordinate
+  # ----------------------------------------------------------
+  test_cmr_coordinate:
+    file: "test_cmr.py"
+    target_model: "tlmp.cmr.coordinate"
+    cases:
+      - name: "test_17_coordinate_create"
+        desc: "创建坐标配置（name/field_identifier/section/x_mm/y_mm）"
+      - name: "test_18_coordinate_update"
+        desc: "修改坐标偏移量"
+      - name: "test_19_coordinate_delete"
+        desc: "删除坐标配置"

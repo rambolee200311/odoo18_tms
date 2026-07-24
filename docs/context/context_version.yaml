@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.19
+context_version: 1.0.21
 update_time: 2026-07-23
-adapt_sprint: Sprint14-CMR
+adapt_sprint: Sprint15-CMR-Test
 update_author: AI-Engineering-Team
 
 version_log:
@@ -127,6 +127,18 @@ valid_rule:
       - verify.py 8/8 PASS, odoo_check.py DB 不可用
     update_type: 新功能开发
     effect_scope: CMR 模块 + 坐标配置 + 报表套打
+
+
+  1.0.21:
+    update_content: |
+      Sprint15 CMR 单元测试覆盖完成
+      - 新增 test_cmr.py 含 30 个 TestCase
+      - CMR CRUD/状态机/Line增删改自动计算/累加校验/快速创建/辅助方法
+      - ADR关联/唯一约束/坐标配置CRUD
+      - verify 8/8 + odoo_check PASS
+      - test_runner: 30/30 CMR case PASS, 1 pre-existing pickup_plan fail
+    update_type: 单元测试覆盖
+    effect_scope: tlmp.cmr + tlmp.cmr.line + tlmp.cmr.coordinate
 
 
 bind_asset_folder:
