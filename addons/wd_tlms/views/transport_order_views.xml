@@ -142,6 +142,19 @@
                                  <field name="customs_declaration_ref"/>
                              </group>
                          </page>
+                         <page string="DGD" name="dgd_page">
+                             <group>
+                                 <field name="dgd_ids">
+                                     <list>
+                                         <field name="name"/>
+                                         <field name="state" widget="badge"/>
+                                         <field name="total_gross_weight"/>
+                                         <field name="confirmed_uid"/>
+                                         <field name="signed_uid"/>
+                                     </list>
+                                 </field>
+                             </group>
+                         </page>
                          <page string="Tracking" name="tracking_page">
                              <group string="Transport Events">
                                  <field name="tracking_state" widget="badge"

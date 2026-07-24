@@ -31,6 +31,11 @@ class TransportCargoLine(models.Model):
     outbound_ref_id = fields.Many2one('ir.model', string='Outbound Document Ref.',
                                       help='Reference to source outbound document (model not hardcoded)')
     has_dangerous_goods = fields.Boolean(string='Has Dangerous Goods')
+    dangerous_goods_profile_id = fields.Many2one(
+        'tlmp.transport.dangerous.goods.profile',
+        string='Dangerous Goods Profile',
+        help='ADR attribute template linked to UN dictionary. '
+             'NOT an ADR field expansion on cargo_line.')
     notes = fields.Text(string='Notes')
 
     @api.constrains('request_id', 'order_id')

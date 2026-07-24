@@ -176,11 +176,7 @@ class TransportOrder(models.Model):
     adr_weight = fields.Float(string='ADR Weight (kg)')
     t1_deadline = fields.Datetime(string='T1 Transit Deadline',
                                    help='Customs transit deadline for T1 documents')
-    t1_deadline = fields.Datetime(string='T1 Transit Deadline',
-                                   help='Customs transit deadline for T1 documents')
-    t1_deadline = fields.Datetime(string='T1 Transit Deadline',
-                                   help='Customs transit deadline for T1 documents')
-    cargo_line_ids
+    dgd_ids = fields.One2many('tlmp.transport.dgd', 'order_id', string='DGD Documents')
     t1_state = fields.Selection([
         ('none', 'None'),
         ('declared', 'Declared'),

@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.33
-update_time: 2026-07-23
-adapt_sprint: Sprint22-DGD-Analysis
+context_version: 1.0.34
+update_time: 2026-07-24
+adapt_sprint: Sprint23-DGD
 update_author: AI-Engineering-Team
 
 version_log:
@@ -240,6 +240,24 @@ valid_rule:
     update_type: 知识沉淀
     effect_scope: business + architecture 资产更新
 
+
+
+  1.0.34:
+    update_content: |
+      Sprint23 DGD 危险品申报单 — ADR 合规文件基座
+      - 新增 tlmp.transport.un.dictionary UN 字典模型
+      - 新增 tlmp.transport.dangerous.goods.profile DG Profile 模型
+      - 新增 tlmp.transport.dgd DGD 主表（六状态生命周期+cmr_id预留字段）
+      - 新增 tlmp.transport.dgd.line DGD 快照副本（source_cargo_line_id+ADR法规字段）
+      - 新增 tlmp.transport.dgd.void.log 作废审计日志模型
+      - cargo_line 增量接入 dangerous_goods_profile_id
+      - transport_order 增量接入 dgd_ids + 修复 t1_deadline 重复字段缺陷
+      - UN 字典预设数据（12 条高频危险品）+ CRUD 维护页面
+      - DGD 表单/列表/搜索视图 + 运输订单 DGD notebook page
+      - Compliance Officer 角色 + 权限隔离
+      - 20 个自动化测试用例（UN/DGD/生命周期/校验/防重复/快照隔离/作废重生成）
+    update_type: 新功能开发
+    effect_scope: compliance domain - DGD 模块
 
 bind_asset_folder:
   - architecture

@@ -597,3 +597,35 @@ verify.py 8项静态 (PASS) + odoo_check.py 模块加载 (PASS) + test_runner.py
 4. **异常超时预设**：driver_delay=4h / document_missing=24h / cargo_damage=72h / customs=168h
 5. **报表轻量**：基于现有模型 tree/pivot/graph，不建事实表
 6. **Cargo Rule 预留**：priority + condition_domain 字段（Sprint22 不评估）
+
+---
+## Sprint23 — DGD 危险品申报单 ADR 合规基座
+**时间**: 2026-07-24
+**契约**: INT-TMS-SPRINT23-001
+**基线**: context_version 1.0.33 → 1.0.34
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/transport_un_dictionary.py` | UN 字典（un_number/品名/Class/PG/隧道代码/运输类别/SP） |
+| 新增模型 | `models/transport_dangerous_goods_profile.py` | DG Profile ADR 属性模板（关联 UN 字典） |
+| 新增模型 | `models/transport_dgd.py` | DGD 主表 + DGD.line 快照 + DGD.void.log 审计日志 |
+| 字段增量 | `models/transport_cargo_line.py` | dangerous_goods_profile_id |
+| 字段增量 | `models/transport_order.py` | dgd_ids（+修复 t1_deadline 3重定义缺陷） |
+| 数据 | `data/transport_un_dictionary_data.xml` | 12 条高频危险品预设 |
+| 视图 | `views/transport_un_dictionary_views.xml` | UN 字典 CRUD 维护 |
+| 视图 | `views/transport_dgd_views.xml` | DGD 表单/列表/搜索 + DG Profile 动作 |
+| 视图增量 | `views/transport_order_views.xml` | DGD notebook page |
+| 菜单 | `views/tlmp_menus.xml` | UN 字典 + DG Profiles + DGD Documents |
+| 安全 | `security/security.xml` | Compliance Officer 组（operator 子集） |
+| 权限 | `security/ir.model.access.csv` | 15 行新权限 |
+| 测试 | `tests/test_transport_dgd.py` | 20 TestCase（UN/DGD/生命周期/校验/防重复/快照隔离/作废重生成） |
+
+### 关键决策
+1. **cargo_line 不扩 ADR 字段**：通过 dangerous_goods_profile 关联模式
+2. **DGD line 快照隔离**：is_snapshot=True，修改 cargo_line 不影响已生成 DGD
+3. **六状态生命周期**：Draft→Confirmed→Generated→Signed→Archived→Void
+4. **作废强制留痕**：void_reason 必填 + void_log 审计
+5. **一单一生效约束**：同一 order 同一时间 active_dgd_count <= 1
+6. **Sprint23-A/B 拆分**：A 期模型+生命周期+视图+测试，B 期 PDF 模板
+7. **Sprint23-B 暂缓**：ADR PDF 生成模板（report_dgd.xml）未纳入本轮

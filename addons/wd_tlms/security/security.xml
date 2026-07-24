@@ -26,5 +26,11 @@
             <field name="name">TLM Portal Carrier</field>
             <field name="category_id" ref="base.module_category_transport"/>
         </record>
+        <!-- Compliance Officer -->
+        <record id="group_tlm_compliance_officer" model="res.groups">
+            <field name="name">TLM Compliance Officer</field>
+            <field name="category_id" ref="base.module_category_transport"/>
+            <field name="implied_ids" eval="[(4, ref('group_tlm_operator'))]"/>
+        </record>
     </data>
 </odoo>

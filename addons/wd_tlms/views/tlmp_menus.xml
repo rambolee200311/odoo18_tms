@@ -78,6 +78,14 @@
               action="action_tlmp_surcharge_type" sequence="20"/>
     <menuitem id="menu_tlmp_cmr_coordinate" name="CMR Coordinates" parent="menu_tlmp_config"
               action="action_tlmp_cmr_coordinate" sequence="45"/>
+    <!-- DGD Configuration -->
+    <menuitem id="menu_tlmp_un_dictionary" name="UN Dictionary" parent="menu_tlmp_config"
+              action="action_tlmp_un_dictionary" sequence="46"/>
+    <menuitem id="menu_tlmp_dangerous_goods_profile" name="DG Profiles" parent="menu_tlmp_config"
+              action="action_tlmp_dangerous_goods_profile" sequence="47"/>
+    <!-- DGD Documents in Documents section -->
+    <menuitem id="menu_tlmp_dgd" name="DGD Documents" parent="menu_tlmp_docs"
+              action="action_tlmp_dgd" sequence="25"/>
 
 
     <!-- 运输计划独立菜单 -->

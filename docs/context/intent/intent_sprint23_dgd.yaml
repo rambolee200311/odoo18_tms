@@ -1,0 +1,141 @@
+# ==============================================================
+# 【Sprint23 正式意图契约】
+# 功能：DGD 危险品申报单 — ADR 合规文件管理
+# 前置基线：Sprint22 Dashboard/Report → Sprint23 危险品合规
+# 基线版本：context_version: 1.0.33 → 1.0.34
+# ==============================================================
+
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: INT-TMS-SPRINT23-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: DGD 危险品申报单 — ADR 合规文件基座
+target_scope: >
+  为 transport_order 配套危险品申报单（DGD）管理功能，构建 TMS Compliance Domain 第一块基础能力。
+  包括 UN 字典库维护、DGD 申报单自动填充+六状态生命周期、ADR 标准 PDF 生成、作废留痕审计。
+  DGD 货物明细源于 cargo_line 的快照副本（dgd.line），不新建独立货物模型。
+  不直接在 cargo_line 上扩展 ADR 字段，采用 dangerous_goods_profile 关联模式。
+
+  Sprint23 分 A/B 两阶段：
+    A（P0 本轮落地）：UN Dictionary + DGD 模型 + 快照副本 + 生命周期 + 审计
+    B（P0~P1）：ADR PDF 生成模板 + 打印导出
+accept_criteria:
+  - "tlmp.transport.un.dictionary UN 字典模型完整（un_number/品名/Class/分类码/PG/隧道代码/运输类别/SP）"
+  - "tlmp.transport.dgd 主表完整（一对一绑定 order，六状态生命周期，含 cmr_id 预留字段）"
+  - "tlmp.transport.dgd.line 快照完整（source_cargo_line_id + 全部 ADR 法规字段）"
+  - "tlmp.transport.dgd.void_log 作废日志模型"
+  - "DGD 六状态流转：Draft → Confirmed → Generated → Signed → Archived → Void"
+  - "预填充：从 cargo_line.dangerous_goods_profile 读取 ADR 参数"
+  - "cargo_line 不直接扩展 ADR 字段，改用 dangerous_goods_profile 关联"
+  - "UN 字典维护页面可用（CRUD + 搜索）"
+  - "DGD 数据模型可支持 PDF 生成（Sprint23-A）"
+  - "作废强制留痕：void_reason 必填 + UI 弹窗确认"
+  - "同一 order 同一时间 active_dgd_count <= 1（SQL UNIQUE constraint WHERE state NOT IN (void, archived)）"
+  - "UN 合法性校验 + 隧道代码值域校验 + 净重<毛重校验"
+  - "权限：新增 Compliance Officer 角色（确认/签署 DGD）"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/海关合规
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_dgd（compliance domain）
+    - transport_un_dictionary
+    - transport_order（cargo_line dangerous_goods_profile 关联）
+  architecture:
+    - dgd_pdf_template（Sprint23-B）
+    - compliance_domain（DGD/CMR/T1/Customs/POD 统一管理）
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - Sprint23-A（本轮交付）：
+    - "tlmp.transport.un.dictionary 模型 + 维护页面 + 预设数据"
+    - "tlmp.transport.dgd 主表 + dgd.line 快照 + dgd.void_log"
+    - "cargo_line.dangerous_goods_profile 关联（非直接 ADR 字段扩展）"
+    - "六状态生命周期（Draft→Confirmed→Generated→Signed→Archived→Void）"
+    - "UN 字典预设数据（高频危险品）"
+    - "校验体系 + 作废留痕 + 一单一生效约束"
+    - "权限体系（含 Compliance Officer 角色 + 六态操作权限矩阵：Draft=Dispatcher / Confirmed=CO / Generated=System / Signed=CO / Archived=CO+Manager / Void=CO）"
+    - "自动化测试用例（UN/DGD/生命周期/校验/防重复/快照隔离/作废重生成）"
+  - Sprint23-B（P0~P1，视本轮进度）：
+    - "ADR 标准 PDF 模板（report_dgd.xml）"
+    - "PDF 生成/下载/打印功能"
+  - "完整 Intent 执行记录文件夹"
+
+limit_constraints: >
+  DGD 货物快照源于 cargo_line.dangerous_goods_profile，非直接 ADR 字段扩展。
+  DGD line 保存完整法规快照（is_snapshot=True），修改不反写源数据。
+  作废仅状态标记 + void_reason 写入 void_log，物理数据永久留存。
+  PDF 模板与模型数据分离（模型负责数据，report 负责展示）。
+  UN 字典预设覆盖高频危险品，后续可维护扩展。
+risk_precheck: |
+  dangerous_goods_profile 关联模式对 cargo_line 现有逻辑的影响
+  UN 字典预设数据的初始条目数量
+  six-state lifecycle 对现有 DGD 草稿的影响
+  PDF 生成性能（多行货物时）
+  作废后新建 DGD 的数据一致性
+
+# ══════════════════════════════════════════════════════
+# Goal（详细设计）
+# ══════════════════════════════════════════════════════
+
+goal: >
+  建设 TMS Compliance Domain 第一块基础能力——DGD 危险品申报单管理。
+  覆盖 UN 字典维护、DGD 快照副本、六状态生命周期、ADR PDF 生成、审计留痕全链路。
+  cargo_line 采用 dangerous_goods_profile 关联，避免直接污染货物字段。
+  DGD 主表预留 cmr_id 字段，为未来 CMR-DGD 联动保留接口。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_un_dictionary.py（新增：UN 字典模型）"
+    - "addons/wd_tlms/models/transport_dgd.py（新增：DGD + line + void_log）"
+    - "addons/wd_tlms/models/transport_cargo_line.py（增量：dangerous_goods_profile 关联字段）"
+    - "addons/wd_tlms/models/transport_order.py（增量：DGD 关联 + lifecycle hooks）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/data/transport_un_dictionary_data.xml（新增：预设 UN 数据）"
+    - "addons/wd_tlms/views/transport_un_dictionary_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_dgd_views.xml（新增：DGD 表单 + dgd tab）"
+    - "addons/wd_tlms/views/transport_order_views.xml（更新：DGD notebook page）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（更新：UN 字典 + DGD 菜单）"
+    - "addons/wd_tlms/reports/report_dgd.xml（新增：ADR PDF 模板 — Sprint23-B）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新增权限 + Compliance Officer group）"
+    - "addons/wd_tlms/security/security.xml（新增：Compliance Officer 安全组）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/tests/test_transport_dgd.py（新增）"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/context_version.yaml（1.0.33→1.0.34）"
+
+  forbid:
+    - 禁止在 cargo_line 上直接扩展 ADR 字段（必须通过 dangerous_goods_profile 关联）
+    - 禁止 DGD line 修改反写 cargo_line / CMR line 数据
+    - 禁止修 transport_event / exception / extra_charge 等跟踪模型
+    - 禁止修改 transport_scene / cargo_rule 等已配置化档案
+    - 禁止物理删除 DGD 数据（仅状态作废 + void_log）
+    - 禁止在 model 层生成 PDF（模型负责数据，report 负责展示）
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
