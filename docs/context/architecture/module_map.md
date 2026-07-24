@@ -113,6 +113,7 @@ wd_tlms/
   tlmp.transport.scene.event    —— 场景-事件路径映射（决定时序顺序）
 
 合规文件层:
+  transport.shipment.label     —— Shipment Label 运输标签（Sprint24 LTL/Parcel 场景）
   transport.un_dictionary      —— UN 危险品字典库（全局合规主数据）
   transport.dgd                —— DGD 危险品申报单（一对一绑定 transport_order）
   transport.dgd.line           —— DGD 货物明细行（可编辑副本，源于 cargo_line）

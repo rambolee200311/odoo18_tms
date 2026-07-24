@@ -271,3 +271,30 @@ transport.dgd（一对一绑定 order）
 - 单件净重 < 单件毛重
 - 隧道代码值域：A/B/C/D/E
 - 一单同一时间仅能存在一份非作废有效 DGD
+
+## 9. LTL/包裹运输铁律（Sprint24 新增）
+
+### 9.1 运输场景扩展
+- **FTL（整车）**：port_to_warehouse（港口到仓）/ to_customer（到客户）/ warehouse_transfer（仓间调拨）/ reverse_logistics（退货）/ pickup_to_warehouse（上门提货回仓）
+- **LTL/Parcel（零担/包裹）**：parcel（包裹运输）/ groupage（拼货运输）
+- 两种场景共享 transport_order 模型，由 transport_type 字段区分
+- FTL 场景已有合规单据（CMR/DGD/POD）仅适用于 FTL 场景，LTL/Parcel 场景不强制生成 CMR
+
+### 9.2 Shipment Label 定位与边界
+- **运营标签**（Carrier Label），非法律强制文件
+- 与 CMR 区别：CMR 是 CMR 公约法律运单，一单一生效约束；Label 是承运商内部运营标签，一个 order 可有多个
+- 与 DGD 区别：DGD 是 ADR 危险品合规法规要求；Label 是运营操作需求
+- 与 POD 区别：POD 是交付签收法律凭证；Label 是发货前生成的运输标签
+- 所有合规单据（CMR/DGD/POD）与 Label 互不阻塞，独立生命周期
+
+### 9.3 Label 与 Order 的协作关系
+- order → shipment_label：一对多（一个 order 下多个包裹/件，各标签独立）
+- order → CMR：一对一或一对多
+- order → DGD：一对一（同一时间点 active_dgd_count <= 1）
+- order → POD：一对一
+- Label 不反写 order 状态，不影响 CMR/DGD/POD 生命周期
+
+### 9.4 承运商服务（Carrier Service）管理策略
+- Sprint24：carrier_service 使用 Selection 枚举值（DHL/UPS/DPD/GLS/PostNL）
+- Sprint25+：升级为 Carrier Service 档案主数据（Many2one）+ Carrier Adapter Framework
+- 标签仅记录，不自动取号/打印/tracking 同步

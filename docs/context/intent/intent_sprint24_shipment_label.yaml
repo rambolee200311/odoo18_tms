@@ -1,0 +1,149 @@
+# ==============================================================
+# 【Sprint24 正式意图契约】
+# 功能：Shipment Label 基座 — LTL/包裹运输标签管理
+# 前置基线：Sprint23 DGD 合规 → Sprint24 包裹/拼货标签基座
+# 基线版本：context_version: 1.0.35 → 1.0.36
+# ==============================================================
+
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: INT-TMS-SPRINT24-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: Shipment Label Foundation — LTL/包裹运输标签管理
+target_scope: >
+  为 transport_order 配套 Shipment Label 管理功能，支持 LTL（零担）/Parcel（包裹）
+  /Groupage（拼货）运输场景。完成标签电子化管理，包括 PDF 上传/打印，
+  tracking number 记录、承运商服务标记。
+
+  本期不建设 Carrier Service 档案主数据，carrier_service 使用 Selection 枚举；
+  不建设 Carrier Adapter（API 自动取号/打印/tracking 同步），留待 Sprint25+。
+
+  为支持新场景，扩展 transport_order.transport_type 增加 parcel / groupage 选项。
+
+accept_criteria:
+  - "tlmp.transport.shipment.label 模型完整（order_id/tracking_number/carrier_service/label_pdf/state）"
+  - "transport_order 新增 parcel、groupage 运输类型选项"
+  - "label 四状态生命周期：Draft → Generated → Printed → Cancelled"
+  - "label_pdf 二进制附件存储（attachment=True）"
+  - "carrier_tracking_url 可记录承运商跟踪链接"
+  - "transport_order 表单 Documents 页签内嵌 Label 列表"
+  - "Shipment Label 独立菜单（parent=Documents）"
+  - "权限：继承现有 TLM Manager / TLM Operator 角色"
+  - "verify.py + odoo_check.py + test_runner 三检通过"
+
+source:
+  type: customer_demand
+  origin_team: 调度/运营（LTL/Parcel 新场景）
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_shipment_label（新文档模型）
+    - transport_order（transport_type 扩展 + 标签列表集成）
+  architecture:
+    - shipment_label_views（新视图）
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - "addons/wd_tlms/models/transport_shipment_label.py（新增：Shipment Label 模型）"
+  - "addons/wd_tlms/models/transport_order.py（增量：transport_type 扩展 + label_ids 关联）"
+  - "addons/wd_tlms/views/transport_shipment_label_views.xml（新增：标签表单/列表/搜索）"
+  - "addons/wd_tlms/views/transport_order_views.xml（增量：Documents 页签内嵌 Label 列表）"
+  - "addons/wd_tlms/views/tlmp_menus.xml（增量：Shipment Labels 菜单）"
+  - "addons/wd_tlms/security/ir.model.access.csv（增量：新模型权限行）"
+  - "addons/wd_tlms/__manifest__.py（增量注册新视图文件）"
+  - "addons/wd_tlms/tests/test_transport_shipment_label.py（新增：单元测试）"
+  - "docs/context/context_version.yaml（1.0.35 → 1.0.36）"
+  - "docs/context/history/decision_note.md（Sprint24 决策记录）"
+
+limit_constraints: >
+  承运商服务（carrier_service）使用 Selection 枚举，不建档案主数据。
+  标签不涉及 Carrier Adapter、API 自动取号、自动跟踪同步。
+  label_pdf 仅支持手动上传/下载/打印，不涉及自动生成。
+  不修改 transport_event / exception / extra_charge / scene / cargo_rule 等现有模型。
+
+risk_precheck: |
+  transport_type 扩展对现有订单（port_to_warehouse/to_customer 等）的兼容性
+  label 与 CMR/POD/DGD 在 Documents 页签的共存布局
+  新模型权限对现有角色的影响范围
+
+# ══════════════════════════════════════════════════════
+# Goal（详细设计）
+# ══════════════════════════════════════════════════════
+
+goal: >
+  建设 LTL/包裹运输场景的 Shipment Label 管理能力，作为 Carrier Integration 的
+  数据基座。本期聚焦标签电子化管理（PDF 上传/打印、tracking number 记录），
+  不涉及 Carrier Adapter API 集成。
+
+  transport_order 扩展 parcel/groupage 运输类型，为未来 Carrier Service 档案
+  和 Carrier Adapter Framework 预留模型层对接点。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_shipment_label.py（新增）"
+    - "addons/wd_tlms/models/transport_order.py（增量：transport_type 扩展 + label_ids）"
+    - "addons/wd_tlms/models/__init__.py（增量引入）"
+    - "addons/wd_tlms/views/transport_shipment_label_views.xml（新增）"
+    - "addons/wd_tlms/views/transport_order_views.xml（增量：Documents 页签）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量：菜单项）"
+    - "addons/wd_tlms/security/ir.model.access.csv（增量：权限行）"
+    - "addons/wd_tlms/__manifest__.py（增量注册）"
+    - "addons/wd_tlms/tests/test_transport_shipment_label.py（新增）"
+    - "docs/context/context_version.yaml（版本升级）"
+    - "docs/context/history/decision_note.md（决策记录）"
+
+  forbid:
+    - 禁止引入 Carrier Adapter / API 自动取号 / tracking 自动同步
+    - 禁止创建 Carrier Service 档案主数据
+    - 禁止修改 transport_event / exception / extra_charge / scene 等跟踪模型
+    - 禁止修改 cmr / dgd / pod 等现有合规文档模型
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止物理删除 Label 数据（仅状态作废）
+    - 禁止引入外部库依赖
+
+# 模型设计参考（非 YAML 字段，仅注释）:
+# tlmp.transport.shipment.label
+#   name = fields.Char(default=_('New'), auto-seq)
+#   order_id = Many2one('tlmp.transport.order', required, index)
+#   sequence = Integer(default=10)
+#   carrier_service = Selection(DHL/UPS/DPD/GLS/PostNL/other)
+#   tracking_number = Char
+#   label_pdf = Binary(attachment=True)
+#   carrier_tracking_url = Char
+#   state = Selection(draft/generated/printed/cancelled, default=draft)
+#   notes = Text
+#
+# order 增量：
+#   transport_type 新增 ('parcel', 'Parcel / Groupage')
+#   shipment_label_ids = One2many('tlmp.transport.shipment.label', 'order_id')
+#
+# 状态流转：
+#   Draft -> Generated (标记/PDF上传) -> Printed (打印) -> Cancelled (作废)
+#   Draft -> Cancelled / Generated -> Cancelled
+#
+# 权限: Manager=RWCD / Operator=RWC(no unlink) / Viewer=R
+# 测试: CRUD / 状态机 / state guards / PDF上传 / transport_type 兼容 / 批量打印
