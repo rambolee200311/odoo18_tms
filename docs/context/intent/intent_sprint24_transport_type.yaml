@@ -1,7 +1,7 @@
 # ==============================================================
 # 【Sprint24 正式意图契约】
-# 功能：Transport Type 架构重构 + Carrier Service 档案基座
-# 前置基线：Sprint23 DGD 合规 → Sprint24 运输类型档案化 + 承运商服务
+# 功能：运输主数据治理 — 运输类型标准化 + 承运能力档案基座
+# 前置基线：Sprint23 DGD 合规 → Sprint24 基础档案治理
 # 基线版本：context_version: 1.0.35 → 1.0.36
 # ==============================================================
 
@@ -9,33 +9,45 @@
 intent_id: INT-TMS-SPRINT24-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
-title: Transport Type 档案化重构 + Carrier Service 基座
+title: 运输主数据治理 — Transport Classification & Carrier Capability Base
 target_scope: >
   将 transport_type 从散落在 4 个模型中的重复 Selection 枚举统一重构为
   Many2one → tlmp.transport.type 档案模型，消除冗余定义。
-  同时创建 tlmp.carrier.service 承运商服务档案，作为 Sprint25+ Carrier
-  Adapter Framework 的前置数据基座。
+  旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly），
+  避免字段名冲突。
+
+  同时创建 tlmp.carrier.service 承运商能力档案，增加 carrier_id
+  （Many2one → res.partner）实现承运商公司 ↔ 服务分层。
+
+  Transport Type 增加 category（FTL/LTL/Parcel/Return）和 mode
+  （road/parcel/groupage）分类维度，为未来报表/定价/Carrier Adapter
+  建立统一分类语言。
+
   新增 parcel/groupage 运输类型，补齐 LTL/包裹/拼货场景定义。
 
+  Carrier Service 预设使用通用服务代码（parcel_standard/parcel_express/
+  road_standard/road_priority），不使用 DHL/UPS 等具体承运商名，
+  避免模型概念混淆。
+
 accept_criteria:
-  - "tlmp.transport.type 档案模型完整（code/name/sequence/is_active）"
-  - "8 个预设运输类型：port_to_warehouse/to_customer/pickup_to_warehouse/warehouse_transfer/reverse_logistics/parcel/groupage/all"
-  - "tlmp.carrier.service 档案模型完整（code/name/tracking_url_template/is_active）"
-  - "5 个预设承运商服务：DHL/UPS/DPD/GLS/PostNL"
-  - "transport_order.transport_type 从 Selection 迁移为 Many2one → transport.type"
-  - "transport_request.transport_type 同上迁移"
-  - "transport_rate_base.transport_type 同上迁移"
-  - "pricing_rule.transport_type 同上迁移"
-  - "旧 transport_type Selection 字段保留为 deprecated（readonly+隐藏），数据兼容"
-  - "pickup_plan / container_service 的 type_map 使用 ID 查找"
-  - "所有视图、domain 筛选、group_by 迁移至 transport_type_id"
+  - "tlmp.transport.type 档案完整（code/name/category/mode/sequence/is_active）"
+  - "8 个预设运输类型覆盖 FTL(5) + Parcel(1) + LTL(1) + All(1)"
+  - "tlmp.carrier.service 档案完整（code/name/carrier_id/tracking_url_template/is_active）"
+  - "4 个通用服务预设（parcel_standard/parcel_express/road_standard/road_priority），不使用 DHL/UPS 名"
+  - "旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly + invisible）"
+  - "transport_type_id Many2one 迁移期 DB nullable，create/write 强制必填"
+  - "transport_order / transport_request / transport_rate_base / pricing_rule 四模型迁移"
+  - "pickup_plan / container_service type_map 改为带缓存的 database lookup"
+  - "所有视图、domain、group_by 迁移至 transport_type_id"
   - "Transport Type / Carrier Service 独立菜单（parent=Configuration）"
-  - "权限：Manager 可管理，Operator 只读"
+  - "权限：Manager 可管理 CRUD，Operator 只读"
+  - "测试：数据类型迁移 + 全链路回归（request→quote→order→pickup→rate）"
   - "verify.py 8/8 PASS + odoo_check PASS"
+  - "ADR-024 决策文件记录架构理由"
 
 source:
   type: architecture_upgrade
-  origin_team: 架构治理（AI 建议）
+  origin_team: 架构治理
 
 asset_snapshot_profile: development
 asset_snapshot_mode: human
@@ -54,13 +66,13 @@ loop_policy:
 
 affected_assets:
   business:
-    - transport_type（新档案模型，FTL/LTL/Parcel/Groupage 场景定义）
-    - carrier_service（新档案模型，Sprint25 前置基座）
+    - transport_type（新档案模型，FTL/LTL/Parcel/Groupage/Return 分类体系）
+    - carrier_service（新档案模型，承运商公司↔服务分层）
     - LTL 铁律（stock_rule.md §9 补充）
   architecture:
     - transport_order / transport_request 模型重构
-    - transport_rate_base / pricing_rule 模型适配
-    - pickup_plan / container_service type_map 迁移
+    - transport_rate_base / pricing_rule 数据层迁移（不改业务逻辑）
+    - pickup_plan / container_service type_map 带缓存迁移
 
 validation_strategy:
   layers:
@@ -72,34 +84,36 @@ validation_strategy:
   required_pass: all
 
 deliverables:
-  - "addons/wd_tlms/models/transport_type.py（新增：tlmp.transport.type 档案模型）"
-  - "addons/wd_tlms/models/carrier_service.py（新增：tlmp.carrier.service 档案模型）"
-  - "addons/wd_tlms/data/transport_type_data.xml（8 个预设类型）"
-  - "addons/wd_tlms/data/carrier_service_data.xml（5 个预设服务）"
-  - "addons/wd_tlms/views/transport_type_views.xml（新增：类型 CRUD）"
-  - "addons/wd_tlms/views/carrier_service_views.xml（新增：服务 CRUD）"
-  - "addons/wd_tlms/views/tlmp_menus.xml（增量：2 个配置菜单）"
-  - "addons/wd_tlms/security/ir.model.access.csv（增量：权限行）"
-  - "addons/wd_tlms/__manifest__.py（增量注册）"
-  - "迁移：transport_order / transport_request / rate_base / pricing_rule 的 transport_type 字段"
-  - "迁移：pickup_plan / pickup_plan_fix / container_service 的 type_map"
-  - "迁移：6 处视图中的 transport_type 显示为 transport_type_id"
-  - "addons/wd_tlms/tests/test_transport_type.py（新增：测试）"
+  - "addons/wd_tlms/models/transport_type.py（新增：tlmp.transport.type）"
+  - "addons/wd_tlms/models/carrier_service.py（新增：tlmp.carrier.service + carrier_id）"
+  - "addons/wd_tlms/data/transport_type_data.xml（8 预设，含 category/mode）"
+  - "addons/wd_tlms/data/carrier_service_data.xml（4 通用服务预设）"
+  - "addons/wd_tlms/views/transport_type_views.xml"
+  - "addons/wd_tlms/views/carrier_service_views.xml"
+  - "addons/wd_tlms/views/tlmp_menus.xml（2 个配置菜单）"
+  - "迁移：transport_order / transport_request / rate_base / pricing_rule"
+  - "迁移：pickup_plan / pickup_plan_fix / container_service type_map"
+  - "迁移：6 处视图字段替换"
+  - "addons/wd_tlms/tests/test_transport_type_migration.py（迁移测试）"
+  - "addons/wd_tlms/tests/test_transport_type_regression.py（回归测试）"
+  - "docs/architecture/adr/adr_024_transport_type_master_data.md（架构决策记录）"
   - "docs/context/context_version.yaml（1.0.35 → 1.0.36）"
-  - "docs/context/history/decision_note.md（Sprint24 决策记录）"
+  - "docs/context/history/decision_note.md"
 
 limit_constraints: >
-  旧 transport_type Selection 字段保留为 deprecated readonly 直到 Sprint30+。
-  transport_type_id 为非必填（默认可空），旧数据迁移为手动触发脚本。
-  pickup_plan / container_service 的 type_map 使用 database lookup 而非硬编码 dict。
-  Carrier Service 仅做档案模型，不在 order 上建立引用——留待 Sprint25。
-  不涉及 Shipment Label 模型。
+  旧 Selection 字段重命名为 legacy_transport_type（deprecated readonly invisible）。
+  不在同一字段名上做 Selection ↔ Many2one 共存，避免字段名歧义。
+  transport_type_id DB 允许空（迁移期兼容），但 create/write 业务层强制必填。
+  pricing_rule 仅做字段迁移，不改业务计算逻辑（留待 Sprint30 费用引擎重构）。
+  type_map 增加模块级缓存，不重复 SQL。
+  Carrier Service 不预设具体承运商名（DHL/UPS/DPD/GLS/PostNL），仅使用通用服务代码。
+  Carrier Adapter / Shipment Label 留待 Sprint25。
 
 risk_precheck: |
-  旧数据中 transport_type 值为空或非标准值的兼容处理
-  Selection → Many2one 变更对现有 domain 筛选的影响范围
-  pickup_plan / container_service type_map 重构对现有业务流程的影响
-  新增 parcel/groupage 类型对现有统计报表的影响
+  字段重命名 legacy_transport_type 对现有 domain 查询的兼容影响
+  type_map 缓存与数据库实时一致性（迁移期数据不同步风险）
+  pricing_rule 数据迁移但逻辑不改——旧 domain 筛选兼容
+  pickup_plan 中 destination_type → transport_type 映射的准确性
 
 # ══════════════════════════════════════════════════════
 # Goal（详细设计）
@@ -108,78 +122,100 @@ risk_precheck: |
 goal: >
   消除 transport_type 在 4 个模型中的冗余 Selection 定义，统一为
   tlmp.transport.type 档案模型，实现单点维护。
-  新增 parcel/groupage 运输类型补齐 LTL/包裹场景定义。
-  同时创建 Carrier Service 档案作为未来 Carrier Adapter 的前置数据基座。
+  新增 category/mode 分类维度，为未来报表、定价、Carrier Adapter
+  建立统一业务分类语言。
+  同时创建 Carrier Service 档案（含 carrier_id 实现承运商公司↔服务分层），
+  作为 Sprint25 Shipment Label + Carrier Adapter 的前置数据基座。
+  旧字段重命名 legacy_transport_type 避免歧义。
 
-  FTL 场景（port_to_warehouse/to_customer/pickup_to_warehouse/warehouse_transfer/
-  reverse_logistics）保持现有流程不变。parcel/groupage 新增类型
-  在 Sprint25（Shipment Label）中才实际使用。
+  FTL 场景（5 类）保持现有流程不变。parcel/groupage 新增类型
+  在 Sprint25 中才实际使用。pricing_rule 仅做字段迁移，不改计算逻辑。
 
 scope:
   allow:
-    - "addons/wd_tlms/models/transport_type.py（新增）"
-    - "addons/wd_tlms/models/carrier_service.py（新增）"
-    - "addons/wd_tlms/models/transport_order.py（迁移）"
-    - "addons/wd_tlms/models/transport_request.py（迁移）"
-    - "addons/wd_tlms/models/transport_rate_base.py（迁移）"
-    - "addons/wd_tlms/models/pricing_rule.py（迁移）"
-    - "addons/wd_tlms/models/pickup_plan.py（type_map 迁移）"
-    - "addons/wd_tlms/models/pickup_plan_fix.py（type_map 迁移）"
-    - "addons/wd_tlms/models/container_service.py（type_map 迁移）"
-    - "addons/wd_tlms/models/__init__.py（增量引入）"
-    - "addons/wd_tlms/data/transport_type_data.xml（新增）"
-    - "addons/wd_tlms/data/carrier_service_data.xml（新增）"
-    - "addons/wd_tlms/views/transport_type_views.xml（新增）"
-    - "addons/wd_tlms/views/carrier_service_views.xml（新增）"
-    - "addons/wd_tlms/views/transport_fee_views.xml（增量：字段替换）"
-    - "addons/wd_tlms/views/transport_order_views.xml（增量：字段替换）"
-    - "addons/wd_tlms/views/tlmp_menus.xml（增量：2 个菜单）"
-    - "addons/wd_tlms/security/ir.model.access.csv（增量）"
-    - "addons/wd_tlms/security/security.xml（增量：只读权限组）"
-    - "addons/wd_tlms/__manifest__.py（增量注册）"
-    - "addons/wd_tlms/tests/test_transport_type.py（新增）"
-    - "docs/context/context_version.yaml（1.0.35→1.0.36）"
+    - "addons/wd_tlms/models/transport_type.py"
+    - "addons/wd_tlms/models/carrier_service.py"
+    - "addons/wd_tlms/models/transport_order.py（legacy_ 重命名 + transport_type_id）"
+    - "addons/wd_tlms/models/transport_request.py（legacy_ 重命名 + transport_type_id）"
+    - "addons/wd_tlms/models/transport_rate_base.py（legacy_ 重命名 + transport_type_id）"
+    - "addons/wd_tlms/models/pricing_rule.py（仅字段迁移，不改逻辑）"
+    - "addons/wd_tlms/models/pickup_plan.py（type_map + 缓存）"
+    - "addons/wd_tlms/models/pickup_plan_fix.py（type_map + 缓存）"
+    - "addons/wd_tlms/models/container_service.py（type_map + 缓存）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/data/transport_type_data.xml"
+    - "addons/wd_tlms/data/carrier_service_data.xml"
+    - "addons/wd_tlms/views/transport_type_views.xml"
+    - "addons/wd_tlms/views/carrier_service_views.xml"
+    - "addons/wd_tlms/views/transport_fee_views.xml（字段替换）"
+    - "addons/wd_tlms/views/transport_order_views.xml（字段替换）"
+    - "addons/wd_tlms/views/tlmp_menus.xml"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/security/security.xml"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_transport_type_migration.py"
+    - "addons/wd_tlms/tests/test_transport_type_regression.py"
+    - "docs/architecture/adr/adr_024_transport_type_master_data.md"
+    - "docs/context/context_version.yaml"
     - "docs/context/history/decision_note.md"
 
   forbid:
     - 禁止创建 Carrier Adapter / API 集成代码
     - 禁止创建 Shipment Label 模型（Sprint25）
+    - 禁止修改 pricing_rule 业务计算逻辑
     - 禁止修改 transport_event / exception / extra_charge / scene 等跟踪模型
-    - 禁止修改 cmr / dgd / pod 等现有合规文档模型
+    - 禁止修改 cmr / dgd / pod 等合规文档模型
     - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
     - 禁止修改 profiles / context_loader / intent 体系
-    - 禁止移除旧 transport_type Selection 字段（保留 deprecated）
-    - 禁止引入外部库依赖
+    - 禁止使用具体承运商名（DHL/UPS/DPD/GLS/PostNL）作为 service 预设
+    - 禁止在同一字段名上混合 Selection 与 Many2one
 
 # 模型设计参考：
+#
 # tlmp.transport.type
-#   code = Char(required, unique)
+#   code = Char(required, unique)       # port_to_warehouse, parcel, ...
 #   name = Char(required, translate)
+#   category = Selection(FTL / LTL / Parcel / Return)  # 业务分类
+#   mode = Selection(road / parcel / groupage)          # 运输模式
 #   description = Text
 #   sequence = Integer(default=10)
 #   is_active = Boolean(default=True)
 #
+# presets:
+#   FTL:    port_to_warehouse, to_customer, pickup_to_warehouse,
+#           warehouse_transfer, reverse_logistics
+#   Parcel: parcel
+#   LTL:    groupage
+#   Other:  all (for rate_base)
+#
 # tlmp.carrier.service
-#   code = Char(required, unique)
+#   code = Char(required, unique)       # parcel_standard, road_priority, ...
 #   name = Char(required, translate)
-#   tracking_url_template = Char(URL with {tracking_number})
+#   carrier_id = Many2one(res.partner)  # 承运商公司（如 DHL/UPS/DPD）
+#   tracking_url_template = Char        # URL with {tracking_number}
 #   is_active = Boolean(default=True)
 #
-# 预设数据:
-#   Transport Types: port_to_warehouse, to_customer, pickup_to_warehouse,
-#                    warehouse_transfer, reverse_logistics, parcel, groupage, all
-#   Carrier Services: DHL, UPS, DPD, GLS, PostNL
+# presets (通用服务代码，非具体承运商名):
+#   parcel_standard, parcel_express, road_standard, road_priority
 #
 # 迁移策略:
-#   各模型增加 transport_type_id = Many2one('tlmp.transport.type')
-#   旧 transport_type 保留为 deprecated + readonly + invisible
-#   type_map 改为 self.env['tlmp.transport.type'].search([('code','=',...)]) → id
-#   domain 筛选改为 ('transport_type_id.code', '=', 'port_to_warehouse')
+#   各模型字段:
+#     legacy_transport_type = fields.Selection(...deprecated=True...)
+#     transport_type_id = fields.Many2one('tlmp.transport.type', ...)
+#   旧 Selection 字段重命名为 legacy_transport_type 开头
+#   DB: transport_type_id nullable（迁移期）
+#   create/write: transport_type_id 强制必填（business required）
+#   pickup_plan type_map: 模块级 _transport_type_cache dict(code→id)
 #
 # 测试:
-#   - transport.type CRUD
-#   - carrier.service CRUD  
-#   - order/request/rate_base/pricing_rule type_id 关联
-#   - 旧 transport_type 兼容（不报错）
-#   - type_map 迁移后值正确
-#   - views 正常渲染
+#   迁移测试:
+#     - 旧数据 transport_type='parcel' → transport_type_id.code='parcel'
+#     - legacy_transport_type 兼容读取
+#   回归测试:
+#     - request → quote → order → pickup → rate 全链路
+#     - type_map 映射准确性
+#     - views 正常渲染
+#   基础测试:
+#     - transport.type CRUD
+#     - carrier.service CRUD
+#     - category/mode 字段

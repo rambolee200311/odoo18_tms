@@ -1,12 +1,12 @@
 # ==============================================================
-# 【Sprint24 正式意图契约】
+# 【Sprint25 正式意图契约】
 # 功能：Shipment Label 基座 — LTL/包裹运输标签管理
-# 前置基线：Sprint23 DGD 合规 → Sprint24 包裹/拼货标签基座
-# 基线版本：context_version: 1.0.35 → 1.0.36
+# 前置基线：Sprint24 Transport Type 架构重构 → Sprint25 包裹/拼货标签
+# 基线版本：context_version: 1.0.36 → 1.0.37
 # ==============================================================
 
 # ── Intent 基础元信息 ──────────────────────────────
-intent_id: INT-TMS-SPRINT24-001
+intent_id: INT-TMS-SPRINT25-001
 intent_work_type: Development
 intent_change_type: New Feature
 title: Shipment Label Foundation — LTL/包裹运输标签管理
@@ -130,7 +130,7 @@ scope:
 #   name = fields.Char(default=_('New'), auto-seq)
 #   order_id = Many2one('tlmp.transport.order', required, index)
 #   sequence = Integer(default=10)
-#   carrier_service = Selection(DHL/UPS/DPD/GLS/PostNL/other)
+#   carrier_service_id = Many2one('tlmp.carrier.service')
 #   tracking_number = Char
 #   label_pdf = Binary(attachment=True)
 #   carrier_tracking_url = Char

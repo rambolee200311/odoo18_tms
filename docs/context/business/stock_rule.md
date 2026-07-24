@@ -295,6 +295,6 @@ transport.dgd（一对一绑定 order）
 - Label 不反写 order 状态，不影响 CMR/DGD/POD 生命周期
 
 ### 9.4 承运商服务（Carrier Service）管理策略
-- Sprint24：carrier_service 使用 Selection 枚举值（DHL/UPS/DPD/GLS/PostNL）
-- Sprint25+：升级为 Carrier Service 档案主数据（Many2one）+ Carrier Adapter Framework
+- Sprint24（已完成）：Carrier Service 档案主数据（tlmp.carrier.service，通用服务代码）
+- Sprint25：Shipment Label 使用 carrier_service_id Many2one 引用档案
 - 标签仅记录，不自动取号/打印/tracking 同步
