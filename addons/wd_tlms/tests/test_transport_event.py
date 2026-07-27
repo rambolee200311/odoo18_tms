@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Transport Event / Exception / ExtraCharge — 状态流转 + 约束测试"""
-from odoo.tests.common import TransactionCase, SavepointCase
+from odoo.tests.common import TransactionCase, TransactionCase
 from odoo.exceptions import UserError, ValidationError
 
 
@@ -127,7 +127,7 @@ class TestTransportException(TransactionCase):
             self.order.action_close()
 
 
-class TestExtraCharge(SavepointCase):
+class TestExtraCharge(TransactionCase):
     """ExtraCharge: CRUD, summary"""
 
     def setUp(self):

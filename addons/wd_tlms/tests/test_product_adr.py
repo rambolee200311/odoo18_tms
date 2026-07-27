@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Product ADR + MRN/T1 — 字段 CRUD 测试"""
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import TransactionCase
 
 
-class TestProductADR(SavepointCase):
+class TestProductADR(TransactionCase):
     """product.product ADR fields + order MRN/T1 fields"""
 
     def setUp(self):

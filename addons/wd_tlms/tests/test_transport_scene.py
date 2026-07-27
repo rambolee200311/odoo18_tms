@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Transport Scene / EventType / SceneEvent / CargoRule — 配置模型测试"""
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 
 
-class TestTransportScene(SavepointCase):
+class TestTransportScene(TransactionCase):
     """TransportScene: lifecycle, constraint, config effect"""
 
     def setUp(self):
