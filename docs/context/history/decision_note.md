@@ -738,3 +738,26 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 3. Printed 状态不可取消（已打印标签不可撤回）
 4. 批量打印 action（action_print_batch）过滤 generated/printed 状态
 5. label 与 CMR/DGD/POD 互不阻塞，独立生命周期
+
+---
+## Sprint25 最终提交 — 测试执行确认 + test_runner.py 升级
+**时间**: 2026-07-27
+**基线**: context_version 1.0.38 → 1.0.39
+
+### 测试现状
+| 项目 | 状态 |
+|------|------|
+| test_transport_shipment_label.py | ✅ 11 TestCase 已编写编译通过 |
+| verify.py 8/8 | 🟢 PASS |
+| -u wd_tlms --stop-after-init | ✅ EXIT=0 |
+| -u wd_tlms --test-enable | ❌ EXIT=255（沙箱拦截） |
+| test_runner.py | ✅ 已升级（数据库预检 + 沙箱处理） |
+
+### test_runner.py 升级内容
+1. 数据库预检：自动将 wd_tlms 标记为 to upgrade，强制模块重读
+2. 沙箱拦截识别：exit=255 时输出帮助提示而非误报 SKIP
+3. PGPASSWORD 环境变量支持数据库连接
+
+### 搜索视图清理
+- 删除 transport_un_dictionary_views.xml 中的搜索视图（Odoo 18 视图验证兼容问题）
+- 删除 transport_dgd_views.xml 中的 draft/void 过滤器和 default 属性
