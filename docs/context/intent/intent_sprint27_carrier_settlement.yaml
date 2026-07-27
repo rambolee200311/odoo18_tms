@@ -1,0 +1,219 @@
+# ==============================================================
+# 【Sprint27 意图契约】
+# 功能：承运商结算数据底座 — Billing Document + Charge Type + Allocation
+# 前置基线：Sprint26 测试修复 + Reports 永久方案
+# 基线版本：context_version: 1.0.41 → 1.0.42
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT27-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 承运商结算数据底座 — Carrier Settlement Data Foundation
+target_scope: >
+  基于 requirements/承运商结算需求说明书 V1.2，实现 P0 子集。
+  本期聚焦承运原始单据存储（billing.document + billing.line）、
+  费用类型字典（charge.type）、多单分摊（allocation + audit）。
+  不涉及：自动匹配引擎、transport.reference 全局引用、
+  月度结算批次、争议工单。
+
+accept_criteria:
+  # 模型
+  - "tlmp.carrier.billing.document 模型完整（document_no/document_type/amount_sign/transport_mode/双状态机）"
+  - "tlmp.carrier.billing.line 模型完整（charge_type_id/service_date/raw_amount/tax/line_total）"
+  - "tlmp.carrier.charge.type 模型完整（code/name/main_category/sub_category/is_active）"
+  - "tlmp.carrier.settlement.allocation 模型完整（billing_line_id/charge_type_id/transport_order_id/allocated_amount）"
+  - "tlmp.carrier.allocation_history 模型完整（alloc_id/old_amount/new_amount/change_reason/operator）"
+  # 视图
+  - "Billing Document 表单/列表/搜索（含line_ids tab）"
+  - "Charge Type CRUD 维护页面"
+  - "Allocation inline list + history 只读tab"
+  # 数据
+  - "charge.type 预设：Transport Base / Fuel Surcharge / Detention / 等高频费用类型"
+  # 权限
+  - "Settlement Clerk 角色：完整 CRUD"
+  - "Operator 角色：只读"
+  - "Finance 角色：只读"
+  # 测试 + 门禁
+  - "CRUD / 状态机 / allocation / history 测试用例"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 财务/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - carrier_billing_document（新）
+    - carrier_charge_type（新）
+    - carrier_settlement_allocation（新）
+    - transport_order（settlement 字段增量）
+  architecture:
+    - settlement_views（新视图）
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  # 新模型
+  - "models/transport_carrier_charge_type.py（新增）"
+  - "models/transport_carrier_billing.py（新增：document + line）"
+  - "models/transport_carrier_allocation.py（新增：allocation + history）"
+  # 存量扩展
+  - "models/transport_order.py（增量：billing_document_ids 关联）"
+  - "models/carrier_settlement.py（增量：billing_document_id 关联）"
+  # 数据
+  - "data/transport_charge_type_data.xml（预设费用类型）"
+  # 视图
+  - "views/transport_carrier_charge_type_views.xml"
+  - "views/transport_carrier_billing_views.xml"
+  - "views/transport_carrier_allocation_views.xml"
+  # 安全
+  - "security/ir.model.access.csv（6行新权限）"
+  - "security/security.xml（Settlement Clerk 组）"
+  # 测试
+  - "tests/test_transport_carrier_settlement.py"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.41→1.0.42）"
+  - "docs/context/history/decision_note.md"
+
+limit_constraints: >
+  本期不创建 transport.reference 模型（跨系统复杂度高，延后 Sprint28+）。
+  不创建 match.rule 自动匹配引擎。
+  不创建 settlement.batch/case 月度批次和争议工单。
+  billing.document 只支持人工录入（不上传解析）。
+  分摊仅支持手动分配（不支持比例自动分摊）。
+  历史审计仅记录 allocation 金额变更（暂不记录其他操作）。
+  旧 carrier_settlement 模型保留作为聚合层，与新 billing 模型通过关联字段连接。
+  不修改 transport_order 的 action_settle/_check_settle_lock 逻辑。
+
+risk_precheck: |
+  billing.document 双状态机（解析+结算）在 UI 上的可操作性
+  allocation 人工修改触发 history 审计的一致性
+  旧 carrier_settlement 模型与新 billing 模型的共存与数据流
+  权限组 Settlement Clerk 的职责边界
+
+# ══════════════════════════════════════════════════════
+# Goal
+# ══════════════════════════════════════════════════════
+
+goal: >
+  建设承运商结算数据底座，为后续自动匹配、月度批次、争议工单
+  提供基础数据结构。本期聚焦：
+  1. 承运原始单据存储（billing.document + billing.line）
+  2. 费用类型字典（charge.type，两级分类+预设数据）
+  3. 多单分摊（allocation + allocation_history 审计日志）
+  4. 人工录入/分配 UI
+
+  旧 carrier_settlement 模型保留为聚合层，通过关联字段
+  连接到新的 billing.document。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_carrier_charge_type.py"
+    - "addons/wd_tlms/models/transport_carrier_billing.py"
+    - "addons/wd_tlms/models/transport_carrier_allocation.py"
+    - "addons/wd_tlms/models/transport_order.py（增量）"
+    - "addons/wd_tlms/models/carrier_settlement.py（增量）"
+    - "addons/wd_tlms/models/__init__.py（注册）"
+    - "addons/wd_tlms/data/transport_charge_type_data.xml"
+    - "addons/wd_tlms/views/transport_carrier_charge_type_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_billing_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_allocation_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml（新菜单）"
+    - "addons/wd_tlms/security/security.xml（新增组）"
+    - "addons/wd_tlms/security/ir.model.access.csv（新权限）"
+    - "addons/wd_tlms/__manifest__.py（注册）"
+    - "addons/wd_tlms/tests/test_transport_carrier_settlement.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止创建 transport.reference 模型
+    - 禁止修改 transport_event/exception/extra_charge 等跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 等文档模型
+    - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
+    - 禁止修改 profiles / context_loader / intent 体系
+    - 禁止修改 pricing_rule 计算逻辑
+
+# 模型设计参考：
+# tlmp.carrier.charge.type
+#   code = Char(required, unique)
+#   name = Char(required, translate)
+#   main_category = Selection(transport / surcharge / operation / penalty / adjustment)
+#   sub_category = Char
+#   is_active = Boolean
+#
+# tlmp.carrier.billing.document
+#   name = Char(default=_('New'), auto-seq)
+#   carrier_id = Many2one(res.partner)
+#   document_no = Char(承运原始单号)
+#   document_type = Selection(Invoice/Statement/Debit_Note/Credit_Note/Cost_Sheet)
+#   billing_period_start/end = Date
+#   currency_id = Many2one(res.currency)
+#   total_amount = Monetary
+#   amount_sign = Selection(positive/negative)
+#   transport_mode = Selection(TRUCK/EXPRESS/3PL)
+#   state: parse_state(Draft→Uploaded→Parsed→Validated/Validation_Failed)
+#   state: settle_state(Matching→Exception→Review→Approved→Paid→Closed)
+#   line_ids = One2many(billing.line)
+#   old_settlement_id = Many2one(carrier.settlement) — link to legacy
+#
+# tlmp.carrier.billing.line
+#   document_id = Many2one(billing.document)
+#   service_date = Date
+#   raw_description = Text
+#   charge_type_id = Many2one(charge.type)
+#   net_amount = Monetary
+#   tax = Monetary
+#   line_total = Monetary
+#   amount_sign = Selection(positive/negative)
+#   transport_order_id = Many2one(transport.order, optional, for quick match)
+#   allocation_ids = One2many(allocation)
+#
+# tlmp.carrier.settlement.allocation
+#   billing_line_id = Many2one(billing.line)
+#   charge_type_id = Many2one(charge.type)
+#   transport_order_id = Many2one(transport.order, required)
+#   allocated_amount = Monetary
+#   allocation_method = Selection(auto/manual)
+#   change_reason = Char(required only if modified)
+#   history_ids = One2many(allocation.history)
+#
+# tlmp.carrier.allocation.history
+#   alloc_id = Many2one(allocation)
+#   old_amount = Monetary
+#   new_amount = Monetary
+#   change_reason = Text(required)
+#   operator = Many2one(res.users)
+#   change_date = Datetime
+#
+# 权限:
+#   group_tlm_settlement_clerk (继承 operator)
+#     billing.document: RWC (no unlink)
+#     billing.line: RWC
+#     charge.type: R
+#     allocation: RWCD (full)
+#     allocation.history: R
+#   group_tlm_financier: read-only on all
+#   group_tlm_operator: read-only on billing, no allocation
