@@ -28,7 +28,7 @@
                     <group>
                         <group string="UN Identification">
                             <field name="un_number"/>
-                            <field name="proper_shipping_number" invisible="1"/>
+                            <field name="proper_shipping_name" invisible="1"/>
                             <field name="proper_shipping_name"/>
                             <field name="hazard_class"/>
                             <field name="classification_code"/>
@@ -57,10 +57,12 @@
             <search string="Search UN Dictionary">
                 <field name="un_number"/>
                 <field name="proper_shipping_name"/>
-                <field name="hazard_class"/>
-                <filter name="active" string="Active" domain="[('is_active','=',True)]" default="1"/>
                 <separator/>
+                <filter name="active" string="Active" domain="[('is_active','=',True)]"/>
                 <filter name="inactive" string="Inactive" domain="[('is_active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_category" string="Category" context="{'group_by':'category'}"/>
+                </group>
             </search>
         </field>
     </record>

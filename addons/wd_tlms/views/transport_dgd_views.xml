@@ -112,7 +112,7 @@
     </record>
 
     <!-- Search View -->
-    <record id="view_tlmp_dgd_search" model="ir.ui.view">
+    <record id="view_tlmp_dgd_search" model="ir.ui.view" forcecreate="false">
         <field name="name">tlmp.transport.dgd.search</field>
         <field name="model">tlmp.transport.dgd</field>
         <field name="arch" type="xml">
@@ -121,10 +121,8 @@
                 <field name="order_id"/>
                 <field name="state"/>
                 <separator/>
-                <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
                 <filter name="active_dgd" string="Active"
-                        domain="[('state','not in',('void','archived'))]" default="1"/>
-                <filter name="void" string="Void" domain="[('state','=','void')]"/>
+                        domain="[('state','not in',('void','archived'))]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_state" string="Status" context="{'group_by':'state'}"/>
                 </group>

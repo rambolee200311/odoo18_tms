@@ -38,7 +38,6 @@
         <field name="arch" type="xml">
             <pivot string="Exception Summary" disable_linking="1">
                 <field name="exception_type" type="row"/>
-                <field name="order_id.scene_id" type="row"/>
                 <field name="exception_state" type="col"/>
                 <field name="id" type="measure"/>
             </pivot>
