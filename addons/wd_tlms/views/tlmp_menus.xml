@@ -34,7 +34,7 @@
               action="action_tlmp_order" sequence="20"/>
     <menuitem id="menu_tlmp_tracking_group" name="Tracking" parent="menu_tlmp_exec_group" sequence="25"/>
     <menuitem id="menu_tlmp_tracking" name="Order Tracking" parent="menu_tlmp_tracking_group"
-              action="action_tlmp_tracking" sequence="10"/>
+              sequence="10"/>
     <menuitem id="menu_tlmp_transport_events" name="Events" parent="menu_tlmp_tracking_group"
               action="action_tlmp_transport_event" sequence="20"/>
     <menuitem id="menu_tlmp_exceptions" name="Exceptions" parent="menu_tlmp_tracking_group"
