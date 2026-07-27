@@ -218,3 +218,69 @@ depends: base, mail, stock, account, portal, contacts, product, fleet, worlddepo
 - Odoo 15, 16, 17, 18 官方 release notes
 - Odoo 18 源码 (`/odoo/release.py` 确认为 18.0)
 - 本项目运行错误日志（BUG-001 ~ BUG-004）
+
+---
+
+## 六、Sprint25 发现的重要 Odoo 18 行为
+
+### 6.1 `aggregator` 属性（Pivot/Graph 视图）
+
+| 行为 | 路径 | 结果 |
+|------|------|------|
+| `aggregator="min"` 在 pivot `<field type="measure">` 上 | CLI `-u wd_tlms` | ✅ 接受 |
+| `aggregator="min"` 在 pivot `<field type="measure">` 上 | UI `button_immediate_upgrade` | ❌ `Invalid view definition` |
+| `aggregator="min"` 在 graph `<field type="measure">` 上 | CLI `-u wd_tlms` | ✅ 接受 |
+| `aggregator="min"` 在 graph `<field type="measure">` 上 | UI `button_immediate_upgrade` | ❌ `Invalid view definition` |
+| 无 `aggregator` + `type="measure"` | GraphModel/PivotModel 渲染 | ❌ `No aggregate function for measure` |
+| 无 `type="measure"`（默认 count） | GraphModel 渲染 | ✅ 正常 |
+
+**结论**: Odoo 18 的 `button_immediate_upgrade` 在任何视图类型上都不接受 `aggregator` 属性，而 JS 侧的 GraphModel/PivotModel 要求 `type="measure"` 的字段必须有 `aggregator`。两者冲突，无法同时满足。
+
+**Workaround**: 删除 `type="measure"` 字段，graph/pivot 回退到默认 COUNT（按分类统计记录数）。
+
+### 6.2 搜索视图兼容性
+
+| 行为 | 路径 | 结果 |
+|------|------|------|
+| `<search>` 带 `<field>`+`<filter>`+`<group>` | CLI `-u wd_tlms` | ✅ 接受 |
+| 同上 | UI `button_immediate_upgrade` | ❌ `Invalid view definition` |
+| 删除搜索视图 | CLI / UI 均通过 | ✅ |
+
+**结论**: Odoo 18 的 `button_immediate_upgrade` 对搜索视图的结构验证比 CLI `-u` 更严格。部分在 `-u` 下通过的搜索视图在 UI 升级时会失败。
+
+**Workaround**: 删除所有自定义搜索视图。系统默认的搜索功能（`<field>` 在 tree/list 中）仍然有效。
+
+### 6.3 TransientModel 权限要求
+
+| 行为 | 结果 |
+|------|------|
+| `perm_read=1, perm_create=0` | ❌ `not allowed to create` 错误 |
+| `perm_read=1, perm_create=1, perm_write=1` | ✅ 正常 |
+
+**结论**: Odoo 18 的 TransientModel 需要 `perm_create` 和 `perm_write` 权限才能正常使用。
+
+### 6.4 `forcecreate="false"` 的实际作用范围
+
+| 用途 | 效果 |
+|------|------|
+| `inherit_id ref=` 外部 ID 不存在时静默跳过 | ✅ 有效 |
+| 搜索视图 / pivot / graph 验证失败时跳过 | ❌ 无效 |
+
+**结论**: `forcecreate="false"` 仅影响 `ir.model.data` 的 `id_get` 操作（`ref=` 引用解析），不影响视图结构验证（`_tag_root` 中的 ParseError）。
+
+### 6.5 报告视图最终架构
+
+```
+Reports 菜单
+  ├── Delivery Timeliness (graph, count by scene)
+  └── Exception Summary (graph, count by type)
+
+限制: graph 视图不使用 type="measure"，显示记录数量统计。
+      如需日期对比（planned vs actual），需要 Odoo 18 正式修复 aggregator 兼容性。
+```
+
+### 参考来源
+- Odoo 18 官方 release notes
+- CSDN: Odoo 18 升级避坑指南（https://lakang.blog.csdn.net/article/details/156727350）
+- 本项目 Sprint25 bug 修复日志（BUG-005 ~ BUG-010）
+- Odoo 18 源码 (`/odoo/tools/convert.py`, `/odoo/addons/web/static/src/views/graph/`)
