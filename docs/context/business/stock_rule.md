@@ -338,7 +338,7 @@ transport.dgd（一对一绑定 order）
 - 分摊金额只影响承运商成本，不影响客户账单
 
 ### 10.5 费用类型体系
-- charge.type 分两级：main_category（5 大类）→ sub_category（二级细项）
+- charge.type 分两级：main_category（6 大类）→ sub_category（二级细项）
 - 5 大类：transport（基础运费）/ surcharge（附加费）/ operation（操作费）/ penalty（滞期罚金）/ adjustment（调账）
 - 系统预设高频费用类型，后续可维护扩展
 

@@ -24,6 +24,7 @@ accept_criteria:
   - "tlmp.carrier.settlement.allocation 模型完整（billing_line_id/charge_type_id/transport_order_id/allocated_amount）"
   - "tlmp.carrier.allocation_history 模型完整（alloc_id/old_amount/new_amount/change_reason/operator）"
   # 视图
+  - "billing.document 为唯一账单事实源，carrier_settlement 仅聚合不存金额"
   - "Billing Document 表单/列表/搜索（含line_ids tab）"
   - "Charge Type CRUD 维护页面"
   - "Allocation inline list + history 只读tab"
@@ -34,7 +35,10 @@ accept_criteria:
   - "Operator 角色：只读"
   - "Finance 角色：只读"
   # 测试 + 门禁
-  - "CRUD / 状态机 / allocation / history 测试用例"
+  - "金额一致性测试（line_total → allocation sum → remaining）
+  - "超额分配拒绝测试（allocation_total > line_total → error）
+  - "变更审计测试（reallocation → history 记录）
+  - "CRUD / 状态机 / allocation / history 基础测试"
   - "verify.py 8/8 PASS + odoo_check PASS"
 
 source:
@@ -61,7 +65,7 @@ affected_assets:
     - carrier_billing_document（新）
     - carrier_charge_type（新）
     - carrier_settlement_allocation（新）
-    - transport_order（settlement 字段增量）
+    - transport_order（allocated_carrier_cost 字段增量）
   architecture:
     - settlement_views（新视图）
 
@@ -97,7 +101,12 @@ deliverables:
   - "docs/context/context_version.yaml（1.0.41→1.0.42）"
   - "docs/context/history/decision_note.md"
 
-limit_constraints: >
+limit_constraints: |
+  settlement_data_authority:
+    source_of_truth: billing.document → billing.line
+    aggregate_only: carrier_settlement（不保存独立金额，仅聚合分配数据）
+    allocation: sum(amount) <= billing_line.line_total
+  
   本期不创建 transport.reference 模型（跨系统复杂度高，延后 Sprint28+）。
   不创建 match.rule 自动匹配引擎。
   不创建 settlement.batch/case 月度批次和争议工单。
@@ -108,7 +117,7 @@ limit_constraints: >
   不修改 transport_order 的 action_settle/_check_settle_lock 逻辑。
 
 risk_precheck: |
-  billing.document 双状态机（解析+结算）在 UI 上的可操作性
+  billing.document 简化状态机（Draft→Confirmed→Cancelled）
   allocation 人工修改触发 history 审计的一致性
   旧 carrier_settlement 模型与新 billing 模型的共存与数据流
   权限组 Settlement Clerk 的职责边界
@@ -150,6 +159,9 @@ scope:
 
   forbid:
     - 禁止创建 transport.reference 模型
+    - 本期非目标：自动解析PDF、Excel导入、OCR、自动匹配、
+      模糊匹配、settlement.batch/case、审批流、付款对接、
+      承运商API
     - 禁止修改 transport_event/exception/extra_charge 等跟踪模型
     - 禁止修改 cmr/dgd/pod/shipment_label 等文档模型
     - 禁止修改 execution/scripts/ 和 governance/ 下任何文件
@@ -160,7 +172,7 @@ scope:
 # tlmp.carrier.charge.type
 #   code = Char(required, unique)
 #   name = Char(required, translate)
-#   main_category = Selection(transport / surcharge / operation / penalty / adjustment)
+#   main_category = Selection(freight / surcharge / accessorial / tax / adjustment / penalty)
 #   sub_category = Char
 #   is_active = Boolean
 #
@@ -174,9 +186,9 @@ scope:
 #   total_amount = Monetary
 #   amount_sign = Selection(positive/negative)
 #   transport_mode = Selection(TRUCK/EXPRESS/3PL)
-#   state: parse_state(Draft→Uploaded→Parsed→Validated/Validation_Failed)
-#   state: settle_state(Matching→Exception→Review→Approved→Paid→Closed)
+#   state: (Draft→Confirmed→Cancelled) — 简化状态机，上传/解析/审批状态延后Sprint30+
 #   line_ids = One2many(billing.line)
+#   carrier_service_id = Many2one(carrier.service, optional)
 #   old_settlement_id = Many2one(carrier.settlement) — link to legacy
 #
 # tlmp.carrier.billing.line
@@ -195,10 +207,13 @@ scope:
 #   billing_line_id = Many2one(billing.line)
 #   charge_type_id = Many2one(charge.type)
 #   transport_order_id = Many2one(transport.order, required)
-#   allocated_amount = Monetary
+#   allocated_amount = Monetary (约束: sum <= billing_line.line_total，不可为负)
 #   allocation_method = Selection(auto/manual)
 #   change_reason = Char(required only if modified)
 #   history_ids = One2many(allocation.history)
+#   _sql_constraints:
+#     - unique(billing_line_id, transport_order_id) — 防重复
+#     - check(allocated_amount >= 0) — 不可为负
 #
 # tlmp.carrier.allocation.history
 #   alloc_id = Many2one(allocation)
@@ -211,9 +226,9 @@ scope:
 # 权限:
 #   group_tlm_settlement_clerk (继承 operator)
 #     billing.document: RWC (no unlink)
-#     billing.line: RWC
+#     billing.line: RWC (no unlink)
 #     charge.type: R
-#     allocation: RWCD (full)
+#     allocation: RWC (no unlink)
 #     allocation.history: R
 #   group_tlm_financier: read-only on all
 #   group_tlm_operator: read-only on billing, no allocation
