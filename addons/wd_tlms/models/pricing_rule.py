@@ -18,13 +18,9 @@ class PricingRule(models.Model):
         ('contracted', 'Contracted'),
         ('subcontracted', 'Subcontracted'),
     ], string='Carrier Type')
-    transport_type = fields.Selection([
-        ('port_to_warehouse', 'Terminal to Warehouse'),
-        ('to_customer', 'To Customer'),
-        ('pickup_to_warehouse', 'Pickup to Warehouse'),
-        ('warehouse_transfer', 'Warehouse Transfer'),
-        ('reverse_logistics', 'Reverse Logistics'),
-    ], string='Transport Types')
+    transport_type_id = fields.Many2one('tlmp.transport.type',
+        string='Transport Type', required=False,
+        help='Leave empty to match all transport types.')
     carrier_id = fields.Many2one('res.partner', string='Carrier')
     date_from = fields.Date(string='Valid From')
     date_to = fields.Date(string='Valid To')

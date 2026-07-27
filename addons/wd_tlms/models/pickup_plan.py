@@ -261,13 +261,13 @@ class PickupPlan(models.Model):
             'customer': 'to_customer',
             'self_pickup': 'to_customer',
         }
-        tr_type = type_map.get(self.destination_type, 'to_customer')
+        tr_code = type_map.get(self.destination_type, 'to_customer')
 
         # For reverse logistics (return to warehouse), check if destination is actually back to us
         # Scene 6: Customer → Our Warehouse -> reverse_logistics
         # Determined by: destination_type=customer but warehouse_id is set
         if self.destination_type == 'customer' and self.warehouse_id:
-            tr_type = 'reverse_logistics'
+            tr_code = 'reverse_logistics'
 
         container_nums = ', '.join(
             self.container_line_ids.mapped('container_number'))
@@ -275,7 +275,7 @@ class PickupPlan(models.Model):
         container_count = len(self.container_line_ids)
 
         request = self.env['tlmp.transport.request'].create({
-            'transport_type': tr_type,
+            'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_code).id,
             'partner_id': self.partner_id.id or self.env.user.partner_id.id,
             'customer_ref': self.name,
             'cargo_description':

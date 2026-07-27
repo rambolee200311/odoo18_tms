@@ -83,6 +83,10 @@
               action="action_tlmp_un_dictionary" sequence="46"/>
     <menuitem id="menu_tlmp_dangerous_goods_profile" name="DG Profiles" parent="menu_tlmp_config"
               action="action_tlmp_dangerous_goods_profile" sequence="47"/>
+    <menuitem id="menu_tlmp_transport_type" name="Transport Types" parent="menu_tlmp_config"
+              action="action_tlmp_transport_type" sequence="48"/>
+    <menuitem id="menu_tlmp_carrier_service" name="Carrier Services" parent="menu_tlmp_config"
+              action="action_tlmp_carrier_service" sequence="49"/>
     <!-- DGD Documents in Documents section -->
     <menuitem id="menu_tlmp_dgd" name="DGD Documents" parent="menu_tlmp_docs"
               action="action_tlmp_dgd" sequence="25"/>

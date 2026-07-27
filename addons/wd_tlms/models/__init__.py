@@ -32,3 +32,5 @@ from . import transport_exception
 from . import transport_un_dictionary
 from . import transport_dangerous_goods_profile
 from . import transport_dgd
+from . import transport_type
+from . import carrier_service

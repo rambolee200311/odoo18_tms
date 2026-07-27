@@ -6,7 +6,6 @@ access_tlmp_order_manager,tlmp.order.manager,model_tlmp_transport_order,wd_tlms.
 access_tlmp_container_manager,tlmp.container.manager,model_tlmp_transport_container,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_surcharge_manager,tlmp.surcharge.manager,model_tlmp_surcharge,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_surchtype_manager,tlmp.surchtype.manager,model_tlmp_surcharge_type,wd_tlms.group_tlm_manager,1,1,1,1
-access_tlmp_tracking_manager,tlmp.tracking.manager,model_tlmp_transport_tracking,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_pod_manager,tlmp.pod.manager,model_tlmp_pod,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_cmr_manager,tlmp.cmr.manager,model_tlmp_cmr,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_bill_manager,tlmp.bill.manager,model_tlmp_customer_bill,wd_tlms.group_tlm_manager,1,1,1,1
@@ -17,7 +16,6 @@ access_tlmp_request_operator,tlmp.request.operator,model_tlmp_transport_request,
 access_tlmp_inquiry_operator,tlmp.inquiry.operator,model_tlmp_transport_inquiry,wd_tlms.group_tlm_operator,1,1,1,0
 access_tlmp_quote_operator,tlmp.quote.operator,model_tlmp_transport_quote,wd_tlms.group_tlm_operator,1,1,1,0
 access_tlmp_order_operator,tlmp.order.operator,model_tlmp_transport_order,wd_tlms.group_tlm_operator,1,1,1,0
-access_tlmp_tracking_operator,tlmp.tracking.operator,model_tlmp_transport_tracking,wd_tlms.group_tlm_operator,1,1,1,0
 access_tlmp_pod_operator,tlmp.pod.operator,model_tlmp_pod,wd_tlms.group_tlm_operator,1,1,0,0
 access_tlmp_surcharge_fin,tlmp.surcharge.fin,model_tlmp_surcharge,wd_tlms.group_tlm_financier,1,1,1,0
 access_tlmp_bill_fin,tlmp.bill.fin,model_tlmp_customer_bill,wd_tlms.group_tlm_financier,1,1,1,0
@@ -56,7 +54,6 @@ access_tlmp_tlmp_transport_quote_all,model_tlmp_transport_quote_all,model_tlmp_t
 access_tlmp_tlmp_transport_quote_line_all,model_tlmp_transport_quote_line_all,model_tlmp_transport_quote_line,base.group_user,1,0,0,0
 access_tlmp_tlmp_transport_order_all,model_tlmp_transport_order_all,model_tlmp_transport_order,base.group_user,1,0,0,0
 access_tlmp_tlmp_transport_container_all,model_tlmp_transport_container_all,model_tlmp_transport_container,base.group_user,1,0,0,0
-access_tlmp_tlmp_transport_tracking_all,model_tlmp_transport_tracking_all,model_tlmp_transport_tracking,base.group_user,1,0,0,0
 access_tlmp_tlmp_pod_all,model_tlmp_pod_all,model_tlmp_pod,base.group_user,1,0,0,0
 access_tlmp_tlmp_cmr_all,model_tlmp_cmr_all,model_tlmp_cmr,base.group_user,1,0,0,0
 access_tlmp_tlmp_customer_bill_all,model_tlmp_customer_bill_all,model_tlmp_customer_bill,base.group_user,1,0,0,0
@@ -118,3 +115,10 @@ access_tlmp_dgd_line_all,tlmp.dgd.line.all,model_tlmp_transport_dgd_line,base.gr
 access_tlmp_dgd_void_log_manager,tlmp.dgd.void.log.manager,model_tlmp_transport_dgd_void_log,wd_tlms.group_tlm_compliance_officer,1,1,1,1
 access_tlmp_dgd_void_log_operator,tlmp.dgd.void.log.operator,model_tlmp_transport_dgd_void_log,wd_tlms.group_tlm_operator,1,0,0,0
 access_tlmp_dgd_void_log_all,tlmp.dgd.void.log.all,model_tlmp_transport_dgd_void_log,base.group_user,1,0,0,0
+
+access_tlmp_type_manager,tlmp.type.manager,model_tlmp_transport_type,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_type_operator,tlmp.type.operator,model_tlmp_transport_type,wd_tlms.group_tlm_operator,1,0,0,0
+access_tlmp_type_all,tlmp.type.all,model_tlmp_transport_type,base.group_user,1,0,0,0
+access_tlmp_carrier_service_manager,tlmp.carrier.service.manager,model_tlmp_carrier_service,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_carrier_service_operator,tlmp.carrier.service.operator,model_tlmp_carrier_service,wd_tlms.group_tlm_operator,1,0,0,0
+access_tlmp_carrier_service_all,tlmp.carrier.service.all,model_tlmp_carrier_service,base.group_user,1,0,0,0

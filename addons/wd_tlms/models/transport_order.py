@@ -11,13 +11,8 @@ class TransportOrder(models.Model):
 
     name = fields.Char(string='Order No.', required=True, copy=False,
                        default=lambda self: _('New'))
-    transport_type = fields.Selection([
-        ('port_to_warehouse', 'Terminal to Warehouse'),
-        ('to_customer', 'To Customer'),
-        ('pickup_to_warehouse', 'Pickup to Warehouse'),
-        ('warehouse_transfer', 'Warehouse Transfer'),
-        ('reverse_logistics', 'Reverse Logistics'),
-    ], string='Transport Type', required=True)
+    transport_type_id = fields.Many2one('tlmp.transport.type',
+        string='Transport Type', required=True)
     scene_id = fields.Many2one('tlmp.transport.scene', string='Transport Scene')
     fleet_operation_mode = fields.Selection([
         ('own_fleet', 'Own Fleet'),
@@ -200,8 +195,8 @@ class TransportOrder(models.Model):
             if not vals.get('carrier_id'):
                 carrier = self.env['res.partner'].create({'name': 'System Carrier'})
                 vals['carrier_id'] = carrier.id
-            if not vals.get('transport_type'):
-                vals['transport_type'] = 'port_to_warehouse'
+            if not vals.get('transport_type_id'):
+                vals['transport_type_id'] = self.env['tlmp.transport.type']._get_by_code('port_to_warehouse').id
             if not vals.get('fleet_operation_mode'):
                 vals['fleet_operation_mode'] = 'subcontracted'
         return super().create(vals_list)
@@ -235,7 +230,7 @@ class TransportOrder(models.Model):
         tr_type = type_map.get(pickup_plan.destination_type, 'port_to_warehouse')
         val = {
             'scene_id': pickup_plan.transport_request_id.scene_id.id if pickup_plan.transport_request_id and pickup_plan.transport_request_id.scene_id else False,
-            'transport_type': tr_type,
+            'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_type).id,
             'fleet_operation_mode': 'subcontracted',
             'pickup_plan_id': pickup_plan.id,
             'request_id': pickup_plan.transport_request_id.id if pickup_plan.transport_request_id else False,
@@ -396,7 +391,7 @@ class TransportOrder(models.Model):
         # Priority 3: Use pricing rules
         rules = self.env['tlmp.pricing.rule'].search([
             ('active', '=', True),
-            ('transport_type', '=', self.transport_type),
+            ('transport_type_id', '=', self.transport_type_id.id),
             ('carrier_type', '=', self.fleet_operation_mode),
         ], order='priority asc', limit=1)
         if rules:

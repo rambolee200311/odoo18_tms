@@ -648,3 +648,44 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 
 ### 连带发现
 `ir.model.access.csv` 中 `model_tlmp_transport_tracking` 外部 ID 因该模型加载失败而无法解析，级联导致 3 条权限记录失败。
+
+---
+## Sprint24 — 运输主数据治理：Transport Type 档案化 + Carrier Service 基座
+**时间**: 2026-07-27
+**契约**: INT-TMS-SPRINT24-001
+**基线**: context_version 1.0.35 → 1.0.36
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/transport_type.py` | tlmp.transport.type（code/name/category/mode） |
+| 新增模型 | `models/carrier_service.py` | tlmp.carrier.service（+carrier_id/service_type/transport_type_ids） |
+| 数据 | `data/transport_type_data.xml` | 7 预设运输类型 |
+| 数据 | `data/carrier_service_data.xml` | 4 通用服务预设 |
+| 字段迁移 | `models/transport_order.py` | transport_type Selection→Many2one |
+| 字段迁移 | `models/transport_request.py` | 同上 |
+| 字段迁移 | `models/transport_quote.py` | 同上 |
+| 字段迁移 | `models/transport_rate_base.py` | 同上（required=False） |
+| 字段迁移 | `models/pricing_rule.py` | 同上（required=False，不改逻辑） |
+| type_map 迁移 | `models/pickup_plan.py` | database lookup |
+| type_map 迁移 | `models/pickup_plan_fix.py` | database lookup |
+| type_map 迁移 | `models/container_service.py` | database lookup |
+| 视图 | `views/transport_type_views.xml` | Transport Type CRUD |
+| 视图 | `views/carrier_service_views.xml` | Carrier Service CRUD |
+| 视图迁移 | `views/transport_fee_views.xml` | transport_type→transport_type_id |
+| 视图迁移 | `views/transport_order_views.xml` | transport_type→transport_type_id + event_type→event_type_id |
+| 菜单 | `views/tlmp_menus.xml` | 2 配置菜单 |
+| 权限 | `security/ir.model.access.csv` | 6 行新权限 + 3 行孤儿清除 |
+| 架构记录 | `docs/architecture/adr/adr_024_transport_type_master_data.md` | 3 层决策 |
+| 测试 | `tests/test_transport_type.py` | 20 TestCase |
+
+### 附带修复
+1. **ir.model.access.csv** — 清除 `model_tlmp_transport_tracking` 孤儿行（Sprint16 遗留）
+2. **transport_order_views.xml** — `event_type` → `event_type_id`（Sprint17 字段改名未同步视图）
+
+### 关键决策
+1. Selection→Many2one：直接替换字段名（无生产数据，不保留 legacy 字段）
+2. transport_type_id：request/order required=True，rate/pricing required=False
+3. Carrier Service 使用通用服务代码，不使用 DHL/UPS 等具体承运商名
+4. pricing_rule 仅字段迁移，不改计算逻辑（Sprint30 费用引擎重构）
+5. type_map 使用 database lookup（不硬编码 ID，不做缓存）

@@ -11,7 +11,7 @@
              <list string="Rate Bases" default_order="name">
                  <field name="name"/>
                  <field name="fee_type_id"/>
-                 <field name="transport_type"/>
+                 <field name="transport_type_id"/>
                  <field name="rate_type"/>
                  <field name="amount" widget="monetary"/>
                  <field name="valid_from"/>
@@ -31,7 +31,7 @@
                          <group>
                              <field name="name"/>
                              <field name="fee_type_id" options="{'no_create': True}"/>
-                             <field name="transport_type"/>
+                             <field name="transport_type_id"/>
                              <field name="rate_type"/>
                          </group>
                          <group>
@@ -56,7 +56,7 @@
              <search>
                  <field name="name"/>
                  <field name="fee_type_id"/>
-                 <field name="transport_type"/>
+                 <field name="transport_type_id"/>
                  <field name="rate_type"/>
                  <separator/>
                  <filter string="Active" name="active" domain="[('active', '=', True)]"/>

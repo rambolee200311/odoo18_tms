@@ -102,7 +102,7 @@ class ContainerServiceRequest(models.Model):
         order = self.env['tlmp.transport.order'].create({
             'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
             'carrier_id': self.carrier_id.id,
-            'transport_type': type_map.get(self.request_type, 'port_to_warehouse'),
+            'transport_type_id': self.env['tlmp.transport.type']._get_by_code(type_map.get(self.request_type, 'port_to_warehouse')).id,
             'fleet_operation_mode': 'subcontracted',
             'planned_pickup_date': self.planned_date,
             'driver_name': self.driver_name,

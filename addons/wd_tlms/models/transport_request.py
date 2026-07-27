@@ -34,14 +34,9 @@ class TransportRequest(models.Model):
        ('manual', 'Manual Entry'),
    ], string='Source', default='manual', required=True)
 
-   # ---- Existing transport_type kept for backward compat ----
-   transport_type = fields.Selection([
-       ('port_to_warehouse', 'Port to Warehouse'),
-       ('to_customer', 'To Customer'),
-       ('pickup_to_warehouse', 'Pickup to Warehouse'),
-       ('warehouse_transfer', 'Warehouse Transfer'),
-       ('reverse_logistics', 'Reverse Logistics'),
-   ], string='Transport Type', required=True, default='port_to_warehouse')
+   transport_type_id = fields.Many2one('tlmp.transport.type',
+       string='Transport Type', required=True,
+       default=lambda self: self.env['tlmp.transport.type']._get_by_code('port_to_warehouse').id)
 
    # ---- Cargo type control ----
    cargo_type = fields.Selection([
@@ -161,7 +156,7 @@ class TransportRequest(models.Model):
        }
        tr_type = type_map.get(self.destination_type, 'port_to_warehouse')
        order = self.env['tlmp.transport.order'].create({
-           'transport_type': tr_type,
+           'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_type).id,
            'fleet_operation_mode': 'subcontracted',
            'partner_id': self.partner_id.id or self.env.user.partner_id.id,
            'carrier_id': self.carrier_id.id if self.carrier_id else False,

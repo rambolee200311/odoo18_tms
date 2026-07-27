@@ -96,7 +96,7 @@ class PickupPlan(models.Model):
         tr_type = type_map.get(self.destination_type, 'port_to_warehouse')
         order_vals = {
            'pickup_plan_id': self.id,
-            'transport_type': tr_type,
+            'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_type).id,
             'fleet_operation_mode': 'subcontracted',
             'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
             'carrier_id': self.carrier_id.id,

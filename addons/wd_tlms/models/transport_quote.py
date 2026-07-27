@@ -108,7 +108,7 @@ class TransportQuote(models.Model):
             'quote_id': self.id,
             'inquiry_id': self.inquiry_id.id,
             'partner_id': self.partner_id.id,
-            'transport_type': self.request_id.transport_type if self.request_id else 'to_customer',
+            'transport_type_id': self.request_id.transport_type_id.id if self.request_id and self.request_id.transport_type_id else False,
             'fleet_operation_mode': 'subcontracted',
             'total_customer_charge': self.total_amount,
             'source_amount_customer': self.total_amount,

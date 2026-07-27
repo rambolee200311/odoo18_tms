@@ -9,13 +9,9 @@ class RateBase(models.Model):
 
     name = fields.Char(string='Rate Name', required=True, index=True)
     fee_type_id = fields.Many2one('world.depot.charge.item', string='Fee Type', required=True)
-    transport_type = fields.Selection([
-        ('port_to_warehouse', 'Port to Warehouse'),
-        ('to_customer', 'To Customer'),
-        ('warehouse_transfer', 'Warehouse Transfer'),
-        ('reverse_logistics', 'Reverse Logistics'),
-        ('all', 'All Types'),
-    ], string='Transport Type', default='all', required=True)
+    transport_type_id = fields.Many2one('tlmp.transport.type',
+        string='Transport Type', required=False,
+        help='Set to a specific type, or leave empty for all types.')
     rate_type = fields.Selection([
         ('fixed', 'Fixed Amount'),
         ('per_km', 'Per Kilometer'),

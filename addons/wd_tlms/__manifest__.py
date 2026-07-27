@@ -14,6 +14,8 @@
         'worlddepot',
     ],
     'data': [
+        'data/transport_type_data.xml',
+        'data/carrier_service_data.xml',
         'data/transport_un_dictionary_data.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -52,6 +54,8 @@
         'views/transport_fee_views.xml',
         'views/transport_un_dictionary_views.xml',
         'views/transport_dgd_views.xml',
+        'views/transport_type_views.xml',
+        'views/carrier_service_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {

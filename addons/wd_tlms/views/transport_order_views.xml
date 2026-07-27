@@ -8,7 +8,7 @@
                  <field name="name"/>
                  <field name="source_type" widget="badge" decoration-success="source_type == 'plan_driven'"
                         decoration-info="source_type == 'commercial'"/>
-                 <field name="transport_type"/>
+                 <field name="transport_type_id"/>
                  <field name="partner_id" optional="show"/>
                  <field name="carrier_id" optional="show"/>
                  <field name="state" widget="badge" decoration-success="state == 'confirmed'"
@@ -49,7 +49,7 @@
                      <group>
                          <group string="Order Info">
                              <field name="name" readonly="1"/>
-                             <field name="transport_type"/>
+                             <field name="transport_type_id"/>
                              <field name="fleet_operation_mode"/>
                              <field name="partner_id" options="{'no_create': True}"/>
                              <field name="carrier_id" options="{'no_create': True}"/>
@@ -166,7 +166,8 @@
                              <field name="transport_event_ids" nolabel="1" colspan="2">
                                  <list>
                                      <field name="sequence" widget="handle"/>
-                                     <field name="event_type"/>
+                                    <field name="event_type_id"/>
+                                     <field name="event_type_id"/>
                                      <field name="event_state" widget="badge"/>
                                      <field name="location"/>
                                      <field name="planned_time"/>
@@ -253,7 +254,7 @@
                      <filter string="Status" name="group_state"
                              context="{'group_by': 'state'}"/>
                      <filter string="Transport Type" name="group_type"
-                             context="{'group_by': 'transport_type'}"/>
+                             context="{'group_by': 'transport_type_id'}"/>
                  </group>
              </search>
          </field>
