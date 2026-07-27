@@ -1,0 +1,175 @@
+# ==============================================================
+# 【Sprint26 正式意图契约】
+# 功能：测试基础设施修复 + Reports 永久方案 + 失败用例排查
+# 前置基线：Sprint25 Shipment Label + 多轮 Bug 修复
+# 基线版本：context_version: 1.0.40 → 1.0.41
+# ==============================================================
+
+# ── Intent 基础元信息 ──────────────────────────────
+intent_id: INT-TMS-SPRINT26-001
+intent_work_type: Development
+intent_change_type: Performance Optimization
+title: 测试基础设施修复 + Reports 永久方案 + 遗留测试失败排查
+target_scope: >
+  B1. --test-enable 沙箱拦截问题：分析根因，修复或绕过限制
+  B2. 当前 12 个失败测试用例：全量运行、分析失败根因、修复
+  B3. Reports 永久方案：替代 graph count-by-scene workaround
+      核心思路：为 transport.order 添加 stored computed Float 字段
+      (delivery_delay_hours)，作为 graph measure 使用时 Float 默认
+      聚合器为 sum，无需显式 aggregator 属性。
+      异常报表保持按类型计数（当前 workaround 已满足需求）。
+
+accept_criteria:
+  - "test_runner.py 在 escalate 环境下可执行 `-u wd_tlms --test-enable`"
+  - "12 个失败用例根因明确，修复后 0 failures"
+  - "reports: Delivery Timeliness 显示 delay_hours 按 scene/carrier 维度"
+  - "reports: 未使用 aggregator 属性，UI 升级通过"
+  - "reports: 未使用 type=\"measure\" 导致 JS No aggregate function"
+  - "verify.py 8/8 PASS + git_commit 三检通过"
+
+source:
+  type: architecture_upgrade
+  origin_team: 架构治理
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_order（delivery_delay_hours 字段）
+    - transport_report（graph 视图重写）
+  architecture:
+    - test_runner.py（测试执行基础设施）
+    - test_*.py（修复失败用例）
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  # B3: Reports
+  - "addons/wd_tlms/models/transport_order.py（增量：delivery_delay_hours 字段）"
+  - "addons/wd_tlms/views/transport_report_views.xml（graph 视图重写）"
+  # B1: Test Infrastructure
+  - "execution/scripts/test_runner.py（升级：escalate 执行路径 + 失败报告）"
+  # B2: Failing Test Cases
+  - "12 个失败用例的分析报告（根因 + 修复方案）"
+  - "修复 12 个失败用例"
+  # Context Assets
+  - "docs/context/context_version.yaml（1.0.40 → 1.0.41）"
+  - "docs/context/history/decision_note.md"
+
+limit_constraints: >
+  Reports 仅修改 graph 视图，不重新引入 pivot 视图。
+  aggregator 属性不用于任何视图字段。
+  delivery_delay_hours 为 stored computed（非 stored=False）。
+  Float 字段的 graph measure 不显式指定 aggregator（使用默认 sum）。
+  不修改 Odoo 框架源码。
+
+risk_precheck: |
+  transport_order 添加 stored computed 字段对现有数据的影响
+  graph 视图对 Float 字段的默认聚合行为是否与 Odoo 18 兼容
+  12 个测试失败的根因可能涉及多个模块（event/flow/security/scene/cargo）
+  沙箱拦截 --test-enable 的根因可能需要外部资源才能修复
+
+# ══════════════════════════════════════════════════════
+# Goal（详细设计）
+# ══════════════════════════════════════════════════════
+
+goal: >
+  解决 Sprint25 遗留的三个基础设施问题：
+  1. Reports 永久方案：transport.order 增加 delivery_delay_hours（Float,
+     stored computed），作为 graph 的 measure 字段。Float 字段的默认
+     聚合器为 sum，JS GraphModel 无需显式 aggregator 属性，UI 升级
+     也不拒绝。
+  2. 测试基础设施：分析 --test-enable 被沙箱拦截的根因，修复或提供
+     escalate 执行路径。
+  3. 遗留测试失败：修复 Sprint21 以来一直未解决的 12 个失败用例。
+
+scope:
+  allow:
+    # B3 Reports
+    - "addons/wd_tlms/models/transport_order.py（增量）"
+    - "addons/wd_tlms/views/transport_report_views.xml（重写）"
+    # B1 Test Infra
+    - "execution/scripts/test_runner.py（升级）"
+    # B2 Test Fixes
+    - "addons/wd_tlms/tests/test_transport_event.py（增量修复）"
+    - "addons/wd_tlms/tests/test_transport_flow.py（增量修复）"
+    - "addons/wd_tlms/tests/test_product_adr.py（增量修复）"
+    - "addons/wd_tlms/tests/test_transport_security.py（增量修复）"
+    - "addons/wd_tlms/tests/test_transport_scene.py（增量修复）"
+    - "addons/wd_tlms/tests/test_transport_cargo.py（增量修复）"
+    - "addons/wd_tlms/tests/test_runtime_validation.py（增量修复）"
+    # Context
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止在视图字段上使用 aggregator 属性
+    - 禁止重新引入 pivot 视图
+    - 禁止修改 Odoo 框架源码
+    - 禁止修改 execution/scripts/verify.py
+    - 禁止修改 execution/scripts/context_loader.py
+    - 禁止修改 governance/ 下任何文件
+    - 禁止修改 profiles / intent 体系
+
+# 详细设计参考：
+#
+# B3. Reports 永久方案
+# ─────────────────
+# transport_order 增量:
+#   delivery_delay_hours = fields.Float(
+#       string='Delivery Delay (hours)',
+#       compute='_compute_delivery_delay', store=True,
+#       help='Actual delivery - planned delivery in hours')
+#   @api.depends('planned_delivery_date', 'actual_delivery_date')
+#   def _compute_delivery_delay(self):
+#       for r in self:
+#           if r.actual_delivery_date and r.planned_delivery_date:
+#               delta = r.actual_delivery_date - r.planned_delivery_date
+#               r.delivery_delay_hours = delta.total_seconds() / 3600
+#           else:
+#               r.delivery_delay_hours = 0.0
+#
+# graph 视图（无 type="measure" 属性，Float 默认 sum 聚合）:
+#   <graph string="Delivery Timeliness" type="bar">
+#       <field name="scene_id"/>
+#       <field name="delivery_delay_hours"/>
+#   </graph>
+#
+# B1. 测试基础设施
+# ─────────────────
+# test_runner.py 升级：
+#   - PGPASSWORD 环境变量读取
+#   - 前置数据库状态更新（强制模块重读）
+#   - escalate 执行路径检测 + 降级处理
+#   - 测试结果摘要输出
+#
+# B2. 失败用例排查
+# ─────────────────
+# 上次全量测试结果（`-i wd_tlms --test-enable`）:
+#   Passed: 120, Failed: 12
+#   涉及文件：test_runtime_validation / test_transport_flow /
+#             test_transport_event / test_product_adr /
+#             test_transport_security / test_transport_scene /
+#             test_transport_cargo
+#   Sprint21 之后新增的测试（Sprint23/24/25）全部 0 failure
+#   本次 Sprint 需排查这些失败是否因 Odoo 18 兼容引起
