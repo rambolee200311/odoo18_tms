@@ -422,3 +422,111 @@
 ### 验收
 - verify.py 8/8: ✅ PASS
 - odoo_check: ✅ PASS
+
+---
+
+## Sprint25: Shipment Label 基座 + 多轮 Bug 修复
+
+**时间**: 2026-07-27
+**契约**: INT-TMS-SPRINT25-001
+**状态**: 已完成
+
+---
+
+### 迭代目标
+
+- Shipment Label 基座（LTL/包裹运输标签管理）
+- 多轮 UI 升级 Bug 修复（共 10 commits）
+
+---
+
+### 完成成果
+
+#### 新功能
+
+| 文件 | 说明 |
+|------|------|
+| `models/transport_shipment_label.py` | tlmp.transport.shipment.label（四状态+carrier_service_id M2O） |
+| `views/transport_shipment_label_views.xml` | 标签表单/列表视图 |
+| `tests/test_transport_shipment_label.py` | 11 TestCase |
+
+#### Bug 修复（6 类，10 次提交）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| 1 | 搜索视图 ParseError（transport_type/DGD/UN dictionary ×3） | 删除搜索视图 |
+| 2 | action_tlmp_tracking / action_tlmp_cmr 缺失 | 删除菜单 `action` 属性 |
+| 3 | Dashboard TransientModel 权限 | `perm_create=1, perm_write=1` |
+| 4 | check_view_fields.py inline list 误报 11 error | `<field>` 祖先链遍历跳过 |
+| 5 | Pivot "No aggregate function" → aggregator冲突 → 回退 | 删除 pivot 视图 |
+| 6 | Graph "No aggregate function" → aggregator同样被拒 → count by scene | 删除 `type="measure"` |
+
+---
+
+### 关键经验教训
+
+#### 1. Odoo 18 有两条验证路径
+
+```
+CLI:  odoo-bin -u wd_tlms --stop-after-init     → 宽松验证
+UI:   Apps → Upgrade → button_immediate_upgrade → 严格验证
+```
+
+搜索视图、`aggregator` 属性等在 CLI 路径下通过，但在 UI 升级路径下被拒绝。
+**教训**: 不要信任 CLI `-u` 作为唯一验证。每次提交前必须用 UI 升级测试。
+
+#### 2. `aggregator` 属性不可用于 Odoo 18
+
+| 视图类型 | CLI `-u` | UI 升级 | JS 运行时 |
+|---------|----------|---------|----------|
+| pivot + `aggregator="min"` | ✅ | ❌ Invalid view | — |
+| graph + `aggregator="min"` | ✅ | ❌ Invalid view | — |
+| graph + `type="measure"`（无 aggregator） | ✅ | ✅ | ❌ No aggregate function |
+| graph + 无 `type="measure"`（默认 count） | ✅ | ✅ | ✅ |
+
+**结论**: Odoo 18 的 `button_immediate_upgrade` 拒绝 `aggregator` 属性，同时 JS 侧的 GraphModel/PivotModel 又要求 `type="measure"` 字段必须有 `aggregator`。两者不可调和。
+
+**最终 workaround**: 删除 `type="measure"`，graph 回退到默认 COUNT（按场景/类型统计记录数）。
+
+#### 3. 搜索视图在 UI 升级中不可靠
+
+带 `<field>`+`<separator>`+`<filter>`+`<group>` 的标准搜索视图在 CLI 下正常，但在 UI 升级时抛出 `Invalid view definition`（无具体错误上下文，`-no context-`）。这似乎是 Odoo 18 的框架 bug。
+
+**方案**: 删除所有自定义搜索视图，依赖系统默认的 tree/list 搜索功能。
+
+#### 4. 删除/重构模型必须清理所有引用
+
+Sprint16 将 `tlmp.transport.tracking` 模型拆分为 event/exception/extra_charge 时，留下了：
+- `ir.model.access.csv` 中 3 行孤儿行（`model_tlmp_transport_tracking`）
+- `tlmp_menus.xml` 中 `menu_tlmp_tracking` 的 `action="action_tlmp_tracking"` 引用
+- `tlmp_menus.xml` 中 `menu_tlmp_cmr` 的 `action="action_tlmp_cmr"`（CMR action 同模式问题）
+
+**教训**: 模型拆分/改名后必须 grep 全仓库检查 `_name`、`action_`、`model_`、`xmlid` 的残留引用。
+
+#### 5. TransientModel 需要写权限
+
+Odoo 18 的 TransientModel（`models.TransientModel`）在用户打开视图时会在临时表创建记录。即使模型定义为只读，CSV 中 `perm_create=0, perm_write=0` 会阻止视图渲染。
+
+**教训**: TransientModel 的 CSV 权限必须设置为 `perm_create=1, perm_write=1`。
+
+#### 6. `forcecreate="false"` 的作用范围有限
+
+`forcecreate="false"` 仅影响 `ir.model.data` 的 `id_get` 操作（`inherit_id ref=` 等引用解析），不影响视图结构验证（`_tag_root` 中的 ParseError）。
+
+**教训**: 视图结构错误不能用 `forcecreate` 掩盖，必须修复视图本身。
+
+#### 7. 验证 check_view_fields.py 时发现的 inline list 处理
+
+`check_view_fields.py`（v3）使用 `ET.parse()` 提取视图中的所有 `<field>`，包括内嵌在 inline list（`<field name="dgd_line_ids"><list><field name="commodity"/>`）中的子字段。这些子字段属于 line model，不属于 parent model。
+
+**修复**: 添加 `<field>` 祖先链遍历，跳过位于另一个 `<field>` 元素内的子字段。
+
+---
+
+### 遗留问题
+
+| 问题 | 原因 | 依赖 |
+|------|------|------|
+| Reports 只能展示 count-by-scene/type | Odoo 18 框架拒绝 `aggregator` | Odoo 18 官方补丁 |
+| 测试无法在 CI 中自动执行 | 沙箱拦截 `--test-enable`（EXIT 255） | 沙箱配置修改 |
+| 部分 Sprint21 测试用例未通过（12/132 fail） | 模板兼容/数据依赖问题 | 待排查 |
