@@ -713,3 +713,28 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - -u wd_tlms --stop-after-init: ✅ PASS
 - -u wd_tlms --test-enable --stop-after-init: ✅ EXIT=0（不再崩溃）
 - test_runner.py: ❌ 需 escalate 权限（sandbox 限制）
+
+---
+## Sprint25 — Shipment Label 基座
+**时间**: 2026-07-27
+**契约**: INT-TMS-SPRINT25-001
+**基线**: context_version 1.0.37 → 1.0.38
+
+### 变更统计
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 新增模型 | `models/transport_shipment_label.py` | tlmp.transport.shipment.label（四状态+carrier_service_id M2O） |
+| 字段增量 | `models/transport_order.py` | shipment_label_ids One2many |
+| 视图 | `views/transport_shipment_label_views.xml` | 标签表单/列表 |
+| 视图增量 | `views/transport_order_views.xml` | Documents 页签内嵌标签列表 |
+| 菜单 | `views/tlmp_menus.xml` | Shipment Labels（Documents 组） |
+| 权限 | `security/ir.model.access.csv` | 3 行新权限 |
+| 序列 | `data/sequences.xml` | LBL/ 序列号 |
+| 测试 | `tests/test_transport_shipment_label.py` | 11 TestCase（109 lines） |
+
+### 关键决策
+1. carrier_service 使用 Sprint24 Carrier Service 档案（Many2one），不使用 Selection 枚举
+2. label 四状态：Draft→Generated→Printed→Cancelled
+3. Printed 状态不可取消（已打印标签不可撤回）
+4. 批量打印 action（action_print_batch）过滤 generated/printed 状态
+5. label 与 CMR/DGD/POD 互不阻塞，独立生命周期

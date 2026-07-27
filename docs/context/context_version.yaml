@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.37
+context_version: 1.0.38
 update_time: 2026-07-27
-adapt_sprint: Sprint24-Fix
+adapt_sprint: Sprint25-Shipment-Label
 update_author: AI-Engineering-Team
 
 version_log:
