@@ -93,10 +93,15 @@ class TestRuntimeValidation(TransactionCase):
         for action in actions:
             modes = [m.strip() for m in (action.view_mode or '').split(',') if m.strip()]
             for mode in modes:
-                has_view = bool(self.env['ir.ui.view'].search([
+                # Odoo 18: list = tree (backward compat during migration)
+                if mode == 'list':
+                    mode = ['list', 'tree']
+                else:
+                    mode = [mode]
+                has_view = bool(self.env['ir.ui.view'].search_count([
                     ('model', '=', action.res_model),
-                    ('type', '=', mode),
-                ], limit=1))
+                    ('type', 'in', mode),
+                ]))
                 if not has_view:
                     bad_actions |= action
                     break
