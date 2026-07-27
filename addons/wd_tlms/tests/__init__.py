@@ -11,3 +11,6 @@ from . import test_product_adr
 from . import test_transport_security
 from . import test_transport_flow
 from . import test_sprint22_dashboard
+from . import test_transport_dgd
+from . import test_transport_type
+from . import test_transport_shipment_label
