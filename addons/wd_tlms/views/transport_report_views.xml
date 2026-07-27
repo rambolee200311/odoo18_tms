@@ -9,8 +9,8 @@
                 <field name="scene_id" type="row"/>
                 <field name="carrier_id" type="row"/>
                 <field name="planned_pickup_date" interval="month" type="col"/>
-                <field name="planned_delivery_date" type="measure" aggregator="min"/>
-                <field name="actual_delivery_date" type="measure" aggregator="min"/>
+                <field name="planned_delivery_date" type="measure"/>
+                <field name="actual_delivery_date" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -39,7 +39,7 @@
             <pivot string="Exception Summary" disable_linking="1">
                 <field name="exception_type" type="row"/>
                 <field name="exception_state" type="col"/>
-                <field name="id" type="measure" aggregator="count"/>
+                <field name="id" type="measure"/>
             </pivot>
         </field>
     </record>
