@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.42
+context_version: 1.0.43
 update_time: 2026-07-27
-adapt_sprint: Sprint27-Carrier-Settlement
+adapt_sprint: Sprint28-Transport-Reference
 update_author: AI-Engineering-Team
 
 version_log:
@@ -290,3 +290,17 @@ bind_asset_folder:
       - verify 8/8 PASS
     update_type: 新功能开发
     effect_scope: 承运商结算数据底座（Settlement Domain）
+
+  1.0.43:
+    update_content: |
+      Sprint28 物流业务索引层 — transport.reference
+      - 新增 tlmp.transport.reference 模型（ref_type/ref_value/reference_role/source_system）
+      - 核心关联使用 res_model + res_id（Char+Integer），不绑定固定 Many2one
+      - Odoo Reference 保留仅作为弱关联（UI 跨模型跳转）
+      - 同一 ref_value 允许多条记录（container_no 等设备编号跨运输合法）
+      - reference_role 分层：identifier/equipment/document/external
+      - transport.order 创建时自动生成 reference + action_open_references 方法
+      - 10 个自动化测试用例
+      - verify 8/8 PASS, odoo_check PASS
+    update_type: 新功能开发
+    effect_scope: 物流业务引用索引层

@@ -224,7 +224,10 @@ class TransportOrder(models.Model):
                 vals['transport_type_id'] = self.env['tlmp.transport.type']._get_by_code('port_to_warehouse').id
             if not vals.get('fleet_operation_mode'):
                 vals['fleet_operation_mode'] = 'subcontracted'
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for rec in records:
+            self.env['tlmp.transport.reference'].create_for_order(rec)
+        return records
 
     @api.depends('surcharge_ids.amount')
     def _compute_surcharge_total(self):
@@ -443,3 +446,19 @@ class TransportOrder(models.Model):
         for r in self:
             r.allocated_carrier_cost = sum(
                 r.allocation_ids.mapped('allocated_amount'))
+
+    def action_open_references(self):
+        """Open references linked to this transport order."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'References',
+            'res_model': 'tlmp.transport.reference',
+            'view_mode': 'list,form',
+            'domain': [('res_model', '=', 'tlmp.transport.order'),
+                       ('res_id', '=', self.id)],
+            'context': {'default_res_model': 'tlmp.transport.order',
+                        'default_res_id': self.id,
+                        'default_ref_type': 'shipment_no',
+                        'default_ref_value': self.name},
+        }

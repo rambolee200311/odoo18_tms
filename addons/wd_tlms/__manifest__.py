@@ -59,6 +59,7 @@
         'views/transport_carrier_charge_type_views.xml',
         'views/transport_carrier_billing_views.xml',
         'views/transport_carrier_allocation_views.xml',
+        'views/transport_reference_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {

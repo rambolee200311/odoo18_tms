@@ -1,0 +1,206 @@
+# ==============================================================
+# 【Sprint28 意图契约】
+# 功能：transport.reference 物流业务索引层
+# 前置基线：Sprint27 承运商结算数据底座
+# 基线版本：context_version: 1.0.42 -> 1.0.43
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT28-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 物流业务索引层 — transport.reference
+
+target_scope: >
+  基于《承运商结算需求说明书 V1.2》§6.1 P0 要求和架构评审结论，
+  建设 transport.reference 物流业务索引层。
+  定位为 IFFM/OMS/TLMS 三系统松耦合的业务引用索引，
+  不做 Odoo Reference 核心关联，改用显式业务关联字段。
+  同一个 ref_value（如 container_no）允许多条记录存在。
+  不承载业务状态，仅作为索引层。
+
+accept_criteria:
+  # 模型
+  - "tlmp.transport.reference 模型完整：ref_type/ref_value/reference_role + 业务关联字段"
+  - "ref_type 枚举：pickup_code / container_no / tracking_no / cmr_no / bl_no / booking_no / po_no / delivery_no / shipment_no"
+  - "reference_role 枚举：identifier（业务唯一识别）/ equipment（设备编号）/ document（文件编号）/ external（外部系统号码）"
+  - "显式业务关联：res_model + res_id（Char+Integer 组合），支撑跨系统（IFFM/OMS/TLMS）通用关联"
+  - "external_reference_model + external_reference_id 作为扩展字段（Char+Integer）"
+  - "reference_policy: duplicate_allowed=true, 同一 ref_value 允许多条记录（container_no 等设备编号天然重复合法）"
+  - "source_system 字段：Selection(iff/oms/tlms/external)，追踪引用来源系统"
+  - "Odoo Reference 保留但仅作为弱关联：用于 UI 跨模型跳转，不作为业务逻辑主键"
+  # 视图
+  - "transport.reference 表单/列表/搜索视图（支持按 ref_type+ref_value+role 检索历史）"
+  - "transport.order 提供 action_open_references 方法，打开对应 reference 列表"
+  # 动作
+  - "transport.order 创建时自动生成 shipment_no reference（ref_type=shipment_no, role=identifier, ref_value=order.name）"
+  - "transport.order 表单支持 action_open_references 智能按钮跳转"
+  - "支持手动创建/编辑/删除 reference 记录"
+  # 验证
+  - "reference 仅作为索引层，不承担业务状态"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 架构/成本域
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_reference（新）
+    - stock_rule（新增 reference 规则）
+  architecture:
+    - reference_views（新视图）
+    - module_map（新增 transport.reference 模型）
+    - dependency（新增引用索引域描述）
+
+# 模型设计参考
+# tlmp.transport.reference
+#   物流业务索引层，不做 Odoo Reference 核心关联
+#
+#   name = Char
+#   ref_type = Selection([
+#     ('pickup_code', 'Pickup Code'),
+#     ('container_no', 'Container No.'),
+#     ('tracking_no', 'Tracking No.'),
+#     ('cmr_no', 'CMR No.'),
+#     ('bl_no', 'Bill of Lading'),
+#     ('po_no', 'PO No.'),
+#     ('delivery_no', 'Delivery No.'),
+#     ('booking_no', 'Booking No.'),
+#     ('shipment_no', 'Shipment No.'),
+#     ('other', 'Other'),
+#   ], required=True)
+#   ref_value = Char(required=True)
+#   reference_role = Selection([
+#     ('identifier', 'Identifier — 当前运输业务唯一标识'),
+#     ('equipment', 'Equipment — 设备编号，跨多次运输'),
+#     ('document', 'Document — 文件编号，生命周期绑定单据'),
+#     ('external', 'External — 外部系统编号'),
+#   ], default='identifier')
+#   source_system = Selection([('iff','IFFM'),('oms','OMS'),('tlms','TLMS'),('external','External')])
+#   res_model = Char(string='Linked Model')
+#   res_id = Integer(string='Linked Record ID')
+#   partner_id = Many2one('res.partner')
+#   external_reference_model = Char()
+#   external_reference_id = Integer()
+#   active = Boolean(default=True)
+#   date = Date(default=today)
+#   _sql_constraints: no unique on (ref_type, ref_value)
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - "models/transport_reference.py（新增）"
+  - "models/transport_order.py（增量：reference_ids + notebook page）"
+  - "views/transport_reference_views.xml"
+  - "views/transport_order_views.xml（增量可选：action_open_references 按钮）"
+  - "security/ir.model.access.csv（新增权限，不含 base.group_user）"
+  - "tests/test_transport_reference.py"
+  - "docs/context/context_version.yaml（1.0.42 -> 1.0.43）"
+  - "docs/context/architecture/module_map.md（更新）"
+  - "docs/context/history/decision_note.md（新增 ADR-028）"
+
+limit_constraints: |
+  1. transport.reference 仅作为业务引用索引层，不承载业务状态逻辑。
+  2. 同一 ref_value 允许多条记录（container_no 等设备编号跨运输合法）。
+  3. Odoo Reference 保留但仅作为弱关联（弱关联展示和跨模型跳转，不作为业务唯一关系）。
+     核心业务关联统一使用 res_model + res_id（Char+Integer 组合）。
+     — 不使用 Odoo Reference 字段作为业务逻辑主键（性能+无FK风险）。
+  4. billing.line 不集成 reference_id（通过 Sprint27 allocation 链路已覆盖）。
+  5. source_system 字段必填，标识引用来源系统（iff/oms/tlms/external）。
+  6. ref_type 保留 Selection（Sprint30 后迁移主数据档案）。
+  6. base.group_user 无权读取 reference 数据（安全隔离）。
+
+reference_policy:
+  unique: false
+  duplicate_allowed: true
+  bind_model: "res_model + res_id (Char+Integer), 不绑定固定模型"
+  reference_field: "保留 Odoo Reference, 仅用于弱关联 UI 跳转"
+
+risk_precheck: |
+  1. container_no 多条记录场景：不做唯一约束，纯索引查询。
+  2. Odoo Reference 不作为核心字段：选型正确性已由架构评审确认。
+  3. billing.line 不集成 reference_id：已有 Sprint27 allocation 链路。
+  4. ref_type 主数据化：本次保留 Selection，Sprint30 后迁移。
+
+# Goal
+goal: >
+  建设 transport.reference 物流业务索引层，
+  为 IFFM/OMS/TLMS 三系统提供统一的跨系统索引关联能力。
+  核心设计原则：
+  - 同一 ref_value 允许多条记录（container_no 跨运输合法）
+  - 按 reference_role 分层：identifier/equipment/document/external
+  - 显式业务关联替代 Odoo Reference
+  - 仅索引层，不承载业务状态
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_reference.py"
+    - "addons/wd_tlms/models/transport_order.py（增量）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/views/transport_reference_views.xml"
+    - "addons/wd_tlms/views/transport_order_views.xml（增量）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量：Documents 菜单）"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_transport_reference.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/architecture/module_map.md"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止使用 Odoo Reference 字段作为核心关联机制
+    - 禁止创建 billing.line.reference_id 关联
+    - 禁止对 ref_value 添加唯一约束
+    - 禁止创建 match.rule 自动匹配引擎
+    - 禁止创建 tlmp.reference.type 档案模型
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+    - 禁止上传/解析/OCR 功能
+    - 禁止 carrier API 集成
+    - 禁止 settlement batch/case 功能
+    - 禁止跨系统主动数据同步
+    - 禁止 base.group_user 可读权限
+
+# 权限设计：
+#   settlement_clerk: RWC (no unlink)
+#   manager:          RWC
+#   operator:         R
+#   viewer:           R
+#   financier:        R
+#   base.group_user:  无权访问
+#
+# ADR-028 关键决策：
+#   1. 不使用 Odoo Reference 作为核心关联（性能+FK风险）
+#   2. 同一 ref_value 允许多条记录（container_no 跨运输合法）
+#   3. reference_role 分层：identifier/equipment/document/external
+#   4. ref_type 保留 Selection（Sprint30 后迁移主数据）
+#   5. billing.line 不集成 reference_id（Sprint27 allocation 链路已覆盖）
+#   6. container_no 当前仅检索索引，不上升 container.asset
+#   7. source_system 必填，标识引用来源（iff/oms/tlms/external）
+#   8. res_model + res_id 作为核心关联，不绑定固定 Many2one
+#   9. Odoo Reference 仅弱关联，不用于业务逻辑

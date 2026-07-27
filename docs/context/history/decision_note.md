@@ -835,3 +835,31 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - transport_order.py: 新增 allocation_ids + allocated_carrier_cost compute field
 - 不影响 transport_event/exception/extra_charge 跟踪模型
 - 不影响 cmr/dgd/pod/shipment_label 文档模型
+
+## ADR-028: transport.reference 物流业务引用索引层
+
+**日期**: 2026-07-27
+**Sprint**: Sprint28
+**影响域**: 引用索引层
+
+### 决策
+1. **不使用 Odoo Reference 作为核心关联**（性能+FK风险），改用 res_model + res_id（Char+Integer）
+2. **同一 ref_value 允许多条记录**（container_no 等设备编号跨运输合法），不设唯一约束
+3. **reference_role 分层**：identifier（业务唯一识别）/ equipment（设备编号）/ document（文件编号）/ external（外部系统号码）
+4. **source_system 必填**：IFFM/OMS/TLMS/External，追踪引用来源
+5. **ref_type 保留 Selection**，Sprint30 后迁移主数据档案
+6. **billing.line 不集成 reference_id**（Sprinte27 allocation 链路已覆盖）
+7. **container_no 当前仅检索索引**，不上升为 container.asset
+8. **Odoo Reference 保留仅弱关联**，用于 UI 跨模型跳转，不作为业务逻辑主键
+9. **transport.reference 不承载业务状态和生命周期**，仅作为索引层
+
+### 原因
+- 物流业务中 container_no/BL_no 等编号天然重复使用（跨运输、跨航次、跨订单生命周期）
+- Odoo Reference 字段无数据库 FK，删除保护弱，查询性能不可控
+- 显式 res_model+res_id 组合提供跨系统（IFFM/OMS/TLMS）通用关联能力，不绑定特定模型
+
+### 影响
+- models/transport_reference.py（新模型）
+- models/transport_order.py（action_open_references 方法 + auto-create）
+- 不影响 transport_event/exception/extra_charge 跟踪模型
+- 不影响 cmr/dgd/pod/shipment_label 文档模型

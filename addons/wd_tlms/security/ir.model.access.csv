@@ -140,3 +140,8 @@ access_tlmp_allocation_fin,tlmp.allocation.fin,model_tlmp_carrier_settlement_all
 access_tlmp_allocation_history_clerk,tlmp.allocation.history.clerk,model_tlmp_carrier_allocation_history,wd_tlms.group_tlm_settlement_clerk,1,0,0,0
 access_tlmp_allocation_history_manager,tlmp.allocation.history.manager,model_tlmp_carrier_allocation_history,wd_tlms.group_tlm_manager,1,1,0,0
 access_tlmp_allocation_history_fin,tlmp.allocation.history.fin,model_tlmp_carrier_allocation_history,wd_tlms.group_tlm_financier,1,0,0,0
+access_tlmp_reference_manager,tlmp.reference.manager,model_tlmp_transport_reference,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_reference_clerk,tlmp.reference.clerk,model_tlmp_transport_reference,wd_tlms.group_tlm_settlement_clerk,1,1,1,0
+access_tlmp_reference_operator,tlmp.reference.operator,model_tlmp_transport_reference,wd_tlms.group_tlm_operator,1,0,0,0
+access_tlmp_reference_viewer,tlmp.reference.viewer,model_tlmp_transport_reference,wd_tlms.group_tlm_viewer,1,0,0,0
+access_tlmp_reference_fin,tlmp.reference.fin,model_tlmp_transport_reference,wd_tlms.group_tlm_financier,1,0,0,0

@@ -98,6 +98,9 @@
               action="action_tlmp_dgd" sequence="25"/>
     <menuitem id="menu_tlmp_shipment_labels" name="Shipment Labels" parent="menu_tlmp_docs"
               action="action_tlmp_shipment_label" sequence="30"/>
+    <menuitem id="menu_tlmp_transport_reference" name="Transport References" parent="menu_tlmp_docs"
+              action="action_tlmp_transport_reference" sequence="35"
+              groups="wd_tlms.group_tlm_settlement_clerk,wd_tlms.group_tlm_manager,wd_tlms.group_tlm_operator,wd_tlms.group_tlm_viewer,wd_tlms.group_tlm_financier"/>
 
 
 
