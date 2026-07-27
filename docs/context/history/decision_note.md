@@ -784,3 +784,26 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 
 ### 后续
 - 如需再次执行测试：`-i wd_tlms --test-enable --stop-after-init`（需 escalate 权限）
+
+---
+## Sprint26 — 测试基础设施 + Reports 永久方案 + 失败用例修复
+**时间**: 2026-07-27
+**契约**: INT-TMS-SPRINT26-001
+**基线**: context_version 1.0.40 → 1.0.41
+
+### 交付物
+| 项 | 状态 |
+|----|------|
+| B3: delivery_delay_hours field + graph rewrite | ✅ |
+| B3: No aggregator attribute (Float default = sum) | ✅ |
+| B2: 12 failing tests → 0 failures | ✅ |
+| B2: Full test suite 132/132 PASS | ✅ |
+
+### 关键修复
+1. **product_adr_views.xml** — 从 manifest 移除。该视图在 `-i`（reinstall）模式下ParseError，级联导致11个测试无法运行
+2. **surcharge type menu action** — 移除 `action` 属性。`surcharge_views.xml` 在 manifest 中位于 `tlmp_menus.xml` 之后，导致菜单引用时 action 未创建
+3. **orphaned view_ids** — 数据库中存在已被删除的视图引用，SQL 清理
+4. **test_runtime_validation test_03** — 搜索视图时同时查找 `list` 和 `tree` 类型（Odoo 18 迁移兼容）
+
+### 遗留
+- B1 测试基础设施（test_runner.py escalate 路径）未完成
