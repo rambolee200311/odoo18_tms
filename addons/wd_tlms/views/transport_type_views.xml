@@ -41,29 +41,9 @@
         </field>
     </record>
 
-    <record id="view_tlmp_transport_type_search" model="ir.ui.view">
-        <field name="name">tlmp.transport.type.search</field>
-        <field name="model">tlmp.transport.type</field>
-        <field name="arch" type="xml">
-            <search string="Search Types">
-                <field name="code"/>
-                <field name="name"/>
-                <field name="category"/>
-                <field name="mode"/>
-                <separator/>
-                <filter name="active" string="Active" domain="[('is_active','=',True)]" default="1"/>
-                <group expand="0" string="Group By">
-                    <filter name="group_category" string="Category" context="{'group_by':'category'}"/>
-                    <filter name="group_mode" string="Mode" context="{'group_by':'mode'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
     <record id="action_tlmp_transport_type" model="ir.actions.act_window">
         <field name="name">Transport Types</field>
         <field name="res_model">tlmp.transport.type</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_tlmp_transport_type_search"/>
     </record>
 </odoo>

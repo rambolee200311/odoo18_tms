@@ -139,7 +139,8 @@ def extract_model_fields():
 
 
 def extract_view_fields(filepath):
-    """从视图 XML 中提取 {model_name: {field_name, ...}}"""
+    """从视图 XML 中提取 {model_name: {field_name, ...}}
+    跳过 inline list 内嵌字段（它们属于 line model，不属于 parent model）"""
     views = {}
     try:
         tree = ET.parse(filepath)
@@ -159,11 +160,28 @@ def extract_view_fields(filepath):
         arch = record.find("./field[@name='arch']")
         if arch is not None:
             fields_found = set()
+            # Build parent map to skip inline list nested fields
+            parent_map = {c: p for p in arch.iter() for c in p}
             for field_tag in arch.iter('field'):
                 fn = field_tag.get('name')
                 if not fn:
                     continue
                 if fn == 'arch' or fn.startswith(('parent.', 'context_', '.')):
+                    continue
+                # Skip inline list nested fields (fields inside another <field> ancestor)
+                found_field_ancestor = False
+                cur = field_tag
+                while cur in parent_map:
+                    cur = parent_map[cur]
+                    if cur.tag == 'field':
+                        found_field_ancestor = True
+                        break
+                    if cur.tag in ('list', 'tree', 'form', 'group', 'sheet', 'header', 'search',
+                                   'xpath', 'page', 'notebook', 'button'):
+                        continue
+                    else:
+                        break
+                if found_field_ancestor:
                     continue
                 fields_found.add(fn)
             views[model_name] = fields_found
