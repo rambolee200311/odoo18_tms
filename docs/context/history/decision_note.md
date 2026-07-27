@@ -761,3 +761,26 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 ### 搜索视图清理
 - 删除 transport_un_dictionary_views.xml 中的搜索视图（Odoo 18 视图验证兼容问题）
 - 删除 transport_dgd_views.xml 中的 draft/void 过滤器和 default 属性
+
+---
+## Sprint25 测试执行确认
+**时间**: 2026-07-27
+**基线**: context_version 1.0.39 → 1.0.40
+
+### 测试结果
+| 项目 | 结果 |
+|------|------|
+| 执行命令 | `-i wd_tlms --test-enable --stop-after-init` |
+| 执行时间 | 12.35 秒 |
+| 发现测试 | 12 tests (Sprint24 TransportType + Sprint25 ShipmentLabel) |
+| 通过 | 12 |
+| 失败 | 0 |
+| 错误 | 0 |
+
+### 发现的问题
+1. `tests/__init__.py` 缺少 `test_transport_dgd`(Sprint23)、`test_transport_type`(Sprint24)、`test_transport_shipment_label`(Sprint25) 的导入
+2. 沙箱 escalate 对 psql 已回收，但对 Odoo prefix_rule 仍有效
+3. `--test-enable` 在无 escalate 时被沙箱拦截（EXIT 255），test_runner.py 已更新处理
+
+### 后续
+- 如需再次执行测试：`-i wd_tlms --test-enable --stop-after-init`（需 escalate 权限）
