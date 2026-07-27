@@ -119,7 +119,15 @@ wd_tlms/
   transport.dgd.line           —— DGD 货物明细行（可编辑副本，源于 cargo_line）
   transport.dgd_void_log       —— DGD 作废日志（强制留痕，不可删除）
 
-签收/结算层:
+成本核算层（Cost Domain — Sprint27 新增）:
+  carrier.billing.document      —— 承运商原始单据主表（Invoice/Statement/Credit_Note）
+  carrier.billing.line           —— 单据明细行（含 charge_type/transport_mode）
+  carrier.charge.type            —— 分级费用类型字典（main_category→sub_category）
+  carrier.settlement.allocation  —— billing_line ↔ transport_order 多对多分摊
+  carrier.allocation.history     —— 分摊变更审计日志
+  carrier.settlement             —— 旧结算聚合模型（billing_document_id 关联）
+
+签收/结算层（旧）:
   tlmp.pod                      —— 签收凭证
   tlmp.cmr                      —— CMR 运单（运输管理侧生成）
 

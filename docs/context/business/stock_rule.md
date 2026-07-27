@@ -298,3 +298,58 @@ transport.dgd（一对一绑定 order）
 - Sprint24（已完成）：Carrier Service 档案主数据（tlmp.carrier.service，通用服务代码）
 - Sprint25：Shipment Label 使用 carrier_service_id Many2one 引用档案
 - 标签仅记录，不自动取号/打印/tracking 同步
+
+
+## 10. 承运商结算铁律（Sprint27 新增）
+
+### 10.1 Cost Domain 定位
+- Cost Domain（成本核算域）独立于 Execution Domain（运输执行域）
+- Cost Domain 负责承运商原始单据存储、费用匹配、成本分摊、差异争议处理
+- Cost Domain 仅输出已审批对账数据，不生成财务应付凭证
+- 财务 AP 应付域（独立 Account 模块）接收结算批次后生成 Supplier Invoice
+
+### 10.2 核心数据分层
+```
+承运商原始单据层
+  carrier.billing.document     —— 承运商发票/结算单/贷项单
+  carrier.billing.line          —— 单据明细行（含 charge_type/service_date/transport_mode）
+
+费用分类层
+  carrier.charge.type           —— 分级费用类型（main_category→sub_category）
+
+分摊层
+  carrier.settlement.allocation —— billing_line → transport_order 多对多分摊
+  carrier.allocation.history    —— 分摊金额变更审计日志
+
+聚合层（旧模型）
+  carrier.settlement            —— 旧结算模型，保留为聚合入口
+```
+
+### 10.3 承运原始单据双状态机
+1. **文件解析状态**：Draft → Uploaded → Parsed → Validated / Validation_Failed
+2. **结算状态**：Matching → Exception → Review → Approved → Paid → Closed
+两状态独立流转，互不阻塞。
+
+### 10.4 分摊铁律
+- billing_line → transport_order 为多对多关系（一单可分摊给多订单、一订单可被多单分摊）
+- 分摊金额必须记录 charge_type_id，用于分层成本统计
+- Credit_Note 红字单据分摊时扣减对应订单成本
+- 人工修改分摊金额强制填写 change_reason，自动写入 allocation.history
+- 分摊金额只影响承运商成本，不影响客户账单
+
+### 10.5 费用类型体系
+- charge.type 分两级：main_category（5 大类）→ sub_category（二级细项）
+- 5 大类：transport（基础运费）/ surcharge（附加费）/ operation（操作费）/ penalty（滞期罚金）/ adjustment（调账）
+- 系统预设高频费用类型，后续可维护扩展
+
+### 10.6 旧模型兼容
+- 旧 `tlmp.carrier.settlement` 保留为聚合层，通过 `billing_document_id` 关联新模型
+- 旧 `transport.fee.line` 中 `party_type=carrier_cost` 存系统预估承运成本
+- 预估成本与承运实收分摊通过 order_id 关联对比
+- `transport_order.total_carrier_cost` 存系统预估值，`allocated_carrier_cost`（Sprint27 新增）存承运实收分摊
+
+### 10.7 权限隔离
+- Settlement Clerk（结算专员）：完整分摊操作，修改金额强制 reason
+- Operator（调度）：只读，禁止修改分摊
+- Finance（财务）：只读，可审批批次付款
+- System Admin：仅维护费用类型和匹配规则
