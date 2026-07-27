@@ -689,3 +689,27 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 3. Carrier Service 使用通用服务代码，不使用 DHL/UPS 等具体承运商名
 4. pricing_rule 仅字段迁移，不改计算逻辑（Sprint30 费用引擎重构）
 5. type_map 使用 database lookup（不硬编码 ID，不做缓存）
+
+---
+## --test-enable 崩溃修复（Sprint24 附带）
+**时间**: 2026-07-27
+**基线**: context_version 1.0.36 → 1.0.37
+
+### 根因
+`product_adr_views.xml` 中 `inherit_id ref="product.product_form_view"` 在 init 模式下
+（`--test-enable` 触发）找不到 product 模块的外部 ID，导致 ParseError → Failed to load registry → exit 255。
+
+### 修复清单
+| 文件 | 修复 | 说明 |
+|------|------|------|
+| `views/product_adr_views.xml` | forcecreate="false" | 父视图不存在时静默跳过继承 |
+| `views/transport_report_views.xml` | 删除 order_id.scene_id | pivot 不支持 dot-notation |
+| `views/transport_un_dictionary_views.xml` | 字段名 typo + 搜索视图 | proper_shipping_number→proper_shipping_name |
+| `views/transport_dgd_views.xml` | 简化搜索视图 | 去掉 draft/void + default |
+| `security/ir.model.access.csv` | 删除孤儿行 | model_tlmp_transport_tracking（Sprint16） |
+| 3 个测试文件 | SavepointCase→TransactionCase | Odoo 18 兼容 |
+
+### 当前状态
+- -u wd_tlms --stop-after-init: ✅ PASS
+- -u wd_tlms --test-enable --stop-after-init: ✅ EXIT=0（不再崩溃）
+- test_runner.py: ❌ 需 escalate 权限（sandbox 限制）
