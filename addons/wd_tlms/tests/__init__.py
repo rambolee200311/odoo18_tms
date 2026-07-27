@@ -16,3 +16,4 @@ from . import test_transport_type
 from . import test_transport_shipment_label
 from . import test_transport_carrier_settlement
 from . import test_transport_reference
+from . import test_transport_match_rule

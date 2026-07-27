@@ -53,6 +53,13 @@ class TransportReference(models.Model):
 
     # 扩展字段
     partner_id = fields.Many2one('res.partner', string='Partner')
+    reference_scope = fields.Selection([
+        ('shipment', 'Shipment'),
+        ('transport', 'Transport'),
+        ('billing', 'Billing'),
+    ], string='Scope', help='匹配优先级: BL > Container+date > Tracking > Pickup')
+    valid_from = fields.Date(string='Valid From')
+    valid_to = fields.Date(string='Valid To')
     description = fields.Text(string='Description')
     active = fields.Boolean(string='Active', default=True)
     date = fields.Date(string='Date', default=fields.Date.today)
@@ -66,6 +73,9 @@ class TransportReference(models.Model):
         ('check_ref_value_not_empty',
          "check(ref_value != '')",
          'Reference value cannot be empty.'),
+        ('unique_ref_object',
+         'unique(ref_type, ref_value, res_model, res_id)',
+         '同一对象不能重复挂相同引用（不同对象可挂相同 ref_value）。'),
     ]
     # 注意：不对 (ref_type, ref_value) 添加唯一约束
     # container_no/bl_no/tracking_no 等业务编号天然可重复（跨运输、跨航次）

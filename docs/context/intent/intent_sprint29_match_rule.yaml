@@ -1,0 +1,261 @@
+# ==============================================================
+# 【Sprint29 意图契约】
+# 功能：match.suggestion 匹配建议基石
+# 前置基线：Sprint28 transport.reference 物流业务索引层
+# 基线版本：context_version: 1.0.43 -> 1.0.44
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT29-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 承运商匹配建议基石 — match.suggestion
+
+target_scope: >
+  基于《承运商结算需求说明书 V1.2》§6.4 §6.11 P1 要求和架构评审结论，
+  建设 match.suggestion 匹配建议基石。
+  核心链路：billing.line → transport.reference → match.rule → match.suggestion → 人工确认 → allocation。
+  本期不做自动匹配执行（延后 Sprint30-B），不做自动比例分摊（延后 Sprint30-B）。
+
+accept_criteria:
+  # 模型
+  - "tlmp.carrier.match.rule：sequence/carrier_id(optional)/condition_json/is_active"
+  - "match_ref_type + match_ref_value 结构化字段（不做 JSON rule engine）（不做 date_range/amount_range/carrier 复杂条件）"
+  - "tlmp.carrier.match.suggestion：billing_line_id/candidate_reference(Reference)/rule_id/confidence_score/confidence_source/state"
+  - "suggestion.state 枚举：draft/confirmed/rejected，支持人工确认/拒绝"
+  - "tlmp.carrier.matching.history：billing_line_id/order_id/rule_id/operation/operator/note"
+  # reference 增强
+  - "tlmp.transport.reference：新增 valid_from/valid_to + reference_scope（shipment/transport/billing） + reference_scope（解决 container_no 重复时的匹配范围）"
+  - "_sql_constraints：unique(ref_type, ref_value, res_model, res_id)（同一对象不重复挂相同引用）"
+  # 匹配建议服务
+  - "TransportMatchService (AbstractModel)：根据 match.rule 条件查询 transport.reference，生成 match.suggestion"
+  - "billing.line 表单显示匹配建议列表（按 confidence_score 降序）"
+  - "人工确认 suggestion → 调用 AllocationService 写入 allocation"
+  # 约束
+  - "运输订单创建时不再自动生成 order name reference（order.name 不是业务引用）"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 财务/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - carrier_match_rule（新）
+    - carrier_match_suggestion（新）
+    - carrier_matching_history（新）
+    - transport_reference（增量：valid_from/valid_to + reference_scope + 唯一约束）
+    - carrier_billing_line（增量：匹配建议 UI）
+  architecture:
+    - match_views（新视图）
+    - module_map（新增匹配域）
+
+# 模型设计参考
+#
+# tlmp.carrier.match.rule
+#   承运商匹配规则（条件仅限 reference.ref_type + reference.ref_value）
+#
+#   name = Char(required)
+#   carrier_id = Many2one(res.partner, optional)
+#     '规则适用承运商可为空，为空作为全局通用规则'
+#   sequence = Integer(default=10, required)
+#     '高优先级的 rule 先执行'
+#   condition_json = Text(
+#     string='Matching Conditions',
+#     help='JSON array: [{"field":"reference.ref_type","op":"eq","value":"container_no"},{"field":"reference.ref_value","op":"eq","value":"xxx"}]'
+#     '本期仅支持 reference.ref_type + reference.ref_value 条件',
+#   is_active = Boolean(default=True)
+#   company_id = Many2one(res.company)
+#
+# tlmp.carrier.match.suggestion
+#   匹配建议（人工确认后才写入 allocation）
+#
+#   billing_line_id = Many2one(carrier.billing.line, required)
+#   candidate_reference = fields.Reference(selection=[('tlmp.transport.order','Transport Order')], string='Candidate', required=True)
+#   match_rule_id = Many2one(match.rule, optional)
+#   confidence_score = Float(string='Confidence', default=1.0)
+#     '置信度分数 0.0-1.0'
+#   confidence_source = fields.Selection([('bl_exact','BL Exact'),('container_exact','Container Exact'),('tracking_exact','Tracking Exact'),('manual','Manual'),('rule_match','Rule Match')], string='Confidence Source', required=True)
+#     '来源描述：container_exact_match / ref_exact / manual'
+#   state = Selection([
+#     ('draft', 'Pending Review'),
+#     ('confirmed', 'Confirmed'),
+#     ('rejected', 'Rejected'),
+#   ], default='draft')
+#   operator = Many2one(res.users)
+#   create_date = Datetime
+#   _sql_constraints = [
+#     unique(billing_line_id, candidate_order_id) 防重复建议
+#   ]
+#
+# tlmp.carrier.matching.history
+#   匹配操作审计日志
+#
+#   billing_line_id = Many2one(billing.line)
+#   transport_order_id = Many2one(transport.order)
+#   match_rule_id = Many2one(match.rule, optional)
+#   suggestion_id = Many2one(match.suggestion, optional)
+#   operation = Selection(
+#     suggestion_created / confirmed / rejected / auto_match / allocation_created)
+#   operator = Many2one(res.users)
+#   change_date = Datetime(default=now)
+#   note = Text
+#
+# tlmp.transport.reference（增量）
+#   valid_from = Date(string='Valid From')
+#   valid_to = Date(string='Valid To')
+#   reference_scope = Selection([('shipment','Shipment'),('transport','Transport'),('billing','Billing')], string='Scope')
+#   _sql_constraints += [
+#     unique(ref_type, ref_value, res_model, res_id)
+#     '同一对象不能重复挂相同引用（但不同对象可挂相同 ref_value）'
+#   ]
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  # 新模型
+  - "models/transport_match_rule.py（match.rule + suggestion + history）"
+  # 匹配服务（AbstractModel）
+  - "models/transport_match_service.py（MatchService）+ services/allocation_service.py"
+  # 存量扩展
+  - "models/transport_reference.py（增量：valid_from/valid_to + reference_scope + 唯一约束）"
+  - "models/transport_carrier_billing.py（增量：billing.line 匹配建议集成）"
+  # 视图
+  - "views/transport_match_rule_views.xml"
+  - "views/transport_carrier_billing_views.xml（增量：suggestion inline list）"
+  # 权限
+  - "security/security.xml（新增 Settlement Config Manager 组）"
+  - "security/ir.model.access.csv（新增权限）"
+  # 测试
+  - "tests/test_transport_match_rule.py"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.43 -> 1.0.44）"
+  - "docs/context/architecture/module_map.md（更新）"
+  - "docs/context/history/decision_note.md（新增 ADR-029）"
+
+limit_constraints: |
+  1. match_ref_type + match_ref_value 结构化字段（不做 JSON rule engine）。
+     — 不做 date_range / amount_range / carrier_id 复杂条件（延后 Sprint30-B）。
+  2. carrier_id 在 match.rule 中为 optional：
+     — 为空时作为全局通用规则。
+     — 承运商已在 billing.document.carrier_id 中，rule 不重复绑定。
+  3. 运输订单创建时不再自动生成 order name reference：
+     — order.name 是 TLMS 内部编号，不是外部业务引用。
+     — 仅在 reference_type=internal 时可手动创建。
+  4. 本期不做自动匹配执行（延后 Sprint30-B）。
+  5. 人工确认 suggestion 后通过 AllocationService 写入 allocation。
+     — UI 不直接调用 allocation.create()。
+  6. 本期不做自动比例分摊（延后 Sprint30-B）。
+  7. 本期不做争议 Case 自动生成（延后 Sprint30-B）。
+  8. 本期不做费用差异对比（延后 Sprint31）。
+  9. container_no 等设备编号允许重复挂不同对象，unique 约束仅防止同一对象重复。
+  10. 本期不做 UI 条件编辑器（延后 P2）。
+  11. match.suggestion 的 candidate_order_id 一期作为主要匹配结果，
+      预留 future 扩展至 candidate_reference（匹配多条 shipent 场景）。
+
+risk_precheck: |
+  1. container_no 重复匹配的正确性依赖 valid_from/valid_to 时间范围。
+  2. unique(ref_type, ref_value, res_model, res_id) 不阻挡不同对象挂同引用。
+  3. AllocationService 为 AbstractModel，不创建独立表。
+
+# Goal
+goal: >
+  建设 match.suggestion 匹配建议基石，
+  核心链路：billing.line → transport.reference → match.rule → suggestion → 人工确认 → allocation。
+  为后续 Sprint30-B 自动匹配提供完整的规则配置 + 建议 + 确认闭环。
+
+  本期交付：
+  1. tlmp.carrier.match.rule（简化版：仅 reference.ref_type + reference.ref_value 条件）
+  2. tlmp.carrier.match.suggestion（含 state/confidence/operator）
+  3. tlmp.carrier.matching.history（操作审计）
+  4. TransportMatchService（AbstractModel 服务层）+ AllocationService（services/ 独立文件）
+  5. transport.reference（增量：valid_from/valid_to + reference_scope + 唯一约束）
+  6. billing.line 匹配建议 UI
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_match_rule.py"
+    - "addons/wd_tlms/models/transport_match_service.py"
+    - "addons/wd_tlms/models/transport_reference.py（增量：valid_from/valid_to + constraint）"
+    - "addons/wd_tlms/models/transport_carrier_billing.py（增量）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/views/transport_match_rule_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_billing_views.xml（增量）"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量：Configuration 菜单）"
+    - "addons/wd_tlms/security/security.xml（新增组）"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_transport_match_rule.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/architecture/module_map.md"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止 condition_json 支持 date_range/amount_range/carrier 复杂条件
+    - 禁止执行自动匹配引擎（本期仅生成建议，不执行）
+    - 禁止自动写入 allocation（通过 AllocationService 人工确认）
+    - 禁止自动创建争议 Case
+    - 禁止费用差异对比
+    - 禁止比例分摊逻辑
+    - 禁止自动生成 order.name reference
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+    - 禁止 settlement batch/case 功能
+
+# 权限设计：
+#   新增组：group_tlm_settlement_config (Configuration Manager，继承 group_tlm_operator)
+#     match.rule:   RWC
+#     suggestion:   R
+#     history:      R
+#   settlement_clerk:
+#     match.rule:   R（只读，规则不是日常维护对象）
+#     suggestion:   RWC（创建/确认/拒绝建议）
+#     history:      R
+#   manager:
+#     match.rule:   RWC
+#     suggestion:   R
+#     history:      R
+#   operator:
+#     match.rule:   R
+#     suggestion:   R（只查看）
+#     history:      R
+#   financier:
+#     match.rule:   R
+#     suggestion:   R
+#     history:      R
+#
+# ADR-029 关键决策：
+#   1. match.rule carrier_id 为 optional（承运商已在 billing.document 中）
+#   2. condition_json 本期仅支持 reference.ref_type + reference.ref_value
+#   3. 新增 match.suggestion 模型（state/confidence/operator），不直接调用 allocation
+#   4. transport.reference 增加 valid_from/valid_to + unique(ref_type,ref_value,res_model,res_id)
+#   5. 运输订单不再自动生成 order name reference
+#   6. AllocationService 隔离 UI 与 allocation 直接交互
+#   7. 新增 Settlement Config Manager 角色维护规则
+#   8. candidate_reference 一期仅 transport.order，future 扩展至 IFFM shipment
+#   9. 匹配建议与自动匹配分离：Sprint29 仅建议，Sprint30-B 才执行
+#  10. confidence_score + confidence_source 结构化记录

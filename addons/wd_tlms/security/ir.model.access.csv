@@ -145,3 +145,17 @@ access_tlmp_reference_clerk,tlmp.reference.clerk,model_tlmp_transport_reference,
 access_tlmp_reference_operator,tlmp.reference.operator,model_tlmp_transport_reference,wd_tlms.group_tlm_operator,1,0,0,0
 access_tlmp_reference_viewer,tlmp.reference.viewer,model_tlmp_transport_reference,wd_tlms.group_tlm_viewer,1,0,0,0
 access_tlmp_reference_fin,tlmp.reference.fin,model_tlmp_transport_reference,wd_tlms.group_tlm_financier,1,0,0,0
+access_match_rule_config,tlmp.match.rule.config,model_tlmp_carrier_match_rule,wd_tlms.group_tlm_settlement_config,1,1,1,1
+access_match_rule_manager,tlmp.match.rule.manager,model_tlmp_carrier_match_rule,wd_tlms.group_tlm_manager,1,1,1,1
+access_match_rule_clerk,tlmp.match.rule.clerk,model_tlmp_carrier_match_rule,wd_tlms.group_tlm_settlement_clerk,1,0,0,0
+access_match_rule_operator,tlmp.match.rule.operator,model_tlmp_carrier_match_rule,wd_tlms.group_tlm_operator,1,0,0,0
+access_match_rule_fin,tlmp.match.rule.fin,model_tlmp_carrier_match_rule,wd_tlms.group_tlm_financier,1,0,0,0
+access_suggestion_clerk,tlmp.suggestion.clerk,model_tlmp_carrier_match_suggestion,wd_tlms.group_tlm_settlement_clerk,1,1,1,0
+access_suggestion_manager,tlmp.suggestion.manager,model_tlmp_carrier_match_suggestion,wd_tlms.group_tlm_manager,1,1,0,0
+access_suggestion_operator,tlmp.suggestion.operator,model_tlmp_carrier_match_suggestion,wd_tlms.group_tlm_operator,1,0,0,0
+access_suggestion_fin,tlmp.suggestion.fin,model_tlmp_carrier_match_suggestion,wd_tlms.group_tlm_financier,1,0,0,0
+access_suggestion_config,tlmp.suggestion.config,model_tlmp_carrier_match_suggestion,wd_tlms.group_tlm_settlement_config,1,0,0,0
+access_matching_history_clerk,tlmp.matching.history.clerk,model_tlmp_carrier_matching_history,wd_tlms.group_tlm_settlement_clerk,1,0,0,0
+access_matching_history_manager,tlmp.matching.history.manager,model_tlmp_carrier_matching_history,wd_tlms.group_tlm_manager,1,1,0,0
+access_matching_history_fin,tlmp.matching.history.fin,model_tlmp_carrier_matching_history,wd_tlms.group_tlm_financier,1,0,0,0
+access_matching_history_config,tlmp.matching.history.config,model_tlmp_carrier_matching_history,wd_tlms.group_tlm_settlement_config,1,1,0,0

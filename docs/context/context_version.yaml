@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.43
+context_version: 1.0.44
 update_time: 2026-07-27
-adapt_sprint: Sprint28-Transport-Reference
+adapt_sprint: Sprint29-Match-Rule
 update_author: AI-Engineering-Team
 
 version_log:
@@ -304,3 +304,19 @@ bind_asset_folder:
       - verify 8/8 PASS, odoo_check PASS
     update_type: 新功能开发
     effect_scope: 物流业务引用索引层
+
+  1.0.44:
+    update_content: |
+      Sprint29 承运商匹配建议基石 — match.suggestion
+      - 新增 tlmp.carrier.match.rule（match_ref_type+match_ref_value 结构化字段）
+      - 新增 tlmp.carrier.match.suggestion（candidate_reference/confidence_score/confidence_source/state）
+      - 新增 tlmp.carrier.matching.history（from_state/to_state 审计）
+      - 新增 TransportMatchService（AbstractModel 匹配建议服务）
+      - 新增 AllocationService（services/ 独立文件）
+      - transport.reference 增量：valid_from/valid_to + reference_scope + unique 约束
+      - billing.line 增量：suggestion_ids 集成
+      - 新增 Settlement Config Manager 角色
+      - 14 个自动化测试用例（rule/suggestion lifecycle/service）
+      - verify 8/8 PASS, odoo_check PASS
+    update_type: 新功能开发
+    effect_scope: 承运商匹配规则域

@@ -863,3 +863,35 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - models/transport_order.py（action_open_references 方法 + auto-create）
 - 不影响 transport_event/exception/extra_charge 跟踪模型
 - 不影响 cmr/dgd/pod/shipment_label 文档模型
+
+## ADR-029: 承运商匹配规则 — match.suggestion
+
+**日期**: 2026-07-27
+**Sprint**: Sprint29
+**影响域**: 匹配规则域
+
+### 决策
+1. **match.rule 仅配置层**，不承载执行逻辑（Sprint30-B 自动匹配才能执行）
+2. **condition_json 不保留**，改用 match_ref_type + match_ref_value 结构化字段（不做 JSON rule engine）
+3. **match.suggestion 独立建模**，candidate_reference (Odoo Reference) 为主关联，candidate_order_id 为快捷访问
+4. **confidence_source Selection** 枚举 5 值：bl_exact/container_exact/tracking_exact/manual/rule_match
+5. **matching.history 记录 from_state → to_state**，审计完整
+6. **AllocationService 独立文件**（services/allocation_service.py），不耦合 match domain
+7. **Settlement Config Manager 角色**负责规则维护，settlement_clerk 规则只读
+8. **transport.reference 增量**：valid_from/valid_to + reference_scope + unique(ref_type,ref_value,res_model,res_id)
+9. **suggestion 不可删除**（unlink=False），属于审计对象
+10. **carrier_id 在 match.rule 中 optional**（承运商已在 billing.document 中）
+
+### 原因
+- 匹配建议与自动匹配分离：Sprint29 仅建议，Sprint30-B 才执行
+- container_no 等多条记录依赖 valid_from/valid_to 时间范围消歧
+- AllocationService 需要被 future batch/dispute 复用
+
+### 影响
+- models/transport_match_rule.py（新）
+- models/transport_match_service.py（新）
+- services/allocation_service.py（新）
+- models/transport_reference.py（增量）
+- models/transport_carrier_billing.py（增量）
+- 不影响 transport_event/exception/extra_charge 跟踪模型
+- 不影响 cmr/dgd/pod/shipment_label 文档模型

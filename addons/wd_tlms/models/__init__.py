@@ -39,3 +39,6 @@ from . import transport_carrier_charge_type
 from . import transport_carrier_billing
 from . import transport_carrier_allocation
 from . import transport_reference
+from . import transport_match_rule
+from . import transport_match_service
+from .. import services

@@ -93,6 +93,9 @@
     <menuitem id="menu_tlmp_charge_types" name="Charge Types" parent="menu_tlmp_config"
               action="action_tlmp_carrier_charge_type" sequence="12"
               groups="wd_tlms.group_tlm_settlement_clerk,wd_tlms.group_tlm_manager"/>
+    <menuitem id="menu_tlmp_match_rules" name="Match Rules" parent="menu_tlmp_config"
+              action="action_tlmp_carrier_match_rule" sequence="13"
+              groups="wd_tlms.group_tlm_settlement_config,wd_tlms.group_tlm_manager"/>
     <!-- DGD Documents in Documents section -->
     <menuitem id="menu_tlmp_dgd" name="DGD Documents" parent="menu_tlmp_docs"
               action="action_tlmp_dgd" sequence="25"/>
