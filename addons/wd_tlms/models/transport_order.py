@@ -56,6 +56,10 @@ class TransportOrder(models.Model):
     planned_delivery_date = fields.Datetime(string='Planned Delivery')
     actual_pickup_date = fields.Datetime(string='Actual Pickup')
     actual_delivery_date = fields.Datetime(string='Actual Delivery')
+    delivery_delay_hours = fields.Float(
+        string='Delivery Delay (hours)',
+        compute='_compute_delivery_delay', store=True,
+        help='Actual delivery minus planned delivery in hours. Negative=early, Positive=late.')
     driver_name = fields.Char(string='Driver')
     driver_phone = fields.Char(string='Driver Phone')
     vehicle_plate = fields.Char(string='Vehicle Plate')
@@ -108,6 +112,15 @@ class TransportOrder(models.Model):
             # Charges: gather from charge attachments
             for chg in r.extra_charge_ids:
                 r.charge_attachment_ids |= chg.attachment_ids
+
+    @api.depends('planned_delivery_date', 'actual_delivery_date')
+    def _compute_delivery_delay(self):
+        for r in self:
+            if r.actual_delivery_date and r.planned_delivery_date:
+                delta = r.actual_delivery_date - r.planned_delivery_date
+                r.delivery_delay_hours = delta.total_seconds() / 3600.0
+            else:
+                r.delivery_delay_hours = 0.0
 
     total_base_fee = fields.Monetary(string='Base Fee')
     total_surcharge = fields.Monetary(string='Total Surcharge', compute='_compute_surcharge_total')
