@@ -75,7 +75,7 @@
     <menuitem id="menu_tlmp_pricing" name="Pricing Rules" parent="menu_tlmp_config"
               action="action_tlmp_pricing_rule" sequence="25"/>
     <menuitem id="menu_tlmp_surcharge_type" name="Surcharge Types" parent="menu_tlmp_config"
-              action="action_tlmp_surcharge_type" sequence="20"/>
+              sequence="20"/>
     <menuitem id="menu_tlmp_cmr_coordinate" name="CMR Coordinates" parent="menu_tlmp_config"
               action="action_tlmp_cmr_coordinate" sequence="45"/>
     <!-- DGD Configuration -->
