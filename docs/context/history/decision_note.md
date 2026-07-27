@@ -807,3 +807,31 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 
 ### 遗留
 - B1 测试基础设施（test_runner.py escalate 路径）未完成
+
+## ADR-027: 承运商结算数据底座架构决策
+
+**日期**: 2026-07-27
+**Sprint**: Sprint27
+**影响域**: Settlement Domain
+
+### 决策
+1. **billing.document → billing.line** 作为唯一账单事实源，carrier.settlement 降级为聚合层
+2. **Allocation 金额约束**: sum(amount) <= billing_line.line_total, non-negative, unique(billing_line, order)
+3. **Cross-currency**: allocation.currency_id related to billing_line.currency_id, no cross-currency allocation
+4. **State machine**: Draft → Confirmed → Cancelled (simplified, upload/parse/approval deferred to Sprint30+)
+5. **No transport.reference model** (deferred to Sprint28+)
+6. **No auto-match engine** (deferred to Sprint30+)
+7. **No settlement batch/case** (deferred to Sprint31+)
+8. **security**: settlement_clerk (RWC, no unlink), operator (R), financier (R)
+9. **charge.type.categories**: freight/surcharge/accessorial/tax/adjustment/penalty (6 categories, stable enum)
+10. **carrier_settlement** gets billing_document_id; billing.document gets legacy_settlement_id (bidirectional but not coupled)
+
+### 原因
+- 旧 carrier_settlement 模型是单一金额聚合层，无法满足多维度分摊和审计追溯需求
+- 新增 billing document 模型作为事实源，保持旧模型兼容
+
+### 影响
+- carrier_settlement.py: 新增 billing_document_id 字段
+- transport_order.py: 新增 allocation_ids + allocated_carrier_cost compute field
+- 不影响 transport_event/exception/extra_charge 跟踪模型
+- 不影响 cmr/dgd/pod/shipment_label 文档模型

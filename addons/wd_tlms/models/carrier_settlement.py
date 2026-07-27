@@ -20,6 +20,13 @@ class CarrierSettlement(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency',
                                   default=lambda self: self.env.company.currency_id)
     account_move_id = fields.Many2one('account.move', string='Journal Entry', readonly=True)
+    billing_document_id = fields.Many2one(
+        'tlmp.carrier.billing.document', string='Billing Document',
+        help='Reference to the new billing document model.')
+    billing_document_ids = fields.One2many(
+        'tlmp.carrier.billing.document', 'legacy_settlement_id',
+        string='Billing Documents',
+        help='New billing documents linked to this legacy settlement.')
     state = fields.Selection([
         ('draft', 'Draft'), ('confirmed', 'Confirmed'),
         ('posted', 'Posted'), ('paid', 'Paid'), ('cancelled', 'Cancelled'),

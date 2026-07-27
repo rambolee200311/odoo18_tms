@@ -37,6 +37,7 @@ accept_criteria:
   # 测试 + 门禁
   - "金额一致性测试（line_total → allocation sum → remaining）
   - "超额分配拒绝测试（allocation_total > line_total → error）
+  - "跨币种禁止测试（billing_line EUR → allocation USD 必须拒绝）
   - "变更审计测试（reallocation → history 记录）
   - "CRUD / 状态机 / allocation / history 基础测试"
   - "verify.py 8/8 PASS + odoo_check PASS"
@@ -65,7 +66,7 @@ affected_assets:
     - carrier_billing_document（新）
     - carrier_charge_type（新）
     - carrier_settlement_allocation（新）
-    - transport_order（allocated_carrier_cost 字段增量）
+    - transport_order（_compute_allocated_cost 只读计算字段）
   architecture:
     - settlement_views（新视图）
 
@@ -175,6 +176,7 @@ scope:
 #   main_category = Selection(freight / surcharge / accessorial / tax / adjustment / penalty)
 #   sub_category = Char
 #   is_active = Boolean
+#   company_id = Many2one(res.company, default=current)
 #
 # tlmp.carrier.billing.document
 #   name = Char(default=_('New'), auto-seq)
@@ -183,18 +185,25 @@ scope:
 #   document_type = Selection(Invoice/Statement/Debit_Note/Credit_Note/Cost_Sheet)
 #   billing_period_start/end = Date
 #   currency_id = Many2one(res.currency)
+#   company_id = Many2one(res.company, default=current)
+#   carrier_service_id = Many2one(carrier.service, optional)
+#   confirmed_by = Many2one(res.users, readonly)
+#   confirmed_date = Datetime(readonly)
+#   cancel_reason = Text
 #   total_amount = Monetary
 #   amount_sign = Selection(positive/negative)
 #   transport_mode = Selection(TRUCK/EXPRESS/3PL)
 #   state: (Draft→Confirmed→Cancelled) — 简化状态机，上传/解析/审批状态延后Sprint30+
 #   line_ids = One2many(billing.line)
 #   carrier_service_id = Many2one(carrier.service, optional)
-#   old_settlement_id = Many2one(carrier.settlement) — link to legacy
+#   legacy_settlement_id = Many2one(carrier.settlement, optional) — 旧模型引用，不反向
 #
 # tlmp.carrier.billing.line
 #   document_id = Many2one(billing.document)
 #   service_date = Date
 #   raw_description = Text
+#   carrier_reference = Char（承运商运单号/提货码）
+#   raw_reference = Char（账单原始文本参考号）
 #   charge_type_id = Many2one(charge.type)
 #   net_amount = Monetary
 #   tax = Monetary
@@ -207,6 +216,7 @@ scope:
 #   billing_line_id = Many2one(billing.line)
 #   charge_type_id = Many2one(charge.type)
 #   transport_order_id = Many2one(transport.order, required)
+#   currency_id = Many2one(res.currency, related=billing_line_id.currency_id, store=False)
 #   allocated_amount = Monetary (约束: sum <= billing_line.line_total，不可为负)
 #   allocation_method = Selection(auto/manual)
 #   change_reason = Char(required only if modified)
@@ -216,19 +226,24 @@ scope:
 #     - check(allocated_amount >= 0) — 不可为负
 #
 # tlmp.carrier.allocation.history
-#   alloc_id = Many2one(allocation)
+#   allocation_id = Many2one(allocation, required)
+#   operation_type = Selection(create/update/delete/reallocate)
 #   old_amount = Monetary
 #   new_amount = Monetary
+#   old_order_id = Many2one(transport.order)
+#   new_order_id = Many2one(transport.order)
+#   old_charge_type_id = Many2one(charge.type)
+#   new_charge_type_id = Many2one(charge.type)
 #   change_reason = Text(required)
 #   operator = Many2one(res.users)
-#   change_date = Datetime
+#   change_date = Datetime(default=now)
 #
 # 权限:
 #   group_tlm_settlement_clerk (继承 operator)
 #     billing.document: RWC (no unlink)
 #     billing.line: RWC (no unlink)
 #     charge.type: R
-#     allocation: RWC (no unlink)
+#     allocation: RWC (no unlink, modify forced reason)
 #     allocation.history: R
 #   group_tlm_financier: read-only on all
 #   group_tlm_operator: read-only on billing, no allocation

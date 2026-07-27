@@ -75,3 +75,15 @@
         <field name="padding">5</field>
     </record>
 </odoo>
+
+    <record id="seq_tlmp_billing_document" model="ir.sequence">
+        <field name="name">TLM Billing Document</field>
+        <field name="code">tlmp.billing.document.seq</field>
+        <field name="prefix">TLM-BLD-%(year)s-%(month)s-</field>
+    <record id="seq_tlmp_billing_document" model="ir.sequence">
+        <field name="name">TLM Billing Document</field>
+        <field name="code">tlmp.billing.document.seq</field>
+        <field name="prefix">TLM-BLD-%(year)s-%(month)s-</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

@@ -53,8 +53,12 @@
         'views/transport_un_dictionary_views.xml',
         'views/transport_dgd_views.xml',
         'views/transport_type_views.xml',
+        'data/transport_charge_type_data.xml',
         'views/carrier_service_views.xml',
         'views/transport_shipment_label_views.xml',
+        'views/transport_carrier_charge_type_views.xml',
+        'views/transport_carrier_billing_views.xml',
+        'views/transport_carrier_allocation_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {

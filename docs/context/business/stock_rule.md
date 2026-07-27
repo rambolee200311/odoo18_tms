@@ -343,7 +343,7 @@ transport.dgd（一对一绑定 order）
 - 系统预设高频费用类型，后续可维护扩展
 
 ### 10.6 旧模型兼容
-- 旧 `tlmp.carrier.settlement` 保留为聚合层，通过 `billing_document_id` 关联新模型
+- 旧 `tlmp.carrier.settlement` 保留为聚合层，billing.document 保留 `legacy_settlement_id` 引用旧模型，不反向依赖
 - 旧 `transport.fee.line` 中 `party_type=carrier_cost` 存系统预估承运成本
 - 预估成本与承运实收分摊通过 order_id 关联对比
 - `transport_order.total_carrier_cost` 存系统预估值，`allocated_carrier_cost`（Sprint27 新增）存承运实收分摊

@@ -14,3 +14,4 @@ from . import test_sprint22_dashboard
 from . import test_transport_dgd
 from . import test_transport_type
 from . import test_transport_shipment_label
+from . import test_transport_carrier_settlement

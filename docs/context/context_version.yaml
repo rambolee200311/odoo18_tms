@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.41
+context_version: 1.0.42
 update_time: 2026-07-27
-adapt_sprint: Sprint26-Infra-Report
+adapt_sprint: Sprint27-Carrier-Settlement
 update_author: AI-Engineering-Team
 
 version_log:
@@ -275,3 +275,18 @@ bind_asset_folder:
   - constraints
   - intent
   - cognition
+
+  1.0.42:
+    update_content: |
+      Sprint27 承运商结算数据底座 — Billing Document + Charge Type + Allocation
+      - 新增 5 个模型：charge.type / billing.document / billing.line / allocation / allocation.history
+      - 新增 settlement_clerk 角色（继承 operator，禁止删除）
+      - carrier_settlement 存量模型增加 billing_document_id 关联
+      - transport_order 增加 allocation_ids 关联 + allocated_carrier_cost 计算字段
+      - charge.type 预设 11 种高频费用类型（6 大类）
+      - Billing Document 简化状态机 Draft->Confirmed->Cancelled
+      - Allocation 金额约束（sum <= line_total, 非负, 唯一）
+      - 26 个自动化测试用例
+      - verify 8/8 PASS
+    update_type: 新功能开发
+    effect_scope: 承运商结算数据底座（Settlement Domain）

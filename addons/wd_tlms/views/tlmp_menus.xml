@@ -53,6 +53,9 @@
               action="action_tlmp_settlement" sequence="20"/>
     <menuitem id="menu_tlmp_surcharges" name="Surcharges" parent="menu_tlmp_finance"
               action="action_tlmp_surcharge" sequence="30"/>
+    <menuitem id="menu_tlmp_billing_documents" name="Billing Documents" parent="menu_tlmp_finance"
+              action="action_tlmp_carrier_billing_document" sequence="15"
+              groups="wd_tlms.group_tlm_settlement_clerk,wd_tlms.group_tlm_manager,wd_tlms.group_tlm_financier"/>
 
     <!-- Documents -->
     <menuitem id="menu_tlmp_docs" name="Documents" parent="menu_tlmp_root" sequence="30"/>
@@ -87,6 +90,9 @@
               action="action_tlmp_transport_type" sequence="48"/>
     <menuitem id="menu_tlmp_carrier_service" name="Carrier Services" parent="menu_tlmp_config"
               action="action_tlmp_carrier_service" sequence="49"/>
+    <menuitem id="menu_tlmp_charge_types" name="Charge Types" parent="menu_tlmp_config"
+              action="action_tlmp_carrier_charge_type" sequence="12"
+              groups="wd_tlms.group_tlm_settlement_clerk,wd_tlms.group_tlm_manager"/>
     <!-- DGD Documents in Documents section -->
     <menuitem id="menu_tlmp_dgd" name="DGD Documents" parent="menu_tlmp_docs"
               action="action_tlmp_dgd" sequence="25"/>

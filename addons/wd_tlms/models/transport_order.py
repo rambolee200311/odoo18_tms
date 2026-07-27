@@ -140,6 +140,16 @@ class TransportOrder(models.Model):
     customer_bill_id = fields.Many2one('tlmp.customer.bill', string='Customer Bill', readonly=True)
     carrier_settlement_id = fields.Many2one('tlmp.carrier.settlement', string='Carrier Settlement',
                                             readonly=True)
+    allocation_ids = fields.One2many(
+        'tlmp.carrier.settlement.allocation', 'transport_order_id',
+        string='Allocations')
+    allocated_carrier_cost = fields.Monetary(
+        string='Allocated Carrier Cost',
+        currency_field='currency_id',
+        compute='_compute_allocated_carrier_cost', store=False)
+    billing_document_ids = fields.One2many(
+        'tlmp.carrier.billing.line', 'transport_order_id',
+        string='Billing Lines')
     cmr_ids = fields.One2many('tlmp.cmr', 'order_id', string='CMR Documents')
     pod_id = fields.Many2one('tlmp.pod', string='POD', readonly=True)
     trip_id = fields.Many2one('container.transport.plan', string='Trip Plan', index=True)
@@ -427,3 +437,9 @@ class TransportOrder(models.Model):
         else:
             self.price_source = 'manual'
         return True
+
+    @api.depends('allocation_ids.allocated_amount')
+    def _compute_allocated_carrier_cost(self):
+        for r in self:
+            r.allocated_carrier_cost = sum(
+                r.allocation_ids.mapped('allocated_amount'))
