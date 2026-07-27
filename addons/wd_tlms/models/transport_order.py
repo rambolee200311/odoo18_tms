@@ -172,6 +172,8 @@ class TransportOrder(models.Model):
     t1_deadline = fields.Datetime(string='T1 Transit Deadline',
                                    help='Customs transit deadline for T1 documents')
     dgd_ids = fields.One2many('tlmp.transport.dgd', 'order_id', string='DGD Documents')
+    shipment_label_ids = fields.One2many('tlmp.transport.shipment.label', 'order_id',
+                                         string='Shipment Labels')
     t1_state = fields.Selection([
         ('none', 'None'),
         ('declared', 'Declared'),

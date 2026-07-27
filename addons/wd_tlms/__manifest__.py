@@ -56,6 +56,7 @@
         'views/transport_dgd_views.xml',
         'views/transport_type_views.xml',
         'views/carrier_service_views.xml',
+        'views/transport_shipment_label_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {

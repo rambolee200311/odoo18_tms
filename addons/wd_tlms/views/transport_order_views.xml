@@ -144,6 +144,18 @@
                          </page>
                          <page string="DGD" name="dgd_page">
                              <group>
+                                 <field name="shipment_label_ids">
+                                     <list>
+                                         <field name="name"/>
+                                         <field name="state" widget="badge"/>
+                                         <field name="tracking_number"/>
+                                         <field name="carrier_service_id"/>
+                                     </list>
+                                 </field>
+                             </group>
+                         </page>
+                         <page string="DGD" name="dgd_page">
+                             <group>
                                  <field name="dgd_ids">
                                      <list>
                                          <field name="name"/>

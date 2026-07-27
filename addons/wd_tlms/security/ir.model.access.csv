@@ -122,3 +122,6 @@ access_tlmp_type_all,tlmp.type.all,model_tlmp_transport_type,base.group_user,1,0
 access_tlmp_carrier_service_manager,tlmp.carrier.service.manager,model_tlmp_carrier_service,wd_tlms.group_tlm_manager,1,1,1,1
 access_tlmp_carrier_service_operator,tlmp.carrier.service.operator,model_tlmp_carrier_service,wd_tlms.group_tlm_operator,1,0,0,0
 access_tlmp_carrier_service_all,tlmp.carrier.service.all,model_tlmp_carrier_service,base.group_user,1,0,0,0
+access_tlmp_shipment_label_manager,tlmp.shipment.label.manager,model_tlmp_transport_shipment_label,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_shipment_label_operator,tlmp.shipment.label.operator,model_tlmp_transport_shipment_label,wd_tlms.group_tlm_operator,1,1,1,0
+access_tlmp_shipment_label_all,tlmp.shipment.label.all,model_tlmp_transport_shipment_label,base.group_user,1,0,0,0

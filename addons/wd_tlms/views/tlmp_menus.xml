@@ -90,6 +90,9 @@
     <!-- DGD Documents in Documents section -->
     <menuitem id="menu_tlmp_dgd" name="DGD Documents" parent="menu_tlmp_docs"
               action="action_tlmp_dgd" sequence="25"/>
+    <menuitem id="menu_tlmp_shipment_labels" name="Shipment Labels" parent="menu_tlmp_docs"
+              action="action_tlmp_shipment_label" sequence="30"/>
+
 
 
     <!-- 运输计划独立菜单 -->
