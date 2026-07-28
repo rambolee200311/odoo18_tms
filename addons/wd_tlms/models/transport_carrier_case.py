@@ -89,9 +89,7 @@ class CarrierSettlementCaseLine(models.Model):
     billing_line_id = fields.Many2one(
         'tlmp.carrier.billing.line', string='Billing Line',
         required=True)
-    allocation_ids = fields.One2many(
-        'tlmp.carrier.settlement.allocation', 'correction_case_id',
-        string='Allocations')
+    # allocation_ids temporarily removed - will be re-added as Many2many in Sprint36
     issue_amount = fields.Monetary(string='Issue Amount')
     resolution_amount = fields.Monetary(string='Resolution Amount')
     expected_amount = fields.Monetary(
