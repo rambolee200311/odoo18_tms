@@ -18,6 +18,7 @@
         'data/carrier_service_data.xml',
         'data/transport_un_dictionary_data.xml',
         'security/security.xml',
+        'security/security_settlement_groups.xml',
         'security/ir.model.access.csv',
         'data/sequences.xml',
         'data/surcharge_data.xml',
