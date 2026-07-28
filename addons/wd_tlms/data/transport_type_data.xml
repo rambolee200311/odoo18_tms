@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <data noupdate="1">
-        <!-- FTL Types -->
+<odoo noupdate="1">
+<!-- FTL Types -->
         <record id="type_port_to_warehouse" model="tlmp.transport.type">
             <field name="code">port_to_warehouse</field>
             <field name="name">Terminal to Warehouse</field>
@@ -53,5 +52,4 @@
             <field name="mode">road</field>
             <field name="sequence">70</field>
         </record>
-    </data>
 </odoo>

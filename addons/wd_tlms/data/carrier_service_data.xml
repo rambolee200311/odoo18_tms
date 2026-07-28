@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <data noupdate="1">
-        <!-- Generic Carrier Services (not tied to specific carrier companies) -->
+<odoo noupdate="1">
+<!-- Generic Carrier Services (not tied to specific carrier companies) -->
         <record id="svc_parcel_standard" model="tlmp.carrier.service">
             <field name="code">parcel_standard</field>
             <field name="name">Parcel Standard</field>
@@ -26,5 +25,4 @@
             <field name="service_type">road</field>
             <field name="sequence">40</field>
         </record>
-    </data>
 </odoo>

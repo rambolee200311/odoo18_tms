@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <data noupdate="1">
-        <record id="charge_type_freight_base" model="tlmp.carrier.charge.type">
+<odoo noupdate="1">
+<record id="charge_type_freight_base" model="tlmp.carrier.charge.type">
             <field name="code">FREIGHT_BASE</field>
             <field name="name">Transport Base</field>
             <field name="main_category">freight</field>
@@ -67,5 +66,4 @@
             <field name="main_category">penalty</field>
             <field name="sequence">110</field>
         </record>
-    </data>
 </odoo>

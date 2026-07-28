@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <data noupdate="1">
-        <!-- High-frequency ADR Dangerous Goods - UN Dictionary Presets -->
+<odoo noupdate="1">
+<!-- High-frequency ADR Dangerous Goods - UN Dictionary Presets -->
         <record id="un_1203" model="tlmp.transport.un.dictionary">
             <field name="un_number">UN1203</field>
             <field name="proper_shipping_name">GASOLINE</field>
@@ -92,5 +91,4 @@
             <field name="tunnel_code">E</field>
             <field name="transport_category">3</field>
         </record>
-    </data>
 </odoo>
