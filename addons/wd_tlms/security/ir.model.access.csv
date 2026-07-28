@@ -187,3 +187,12 @@ access_batch_approval_clerk,tlmp.batch.approval.clerk,model_tlmp_carrier_settlem
 access_batch_approval_manager,tlmp.batch.approval.manager,model_tlmp_carrier_settlement_batch_approval_history,wd_tlms.group_tlm_manager,1,1,1,0
 access_batch_approval_fin,tlmp.batch.approval.fin,model_tlmp_carrier_settlement_batch_approval_history,wd_tlms.group_tlm_financier,1,0,0,0
 access_export_wizard,tlmp.export.wizard,model_tlmp_settlement_export_wizard,base.group_user,1,1,0,0
+access_template_config,tlmp.template.config,model_tlmp_carrier_invoice_template,wd_tlms.group_tlm_settlement_config,1,1,1,1
+access_template_manager,tlmp.template.manager,model_tlmp_carrier_invoice_template,wd_tlms.group_tlm_manager,1,1,1,1
+access_template_clerk,tlmp.template.clerk,model_tlmp_carrier_invoice_template,wd_tlms.group_tlm_settlement_clerk,1,0,0,0
+access_import_invoiceop,tlmp.import.invoiceop,model_tlmp_carrier_invoice_import,wd_tlms.group_tlm_invoice_operator,1,1,1,0
+access_import_clerk,tlmp.import.clerk,model_tlmp_carrier_invoice_import,wd_tlms.group_tlm_settlement_clerk,1,1,1,0
+access_import_manager,tlmp.import.manager,model_tlmp_carrier_invoice_import,wd_tlms.group_tlm_manager,1,1,1,0
+access_importline_invoiceop,tlmp.importline.invoiceop,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_invoice_operator,1,0,0,0
+access_importline_clerk,tlmp.importline.clerk,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_settlement_clerk,1,1,0,0
+access_importline_manager,tlmp.importline.manager,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_manager,1,1,0,0

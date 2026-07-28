@@ -26,3 +26,5 @@ from . import test_settlement_adjustment
 from . import test_batch_approval
 from . import test_settlement_export
 from . import test_closed_batch_protection
+from . import test_invoice_template
+from . import test_invoice_import

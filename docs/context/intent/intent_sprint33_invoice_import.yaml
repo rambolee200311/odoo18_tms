@@ -1,0 +1,186 @@
+# ==============================================================
+# 【Sprint33 意图契约 V3】
+# 功能：承运商账单导入基础 — Settlement Domain 外部输入标准化
+# 前置基线：Sprint32 结算财务闭环（Settlement Domain MVP）
+# 基线版本：context_version: 1.0.47 -> 1.0.48
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT33-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 承运商账单导入 — Settlement Domain 外部输入标准化
+
+target_scope: >
+  Sprint27-32 完成了 Settlement Domain 核心闭环。
+  当前最大人工瓶颈：承运商账单需要手工录入 billing.document。
+  Sprint33 建设外部账单导入标准入口。
+  - P0: Invoice Template（可配置映射）
+  - P0: Invoice Import（Batch + Line + Preview + Validation + Partial Failure）
+  - P0: Idempotency（external_invoice_no + version + external_line_key）
+  不做 Rule Engine（Sprint34）、Dashboard（Sprint34）、Audit（已有平台审计）。
+
+accept_criteria:
+  # P0: Invoice Template
+  - "tlmp.carrier.invoice.template：carrier_profile_id/name/file_type/mapping_json/is_active"
+  - "mapping_json 格式：{'column_key':'business_field'}，不绑定业务字段名称"
+  - "不同 carrier_profile 绑定不同模板"
+  # P0: Invoice Import Batch
+  - "tlmp.carrier.invoice.import：name/carrier_partner_id/template_id/state/file_name/total_lines/success_lines/error_lines"
+  - "state 状态机：draft → uploaded → preview → validating → validated → importing → completed / partial_failed / failed / cancelled"
+  - "导入流程：上传 → preview（解析预览）→ confirm（校验）→ import（写入 billing.document + billing.line）"
+  - "partial_failed：部分行成功（99/100），成功行已写入 billing，失败行保留 error_message"
+  # P0: Import Line（临时导入层，不复制业务字段）
+  - "tlmp.carrier.invoice.import.line：import_id/line_no/raw_data(JSON)/parsed_data(JSON)/billing_line_id/import_status/validation_error_code/validation_message"
+  - "import_status：pending → validated → imported → failed | skipped"
+  - "Import Line 非业务事实，确认后业务数据进入 billing.line"
+  # P0: Idempotency
+  - "billing.document 增加 external_invoice_no + invoice_version + external_document_ref（Char, index）"
+  - "billing.line 增加 external_line_key（Char, index）"
+  - "幂等规则：同 carrier + external_invoice_no + version 的文档不可重复导入"
+  - "同版本修正：新版本覆盖旧版本"
+  # 编码支持
+  - "CSV 自动识别编码 UTF-8/GBK/ISO-8859-1"
+  - "无法识别时导入失败并提示编码问题"
+  # 门禁
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 产品/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - carrier_invoice_template（新）
+    - carrier_invoice_import（新）
+    - carrier_invoice_import_line（新）
+    - carrier_billing_document（增量）
+    - carrier_billing_line（增量）
+  architecture:
+    - invoice_import_views（新）
+
+deliverables:
+  # 新模型
+  - "models/transport_carrier_invoice_template.py"
+  - "models/transport_carrier_invoice_import.py（Import Batch + Import Line）"
+  # 新服务（拆分职责）
+  - "services/invoice_import_service.py（主服务）"
+  - "services/invoice_parser.py（CSV/XLSX/编码解析）"
+  - "services/invoice_validator.py（校验 + 幂等检查）"
+  - "services/invoice_writer.py（写入 billing.document + billing.line）"
+  # 存量扩展
+  - "models/transport_carrier_billing.py（增量：external 字段）"
+  # 视图
+  - "views/transport_carrier_invoice_template_views.xml"
+  - "views/transport_carrier_invoice_import_views.xml"
+  # 权限
+  - "security/security.xml（新增 invoice_operator 组）"
+  - "security/ir.model.access.csv"
+  # 测试
+  - "tests/test_invoice_template.py"
+  - "tests/test_invoice_import.py（含 partial_failure + duplicate 测试）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.47 -> 1.0.48）"
+  - "docs/context/history/decision_note.md（新增 ADR-033）"
+
+limit_constraints: |
+  1. Invoice Import 一期仅支持 CSV 和 .xlsx（PDF 延后 Sprint35）。
+  2. Invoice Template mapping_json 采用 JSON 格式（不做 UI 编辑器，Sprint34）。
+  3. Import Line 是临时导入层，确认后业务数据进入 billing.line（不复制业务字段）。
+  4. Partial Failure 支持：成功行写入 billing，失败行保留 error_message。
+  5. 幂等策略：external_invoice_no + invoice_version 唯一，新版本覆盖旧版本。
+  6. 本期不做 Match Rule Engine（Sprint34）。
+  7. 本期不做 Dashboard（Sprint34）。
+  8. 本期不做 Audit Log（已有 matching.history + 平台审计）。
+  9. 本期不做 account.move 自动记账（Sprint34+）。
+
+risk_precheck: |
+  1. CSV 编码自动识别失败率需测试（UTF-8/GBK/ISO-8859-1）。
+  2. Invoice Import 不负责匹配，仅负责外部账单落地。
+  3. Import Line 数量可能很大（单次万级），考虑分批处理。
+  4. 幂等覆盖策略（同版本的重新导入）需在 billing.document 中标记旧版本为 superseded。
+
+# Goal
+goal: >
+  建设承运商账单导入标准入口，
+  解决当前最大人工瓶颈：承运商账单手工录入。
+  同时建立 Invoice Template 配置机制，新增承运商无需开发。
+
+  本期交付：
+  1. Carrier Invoice Template（可配置映射）
+  2. Invoice Import Batch + Line（完整导入生命周期）
+  3. Partial Failure + Idempotency
+  4. 编码自动识别
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_carrier_invoice_template.py"
+    - "addons/wd_tlms/models/transport_carrier_invoice_import.py"
+    - "addons/wd_tlms/services/invoice_import_service.py"
+    - "addons/wd_tlms/services/invoice_parser.py"
+    - "addons/wd_tlms/services/invoice_validator.py"
+    - "addons/wd_tlms/services/invoice_writer.py"
+    - "addons/wd_tlms/models/transport_carrier_billing.py（增量）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/views/transport_carrier_invoice_template_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_invoice_import_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量）"
+    - "addons/wd_tlms/security/security.xml（新增 invoice_operator 组）"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_invoice_template.py"
+    - "addons/wd_tlms/tests/test_invoice_import.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止创建 match.rule.condition（延后 Sprint34 整体设计 Rule Engine 2.0）
+    - 禁止创建 settlement.audit.log（复用平台审计）
+    - 禁止创建 settlement dashboard（Sprint34）
+    - 禁止创建 account.move 自动记账
+    - 禁止 Carrier API 对接
+    - 禁止 PDF 导入
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+# 权限设计：
+#   invoice_operator（新增组，继承 group_tlm_operator）：
+#     upload + preview Import（上传/预览不写入）
+#   settlement_clerk：
+#     validate + confirm import（校验/确认写入）
+#     Template: R
+#   settlement_config：
+#     Template: CRUD
+#   manager：
+#     confirm import / R on all
+#   financier：
+#     R on all
+#
+# ADR-033 关键决策：
+#   1. Invoice Import 作为 Settlement Domain 唯一外部账单入口
+#   2. Import Batch + Import Line 作为临时导入层，Billing Document 是唯一业务事实
+#   3. Import 支持 partial success，避免批量事务全部失败
+#   4. Idempotency：external_invoice_no + version + external_line_key
+#   5. Template 使用配置映射，不绑定业务字段名
+#   6. Audit 不建设，复用平台审计（matching.history + chatter）
+#   7. Match Rule Engine 延后 Sprint34
+#   8. Dashboard 延后 Sprint34（Import 后指标基线变化）
+#   9. PDF/OCR/API 延后 Sprint35
+#   10. Invoice Parser/Validator/Writer 服务职责拆分

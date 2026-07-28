@@ -71,6 +71,12 @@
     <record id="seq_shipment_label" model="ir.sequence">
     <record id="seq_tlmp_settlement_case" model="ir.sequence">
     <record id="seq_tlmp_adjustment" model="ir.sequence">
+    <record id="seq_tlmp_invoice_import" model="ir.sequence">
+        <field name="name">TLM Invoice Import</field>
+        <field name="code">tlmp.invoice.import.seq</field>
+        <field name="prefix">IMP-%(year)s%(month)s-</field>
+        <field name="padding">4</field>
+    </record>
         <field name="name">TLM Adjustment</field>
         <field name="code">tlmp.adjustment.seq</field>
         <field name="prefix">ADJ-%(year)s%(month)s-</field>

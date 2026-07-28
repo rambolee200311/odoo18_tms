@@ -973,3 +973,28 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - services/settlement_export_service.py（新）
 - views/transport_carrier_adjustment_views.xml（新）
 - views/settlement_export_wizard.xml（新）
+
+## ADR-033: 承运商账单导入 — Invoice Import Foundation
+
+**日期**: 2026-07-28
+**Sprint**: Sprint33
+**影响域**: 结算导入域
+
+### 决策
+1. Invoice Import 作为 Settlement Domain 唯一外部账单入口
+2. Import Batch + Import Line 作为临时导入层，Billing Document 是唯一业务事实
+3. Import 支持 partial success（99/100 成功）
+4. Idempotency：external_invoice_no + invoice_version + external_line_key
+5. Template 使用配置映射，不绑定业务字段名
+6. Audit 不建设，复用平台审计（matching.history + chatter）
+7. Match Rule Engine 延后 Sprint34
+8. Dashboard 延后 Sprint34（Import 后指标基线变化）
+9. PDF/OCR/API 延后 Sprint35
+10. Invoice Parser/Validator/Writer 服务职责分离
+
+### 影响
+- models/transport_carrier_invoice_template.py（新）
+- models/transport_carrier_invoice_import.py（新）
+- services/invoice_parser.py / invoice_validator.py / invoice_writer.py（新）
+- services/invoice_import_service.py（新）
+- models/transport_carrier_billing.py（增量）
