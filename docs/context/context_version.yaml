@@ -343,4 +343,12 @@ bind_asset_folder:
       - docs/context/invoice_mapping_schema.yaml 上下文资产
     update_type: 新功能开发 + 领域边界建立
     effect_scope: settlement_intake_layer
-
+  1.0.53:
+    update_content: |
+      Sprint36-B Settlement Domain Invariant 自动化质量门禁
+      - test_settlement_regression.py（单入口文件，4 个内部 class）
+      - 覆盖金额守恒/状态机/幂等/权限四大 invariant
+      - Domain Invariant 纳入 Governance Asset
+      - 测试失败只记录缺陷，不自动修复业务逻辑
+    update_type: 质量硬化
+    effect_scope: settlement_domain_invariant

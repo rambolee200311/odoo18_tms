@@ -1,6 +1,6 @@
 # ==============================================================
-# 【Sprint36-B Intent 契约】
-# 功能：结算域生产硬化 — Settlement Domain Test Hardening
+# 【Sprint36-B Intent 契约 V2】
+# 功能：结算域 Domain Invariant 自动化质量门禁
 # 前置基线：Sprint36-A Carrier Invoice Import
 # 基线版本：context_version: 1.0.52 -> 1.0.53
 # ==============================================================
@@ -8,42 +8,21 @@
 intent_id: INT-TMS-SPRINT36-002
 intent_work_type: Maintenance
 intent_change_type: Quality Hardening
-title: Settlement Domain Test Hardening — 全链路质量基线
+title: Settlement Domain Invariant — 自动化质量门禁
 
 target_scope: >
-  Sprint27-36-A 完成了 Settlement Domain 功能闭环：
-  billing → matching → allocation → batch → case → correction → approval → export → import。
-  本期是第一次对结算域做全链路质量硬化：
+  本期建立 Settlement Domain Domain Invariant 自动化质量门禁。
+  验证范围严格限定：billing / matching / allocation / batch / case / correction。
 
-  - P0: 金额守恒 + 状态机合规 + 幂等安全 + 权限隔离 四大测试矩阵
-  - P0: Domain Invariant 自动化验证
-  - P1: 回归基线建立
+  不覆盖：
+  - UI 行为测试
+  - 导入流程测试（由 Sprint36-A 负责）
+  - PDF/Export 格式测试
+  - 性能压力测试
+  - 历史遗留缺陷修复
+  - 非业务字段测试
 
-  不做新功能、不做 UI、不做架构调整。
-
-accept_criteria:
-  # P0: 金额守恒
-  - "billing.total = allocation.total + unallocated.amount"
-  - "batch.total = sum(allocation)"
-  - "original + reversal + replacement = final amount（修正一致）"
-  # P0: 状态机合规
-  - "Batch lifecycle: draft → processing → confirmed → closed"
-  - "closed 后禁止修改 allocation"
-  - "Case lifecycle: open → in_progress → resolved → closed"
-  # P0: 幂等安全
-  - "重复执行 run_matching() → allocation 数量不变"
-  - "同 idempotency_hash 不产生重复 billing"
-  # P0: 权限隔离
-  - "operator 不能修改 allocation"
-  - "clerk 可以修正 allocation"
-  - "manager 审批 batch"
-  - "financier 导出"
-  # P0: Matching 置信度边界
-  - "confidence >= 0.85 → auto_confirmed + allocation 创建"
-  - "confidence < 0.70 → draft 不创建 allocation"
-  # P1: 回归基线
-  - "全量测试单次运行通过率 >= 95%"
-  - "新增模块测试文件不影响已有测试"
+  本期不修改任何业务逻辑代码。测试失败只记录缺陷，不自动修复业务逻辑。
 
 source:
   type: quality_improvement
@@ -64,23 +43,86 @@ loop_policy:
     - human_accept
     - risk_block
 
+# ======== Test Structure ========
+test_structure:
+  single_entry_file: true
+  file_name: test_settlement_regression.py
+  internal_class_split: required
+  classes:
+    - TestSettlementAmountInvariant
+    - TestSettlementStateMachine
+    - TestSettlementIdempotency
+    - TestSettlementSecurity
+
+# ======== Change Policy ========
+change_policy:
+  business_logic_change: forbidden
+  invariant_change: forbidden
+  test_only_change: allowed
+  defect_fix: record_only
+
+# ======== Domain Invariants ========
 domain_invariants:
-  allocation_never_exceed_billing:
-    rule: allocation_total <= billing_line_total
-    validation: 创建/修正 allocation 时自动校验
-    criticality: P0
-  closed_batch_immutable:
-    rule: batch state=closed 时禁止修改 allocation
-    validation: 状态机约束 + 测试验证
-    criticality: P0
-  correction_preserves_history:
-    rule: 修正必须保留原 allocation（is_reversal=True）
-    validation: matching.history + allocation 历史链
-    criticality: P0
-  duplicate_execution_safe:
-    rule: 同一 execution_id 重复执行结果不变
-    validation: 幂等测试
-    criticality: P0
+  source_asset:
+    path: governance/domain_invariants/settlement.yaml
+    version: "1.0"
+
+  invariants:
+    # ── 金额不变量 ──
+    allocation_never_exceed_billing:
+      rule: allocation_total <= billing_line_total
+      validation: 创建/修正 allocation 时自动校验
+      criticality: P0
+
+    settlement_amount_reconciliation:
+      rule: billing_line_amount = allocated_amount + remaining_amount + adjustment_amount
+      validation: 金额守恒校验（允许舍入误差）
+      criticality: P0
+
+    # ── 状态机不变量 ──
+    closed_batch_immutable:
+      rule: batch state=closed 时禁止修改 allocation
+      validation: 状态机约束 + 测试验证
+      criticality: P0
+
+    # ── 幂等不变量 ──
+    duplicate_execution_safe:
+      rule: 同一 execution_id 重复执行结果不变
+      validation: 幂等测试
+      criticality: P0
+
+    # ── 修正不变量 ──
+    correction_preserves_history:
+      rule: 修正必须保留原 allocation（is_reversal=True），原始金额不可变
+      validation: matching.history + allocation 历史链
+      criticality: P0
+
+# ======== Matching 置信度边界 ========
+confidence_range:
+  '>=0.85':
+    action: auto_confirmed
+    allocation: auto_create
+  '0.70-0.85':
+    action: manual_review
+    allocation: draft
+  '<0.70':
+    action: draft
+    allocation: none
+
+# ======== 安全矩阵 ========
+security_matrix:
+  operator:
+    allow: [read]
+    deny: [create, write, unlink]
+  clerk:
+    allow: [correction_create, read]
+    deny: [batch_approve, delete]
+  manager:
+    allow: [batch_approve, read]
+    deny: [allocation_modify, delete]
+  financier:
+    allow: [export, read]
+    deny: [business_modify, allocation_modify]
 
 affected_assets:
   business:
@@ -90,10 +132,11 @@ affected_assets:
   governance:
     - invariant_validation
     - regression_baseline
+    - domain_invariants/settlement.yaml
 
 deliverables:
-  # 回归测试（单文件，不按模型复制）
-  - "tests/test_settlement_regression.py（集成所有 invariant + 状态机 + 权限 验证）"
+  # 回归测试（单入口文件，内部 Class 拆分）
+  - "tests/test_settlement_regression.py"
   # 上下文
   - "docs/context/context_version.yaml（1.0.52 -> 1.0.53）"
   - "docs/context/history/decision_note.md（新增 ADR-036-B）"
@@ -103,23 +146,48 @@ limit_constraints: |
   2. 本期不做 UI 调整。
   3. 本期不做架构调整。
   4. 测试必须基于真实模型实例，不 mock 核心业务服务。
-  5. 回归测试一个文件（test_settlement_regression.py），不按模型分拆。
+  5. 回归测试一个文件（test_settlement_regression.py），内部按 class 分拆。
   6. 权限测试使用 Odoo 标准 test_security 方式（sudo/user context）。
+  7. 测试失败只记录缺陷到 decision_note.md，不自动修复业务代码。
+  8. 修改业务逻辑、修改 invariant、修改匹配算法均禁止。
+
+scope:
+  allow:
+    - "addons/wd_tlms/tests/test_settlement_regression.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止修改 domain model constraint
+    - 禁止修改 workflow transition
+    - 禁止修改 matching confidence 算法
+    - 禁止修改 allocation 计算逻辑
+    - 禁止修改 billing 创建/确认/取消逻辑
+    - 禁止修改业务模型字段定义
+    - 禁止修改视图/菜单/action
+    - 禁止修改权限组/访问规则
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
 
 risk_precheck: |
-  1. 全链路测试依赖真实数据库，沙箱可能阻断 PostgreSQL 连接。
-  2. 当前 Sprint21 遗留 12 个失败用例需先确认是否影响本域测试。
-  3. test_settlement_regression.py 包含多个 TestCase class，建议按 domain_invariant 分组。
+  1. 全链路测试依赖真实数据库，必须使用 require_escalated 放行 PostgreSQL 连接。
+  2. 当前 Sprint21 遗留 12 个失败用例需隔离，不影响本域测试。
+  3. test_settlement_regression.py 包含多个 TestCase class，按 domain_invariant 分组。
+  4. 测试数据必须隔离，不允许污染已有结算测试数据（建议 TransactionCase 自动回滚）。
 
-# ======== Goal ========
 goal: >
-  为 Settlement Domain 建立全链路质量基线。
-  通过四大测试矩阵（金额守恒、状态机合规、幂等安全、权限隔离）
+  建立 Settlement Domain Domain Invariant 自动化质量门禁。
+  通过四个不变领域（金额守恒 + 状态机合规 + 幂等安全 + 权限隔离）
   确保结算域在真实数据压力下不会错账、不会重复、不会越权。
 
+  本期不修改任何业务逻辑。
+  Domain Invariant 纳入 Governance Asset，后续 Intent 自动加载。
+
 # ADR-036-B 关键决策：
-#   1. 回归测试集中一个文件，不按模型分拆（避免每个 sprint 复制测试文件）
-#   2. Domain Invariant 自动化验证作为测试核心驱动力
+#   1. 回归测试集中一个文件，内部按 class 分拆（test_settlement_regression.py）
+#   2. Domain Invariant 驱动测试，纳入 Governance Asset
 #   3. 测试基于真实模型实例，不 mock
 #   4. 本期不修改任何业务模型代码
-#   5. Sprint21 遗留 12 个失败用例需隔离确认不影响结算域
+#   5. Sprint21 遗留 12 个失败用例隔离确认不影响结算域
+#   6. 测试失败只记录缺陷，不自动修复业务逻辑
+#   7. Domain Invariant 纳入 Governance Asset，后续 Intent 自动加载

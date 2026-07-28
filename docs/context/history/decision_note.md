@@ -1106,3 +1106,35 @@ Billing Domain (single source of truth)
 - Manual billing creation still allowed but identifiable (no import_batch_id)
 - Future API/EDI/OCR adapters reuse the same Intake Layer pattern
 - Template mapping uses field transformation rules (JSON array with source_column/target_field/transform)
+
+---
+
+## ADR-036-B: Settlement Domain Invariant Quality Gate
+
+**Date**: 2026-07-28
+**Sprint**: 36-B
+**Intent**: INT-TMS-SPRINT36-002
+**Type**: Quality Hardening
+
+### Context
+Sprint27-36-A completed Settlement Domain functional closure. Before production release, the domain needs automated invariant validation covering: amount consistency, state machine compliance, idempotency safety, and permission isolation.
+
+### Decision
+Establish Domain Invariant automated quality gate as the first AI Agent-consumable business invariant asset.
+
+**Test structure:**
+- Single entry file: `tests/test_settlement_regression.py`
+- Internal class split: TestSettlementAmountInvariant / TestSettlementStateMachine / TestSettlementIdempotency / TestSettlementSecurity
+- Real model instances only (no mocks)
+- TransactionCase auto-rollback for data isolation
+
+**Change Policy:**
+- Business logic change: forbidden
+- Invariant change: forbidden
+- Test-only change: allowed
+- Defect fix: record-only (to decision_note.md)
+
+### Consequences
+- Domain Invariants now part of Governance Asset baseline
+- Future Sprints auto-load invariants via Intent profile
+- Test failure → record defect → not auto-fix business logic

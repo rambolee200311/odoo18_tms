@@ -549,3 +549,29 @@ Odoo 18 的 TransientModel（`models.TransientModel`）在用户打开视图时�
 **现象**: 沙箱阻断 5432/5555 端口连接 PostgreSQL，`odoo_check.py` 必然失败。
 
 **教训**: odoo_check.py 的数据库连接依赖无法在沙箱中满足，验证应以 verify.py 静态检查为主。
+
+#### 10. odoo_check.py 沙箱故障诊断
+
+**⚠️ 此条修正 Lesson #9 的错误结论**
+
+**原结论（错误）**：沙箱阻断 PostgreSQL 端口连接，odoo_check.py 必然失败。
+
+**实际根因**：odoo.conf 中 db_host=127.0.0.1 db_port=5555 参数正确，PostgreSQL 正常监听。odoo_check.py 失败的原因是 Codex Agent 运行在沙箱环境中，默认 `Network access is restricted`。需要用 `require_escalated` 权限放行才能访问数据库。
+
+**修复**：
+```python
+# 错误方式（沙箱内阻断网络）
+python3 execution/scripts/odoo_check.py
+
+# 正确方式（放行数据库连接）
+exec_command(
+    cmd="python3 execution/scripts/odoo_check.py",
+    sandbox_permissions="require_escalated",
+    justification="需要访问 PostgreSQL 运行 -u wd_tlms 模块验证"
+)
+```
+
+**教训**：
+- odoo_check.py 依赖数据库连接，必须在非沙箱环境（或 require_escalated）下执行
+- 永远不要假设数据库不可用——先检查 odoo.conf 参数，再用放行后的命令测试
+- 沙箱阻断网络 ≠ 数据库不可用。这是两个不同的概念
