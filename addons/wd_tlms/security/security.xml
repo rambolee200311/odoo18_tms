@@ -34,8 +34,8 @@
         </record>
     </data>
     </data>
-</odoo>
     <data noupdate="0">
+    <record id="group_tlm_settlement_clerk" model="res.groups">
         <field name="name">TLM Settlement Clerk</field>
         <field name="category_id" ref="base.module_category_transport"/>
         <field name="implied_ids" eval="[(4, ref('group_tlm_operator'))]"/>
@@ -55,3 +55,5 @@
         <field name="category_id" ref="base.module_category_transport"/>
         <field name="implied_ids" eval="[(4, ref('group_tlm_operator'))]"/>
     </record>
+    </data>
+</odoo>
