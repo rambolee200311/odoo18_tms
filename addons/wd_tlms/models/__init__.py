@@ -46,3 +46,5 @@ from . import transport_carrier_profile
 from . import transport_carrier_batch
 from . import transport_match_execution
 from . import transport_carrier_case
+from . import transport_carrier_adjustment
+from . import transport_carrier_batch_approval

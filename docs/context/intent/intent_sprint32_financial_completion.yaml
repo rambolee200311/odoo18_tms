@@ -1,0 +1,213 @@
+# ==============================================================
+# 【Sprint32 意图契约 V1.1】
+# 功能：结算财务闭环 — Settlement Adjustment + Batch Approval + Export
+# 前置基线：Sprint31 结算争议工单 + 手动修正
+# 基线版本：context_version: 1.0.46 -> 1.0.47
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT32-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 结算财务闭环 — Adjustment + Batch Approval + Settlement Export
+
+target_scope: >
+  基于《承运商结算需求说明书 V1.2》Sprint31 P1 要求和架构评审结论，
+  完成结算财务闭环。
+  **Credit/Debit 不直接扩展 billing.document，改用独立的 settlement.adjustment 模型，
+  为未来 Sprint33 account.move 集成预留。**
+  **closed batch 永久冻结，修正通过 adjustment 完成。**
+  **Batch 状态机保留 Sprint30 的 processing/confirmed 状态，增量增加 submitted/approved。**
+  **AP Export 改名为 Settlement Export，独立服务。**
+
+accept_criteria:
+  # settlement.adjustment（替代 Credit/Debit 扩展 billing.document）
+  - "tlmp.carrier.settlement.adjustment：adjustment_no/type(credit/debit)/source_case_id/amount/reason/state"
+  - "adjustment.type = carrier_credit（减少应付）/ carrier_debit（增加应付），方向明确"
+  - "original_document_id + batch_id + carrier_partner_id + currency_id"
+  - "state 状态机：draft → approved → cancelled"
+  - "adjustment.history 审计：created_by/approved_by/cancelled_by/change_date"
+  - "adjustment 不影响已 closed batch（closed batch 永久冻结）"
+  # Batch 审批流（保留 Sprint30 processing/confirmed 状态）
+  - "settlement.batch.state 完整状态机：draft → submitted → processing → approved → closed | rejected | cancelled"
+  - "submitted 后锁定编辑（除审批相关字段外所有字段 readonly）"
+  - "approval.history：batch_id/action(submit/approve/reject)/user/date/note"
+  - "rejected 退回 draft，reject_reason 必填"
+  - "已 closed batch 永久冻结（不 reopen，修正通过 adjustment）"
+  # Settlement Export
+  - "SettlementExportService（独立服务，非 AP 导出）"
+  - "导出维度：batch_no/carrier/period/document_no/line_total/allocated_amount/adjustment_amount/final_amount/variance/approval_state"
+  - "导出格式：CSV（一期）"
+  - "导出权限：仅 financier + manager"
+  # 集成
+  - "adjustment 原始金额汇总影响 settlement.export"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 财务/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - settlement_adjustment（新，独立模型，不扩展 billing.document）
+    - settlement_adjustment_history（新）
+    - batch_approval_history（新）
+    - carrier_settlement_batch（增量：状态机 + 审批字段）
+    - settlement_export（新服务）
+  architecture:
+    - settlement_export_views（新）
+
+# 模型设计参考
+#
+# tlmp.carrier.settlement.adjustment
+#   结算调整单（替代 Credit/Debit 扩展 billing.document）
+#   为将来 account.move 集成预留接口
+#
+#   name = Char(string='Adjustment No.')
+#   type = Selection([('carrier_credit','Carrier Credit — 减少应付'),
+#                     ('carrier_debit','Carrier Debit — 增加应付')])
+#   source_case_id = Many2one(settlement.case, optional)
+#   batch_id = Many2one(settlement.batch, optional)
+#   carrier_partner_id = Many2one(res.partner)
+#   original_document_id = Many2one(billing.document, optional)
+#   amount = Monetary
+#   currency_id = Many2one(res.currency)
+#   reason = Text
+#   state = Selection([('draft','Draft'),('approved','Approved'),('cancelled','Cancelled')])
+#   account_move_id = Many2one(account.move, future)
+#   created_by / approved_by / approved_date / cancel_reason / cancelled_by / cancelled_date
+#
+# tlmp.carrier.settlement.adjustment.history
+#   adjustment_id / action / user / date / note
+#
+# tlmp.carrier.settlement.batch.approval.history
+#   batch_id / action(submit/approve/reject) / user / date / note
+#
+# Settlement Batch 最终状态机：
+#   draft → submitted → processing → approved → closed
+#                                                     → rejected(→ draft)
+#                                                     → cancelled(any state)
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  # 新模型
+  - "models/transport_carrier_adjustment.py（adjustment + history）"
+  - "models/transport_carrier_batch_approval.py（approval.history）"
+  # 服务
+  - "services/settlement_export_service.py（SettlementExportService + ExportWizard TransientModel）"
+  # 存量扩展
+  - "models/transport_carrier_batch.py（增量：状态机 + approval 字段）"
+  # 视图
+  - "views/transport_carrier_adjustment_views.xml"
+  - "views/transport_carrier_batch_views.xml（增量：审批按钮 + history）"
+  - "views/settlement_export_wizard.xml"
+  # 权限
+  - "security/ir.model.access.csv"
+  # 测试
+  - "tests/test_settlement_adjustment.py（含审计）"
+  - "tests/test_settlement_adjustment_audit.py"
+  - "tests/test_batch_approval.py（含 approval.history）"
+  - "tests/test_batch_state_machine.py（完整状态转换）"
+  - "tests/test_settlement_export.py（含权限验证）"
+  - "tests/test_closed_batch_protection.py"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.46 -> 1.0.47）"
+  - "docs/context/history/decision_note.md（新增 ADR-032）"
+
+limit_constraints: |
+  1. settlement.adjustment 不扩展 billing.document，独立建模（为 future account.move 预留）。
+  2. adjustment.type = carrier_credit（减少应付）/ carrier_debit（增加应付）。
+  3. closed batch 永久冻结：不可 reopen，不可修改 allocation，修正通过 adjustment。
+  4. Batch 状态机保留 Sprint30 的 processing/confirmed 状态，增量增加 submitted/approved。
+  5. Batch approval 使用 approval.history 记录，不依赖单字段。
+  6. Settlement Export 与 AP 会计接口解耦（不叫 AP Export）。
+  7. 本期不自动记账（不创建 account.move，延后 Sprint33）。
+  8. 本期不做 OCR/AI/承运商 API（Sprint33+）。
+  9. Export 仅 CSV 格式（Excel/PDF 延后 Sprint33）。
+
+risk_precheck: |
+  1. Batch 状态机需要与 Sprint30 存量数据兼容（processing/confirmed 状态保留）。
+  2. closed batch 永久冻结策略与 Sprint31 closed batch 保护一致。
+  3. adjustment.history 确保审批链完整可追溯。
+  4. Export Wizard 使用 TransientModel，注意内存限制。
+
+# Goal
+goal: >
+  完成结算财务闭环，使 Settlement Domain 达到生产可用（MVP）。
+  本期交付：
+  1. tlmp.carrier.settlement.adjustment（替代 Credit/Debit 扩展）
+  2. Settlement batch 审批流（保留 Sprint30 状态，增量 approval.history）
+  3. SettlementExportService（CSV）
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_carrier_adjustment.py"
+    - "addons/wd_tlms/models/transport_carrier_batch_approval.py"
+    - "addons/wd_tlms/models/transport_carrier_batch.py（增量）"
+    - "addons/wd_tlms/services/settlement_export_service.py"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/views/transport_carrier_adjustment_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_batch_views.xml（增量）"
+    - "addons/wd_tlms/views/settlement_export_wizard.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量）"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_settlement_adjustment.py"
+    - "addons/wd_tlms/tests/test_settlement_adjustment_audit.py"
+    - "addons/wd_tlms/tests/test_batch_approval.py"
+    - "addons/wd_tlms/tests/test_batch_state_machine.py"
+    - "addons/wd_tlms/tests/test_settlement_export.py"
+    - "addons/wd_tlms/tests/test_closed_batch_protection.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止扩展 billing.document 实现 Credit/Debit（使用独立 adjustment 模型）
+    - 禁止修改已 closed batch（永久冻结）
+    - 禁止自动记账（对接 account.move）
+    - 禁止 OCR/AI/承运商 API
+    - 禁止 match.rule 复合条件升级
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+# 权限设计：
+#   financier:    settlement.export execute / batch approve
+#   manager:      batch approve / adjustment approve
+#   clerk:        adjustment create（draft）/ batch submit
+#   match_operator: R on all
+#
+# ADR-032 关键决策：
+#   1. Credit/Debit 不扩展 billing.document，使用独立 settlement.adjustment 模型
+#   2. adjustment.type = carrier_credit（减少应付）/ carrier_debit（增加应付）
+#   3. closed batch 永久冻结，修正通过 adjustment 完成（不 reopen）
+#   4. Batch 状态机保留 Sprint30 processing/confirmed 状态
+#   5. Batch approval 使用 approval.history 记录审批事件
+#   6. Settlement Export 与 AP 解耦（独立服务）
+#   7. Export Wizard 使用 TransientModel
+#   8. adjustment 预留 account_move_id 字段（Sprint33 集成）
+#   9. 本期 Settlement Domain 达到 MVP 生产可用基线

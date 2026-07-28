@@ -17,9 +17,11 @@ class CarrierSettlementBatch(models.Model):
     period_end = fields.Date(string='Period End', required=True)
     state = fields.Selection([
         ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
         ('processing', 'Processing'),
-        ('confirmed', 'Confirmed'),
+        ('approved', 'Approved'),
         ('closed', 'Closed'),
+        ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', required=True)
     line_ids = fields.One2many(
@@ -37,6 +39,12 @@ class CarrierSettlementBatch(models.Model):
         default=lambda self: self.env.company)
     confirmed_by = fields.Many2one('res.users', string='Confirmed By', readonly=True)
     confirmed_date = fields.Datetime(string='Confirmed Date', readonly=True)
+    approved_by = fields.Many2one('res.users', string='Approved By', readonly=True)
+    approved_date = fields.Datetime(string='Approved Date', readonly=True)
+    reject_reason = fields.Text(string='Reject Reason')
+    approval_history_ids = fields.One2many(
+        'tlmp.carrier.settlement.batch.approval.history', 'batch_id',
+        string='Approval History')
     note = fields.Text(string='Note')
 
     @api.model_create_multi
@@ -58,6 +66,22 @@ class CarrierSettlementBatch(models.Model):
 
     def action_close(self):
         self.write({'state': 'closed'})
+
+    def action_submit(self):
+        self.write({'state': 'submitted'})
+        self.env['tlmp.carrier.settlement.batch.approval.history'].create({
+            'batch_id': self.id, 'action': 'submit', 'user': self.env.uid})
+
+    def action_approve(self):
+        self.write({'state': 'approved', 'approved_by': self.env.uid,
+                     'approved_date': fields.Datetime.now()})
+        self.env['tlmp.carrier.settlement.batch.approval.history'].create({
+            'batch_id': self.id, 'action': 'approve', 'user': self.env.uid})
+
+    def action_reject(self):
+        self.write({'state': 'rejected'})
+        self.env['tlmp.carrier.settlement.batch.approval.history'].create({
+            'batch_id': self.id, 'action': 'reject', 'user': self.env.uid})
 
     def action_cancel(self):
         self.write({'state': 'cancelled'})

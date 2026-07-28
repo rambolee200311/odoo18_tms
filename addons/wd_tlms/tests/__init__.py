@@ -22,3 +22,7 @@ from . import test_settlement_batch
 from . import test_match_execution
 from . import test_settlement_case
 from . import test_allocation_reversal
+from . import test_settlement_adjustment
+from . import test_batch_approval
+from . import test_settlement_export
+from . import test_closed_batch_protection

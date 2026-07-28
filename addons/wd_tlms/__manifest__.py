@@ -63,6 +63,8 @@
         'views/transport_carrier_profile_views.xml',
         'views/transport_carrier_batch_views.xml',
         'views/transport_carrier_case_views.xml',
+        'views/transport_carrier_adjustment_views.xml',
+        'views/settlement_export_wizard.xml',
         'views/transport_match_rule_views.xml',
         'views/tlmp_menus.xml',
     ],

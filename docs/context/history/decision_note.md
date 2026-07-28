@@ -949,3 +949,27 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - models/transport_order.py（增量）
 - models/transport_match_rule.py（增量）
 - models/transport_carrier_allocation.py（增量）
+
+## ADR-032: 结算财务闭环 — Adjustment + Batch Approval + Settlement Export
+
+**日期**: 2026-07-28
+**Sprint**: Sprint32
+**影响域**: 结算财务域
+
+### 决策
+1. Credit/Debit 不扩展 billing.document，使用独立 settlement.adjustment 模型
+2. adjustment.type = carrier_credit（减少应付）/ carrier_debit（增加应付）
+3. closed batch 永久冻结，修正通过 adjustment（不 reopen）
+4. Batch 状态机保留 Sprint30 processing/confirmed 状态
+5. Batch approval 使用 approval.history 记录审批事件链
+6. Settlement Export 与 AP 解耦（独立服务，非 AP Export）
+7. Export Wizard 使用 TransientModel
+8. adjustment 预留 account_move_id（Sprint33 自动记账）
+9. 本期 Settlement Domain 达到 MVP 生产可用基线
+
+### 影响
+- models/transport_carrier_adjustment.py（新）
+- models/transport_carrier_batch.py（增量）
+- services/settlement_export_service.py（新）
+- views/transport_carrier_adjustment_views.xml（新）
+- views/settlement_export_wizard.xml（新）
