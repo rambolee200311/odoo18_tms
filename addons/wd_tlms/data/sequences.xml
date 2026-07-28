@@ -69,6 +69,12 @@
 
 
     <record id="seq_shipment_label" model="ir.sequence">
+    <record id="seq_tlmp_settlement_case" model="ir.sequence">
+        <field name="name">TLM Settlement Case</field>
+        <field name="code">tlmp.settlement.case.seq</field>
+        <field name="prefix">CASE-%(year)s%(month)s-</field>
+        <field name="padding">4</field>
+    </record>
         <field name="name">Shipment Label</field>
         <field name="code">tlmp.shipment.label.seq</field>
         <field name="prefix">LBL/</field>

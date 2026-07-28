@@ -20,3 +20,5 @@ from . import test_transport_match_rule
 from . import test_carrier_profile
 from . import test_settlement_batch
 from . import test_match_execution
+from . import test_settlement_case
+from . import test_allocation_reversal

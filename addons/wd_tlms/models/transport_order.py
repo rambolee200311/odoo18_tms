@@ -208,6 +208,13 @@ class TransportOrder(models.Model):
     company_id = fields.Many2one('res.company', string='Company',
                                  default=lambda self: self.env.company)
 
+    @api.depends('fee_line_ids.amount', 'fee_line_ids.party_type')
+    def _compute_estimated_cost(self):
+        for r in self:
+            r.estimated_carrier_cost = sum(
+                r.fee_line_ids.filtered(lambda l: l.party_type == 'carrier_cost'
+                ).mapped('amount'))
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

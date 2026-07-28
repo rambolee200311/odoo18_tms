@@ -79,6 +79,7 @@ class CarrierMatchSuggestion(models.Model):
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled'),
+        ('failed', 'Failed'),
     ], string='Status', default='draft', required=True)
     execution_id = fields.Many2one('tlmp.carrier.match.execution', string='Execution')
     operator = fields.Many2one('res.users', string='Operator')

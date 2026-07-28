@@ -174,3 +174,9 @@ access_batchline_clerk,tlmp.batchline.clerk,model_tlmp_carrier_settlement_batch_
 access_execution_config,tlmp.execution.config,model_tlmp_carrier_match_execution,wd_tlms.group_tlm_settlement_config,1,1,1,0
 access_execution_matchop,tlmp.execution.matchop,model_tlmp_carrier_match_execution,wd_tlms.group_tlm_match_operator,1,1,1,0
 access_execution_manager,tlmp.execution.manager,model_tlmp_carrier_match_execution,wd_tlms.group_tlm_manager,1,1,0,0
+access_case_clerk,tlmp.case.clerk,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_settlement_clerk,1,1,1,0
+access_case_manager,tlmp.case.manager,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_manager,1,1,1,1
+access_case_matchop,tlmp.case.matchop,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_match_operator,1,0,0,0
+access_case_fin,tlmp.case.fin,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_financier,1,0,0,0
+access_caseline_clerk,tlmp.caseline.clerk,model_tlmp_carrier_settlement_case_line,wd_tlms.group_tlm_settlement_clerk,1,1,0,0
+access_caseline_manager,tlmp.caseline.manager,model_tlmp_carrier_settlement_case_line,wd_tlms.group_tlm_manager,1,1,1,0

@@ -152,6 +152,14 @@ class CarrierBillingLine(models.Model):
             else:
                 r.line_total = base
 
+    @api.depends('line_total', 'expected_amount')
+    def _compute_variance(self):
+        for r in self:
+            expected = r.expected_amount or 0.0
+            actual = r.line_total or 0.0
+            r.variance_amount = actual - expected
+            r.variance_percent = ((actual - expected) / expected * 100) if expected else 0.0
+
     @api.depends('allocation_ids.allocated_amount')
     def _compute_allocated_total(self):
         for r in self:

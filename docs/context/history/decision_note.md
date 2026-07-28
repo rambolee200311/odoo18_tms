@@ -923,3 +923,29 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - models/transport_carrier_allocation.py（增量）
 - 不影响 transport_event/exception/extra_charge 跟踪模型
 - 不影响 cmr/dgd/pod/shipment_label 文档模型
+
+## ADR-031: 结算争议工单 — Settlement Case + Manual Correction
+
+**日期**: 2026-07-28
+**Sprint**: Sprint31
+**影响域**: 结算争议域
+
+### 决策
+1. settlement.case 使用 case.line 作为 billing.line 关联中间层，禁止直接 One2many
+2. Allocation correction 采用 reverse + replacement 模式，原 allocation 永久保留
+3. expected_amount 为 billing snapshot，不随 transport fee 后续变化
+4. variance_amount + variance_percent 为 stored value（store=True）
+5. Auto-matching 仅在 billing.line 无 suggestion 或所有 rejected + remaining>0 时创建 case
+6. Case resolved 不影响 billing.line 业务状态，仅更新 dispute_state
+7. allocation 新增 reversal 字段集（is_reversal/reversed_allocation_id/correction_case_id/correction_reason/correction_user_id/correction_date）
+8. 新增 Settlement Operator 角色，correction 需要 Manager approve
+9. Closed batch 的 allocation 不可修正
+10. matching.history 增加 case_id 关联
+
+### 影响
+- models/transport_carrier_case.py（新）
+- services/allocation_correction_service.py（新）
+- models/transport_carrier_billing.py（增量）
+- models/transport_order.py（增量）
+- models/transport_match_rule.py（增量）
+- models/transport_carrier_allocation.py（增量）
