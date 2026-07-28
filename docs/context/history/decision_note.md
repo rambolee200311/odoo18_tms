@@ -1038,3 +1038,30 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - domain_invariants 纳入认知资产：allocation 不变量 / closed_batch 保护 / correction 审计 / 幂等
 - verify 8/8 PASS, odoo_check PASS
 - --test-enable 沙箱阻塞（已知技术债，Exit 255）
+
+## ADR-035: Sprint31 字段遗漏修复 — correction_case_id Bug
+
+**日期**: 2026-07-28
+**Sprint**: Sprint35
+**类型**: Functional Bug Fix
+
+### 根因
+Sprint31 的 Python sed 脚本未成功将 `correction_case_id` 字段写入 `transport_carrier_allocation.py`。
+但 `transport_carrier_case.py` 中的 One2many 引用了此字段，导致：
+```
+KeyError: 'correction_case_id'  → HTTP 500
+```
+
+### 影响范围
+- transport_carrier_allocation.py（缺失 6 个反转字段）
+- Odoo 服务器无法启动（模块加载时 KeyError）
+
+### 修复
+1. 在 transport_carrier_allocation.py 中添加缺失字段（is_reversal, reversed_allocation_id, correction_case_id, correction_reason, correction_user_id, correction_date）
+2. 执行 `-u wd_tlms` 数据库迁移
+3. 验证：odoo_check_py PASS（模块加载无错误）
+
+### 教训
+- sed 批量修改 Python 文件容易遗漏换行/引号
+- 字段增改应优先使用 Python 脚本（非 sed）
+- 模块升级后应执行 odoo_check 验证

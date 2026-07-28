@@ -1,0 +1,57 @@
+# ==============================================================
+# 【Sprint35 意图契约】
+# 功能：Sprint31 字段遗漏修复 — correction_case_id 缺失
+# 前置基线：Sprint34 结算域生产硬化
+# 基线版本：context_version: 1.0.49 -> 1.0.50
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT35-001
+intent_work_type: Maintenance
+intent_change_type: Functional Bug Fix
+title: Sprint31 字段遗漏修复 — correction_case_id Migration Bug
+
+target_scope: >
+  Sprint31 代码将 correction_case_id 字段添加到 transport_carrier_case.py（One2many）
+  但 sed 脚本未成功将相应字段添加到 transport_carrier_allocation.py，
+  导致模块启动时报 KeyError: 'correction_case_id'，HTTP 500。
+  
+  本期专注修复此数据库迁移缺陷及可能存在的其他类似字段遗漏。
+
+accept_criteria:
+  - "transport_carrier_allocation.py 包含 correction_case_id, is_reversal, reversed_allocation_id, correction_reason, correction_user_id, correction_date 字段"
+  - "-u wd_tlms 成功创建数据库列"
+  - "odoo_check PASS（模块无错误加载）"
+  - "verify.py 8/8 PASS"
+
+source:
+  type: online_bug
+  origin_team: 系统运维
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 3
+
+affected_assets:
+  business:
+    - carrier_allocation_model（字段修复）
+  history:
+    - sprint31_implementation_defect
+
+deliverables:
+  - "addons/wd_tlms/models/transport_carrier_allocation.py（修正：添加缺失的反转字段）"
+  - "docs/context/context_version.yaml（1.0.49 -> 1.0.50）"
+  - "docs/context/history/decision_note.md（新增 ADR-035）"
+
+limit_constraints: |
+  1. 本期仅修复已有代码的数据库迁移缺陷，不新增功能。
+  2. Sprint31 的 sed 脚本缺陷已记录为历史教训。
+  3. corretion_case_id 修复后，需重启 Odoo 服务器。
+
+# Goal
+goal: >
+  修复 Sprint31 的字段遗漏缺陷：`correction_case_id` 在 transport_carrier_allocation.py 中缺失，
+  导致模型设置时 KeyError（One2many inverse 字段不存在）。
+  已通过 Python 代码补全 + `-u wd_tlms` 数据库迁移修复，
+  odoo_check 验证通过。

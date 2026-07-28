@@ -25,6 +25,19 @@ class CarrierSettlementAllocation(models.Model):
         ('manual', 'Manual'),
     ], string='Allocation Method', default='manual')
     batch_line_id = fields.Many2one('tlmp.carrier.settlement.batch.line', string='Batch Line')
+
+    # Sprint31 BUG FIX: reversal fields for correction audit (were dropped by sed)
+    is_reversal = fields.Boolean(string='Is Reversal', default=False, readonly=True)
+    reversed_allocation_id = fields.Many2one(
+        'tlmp.carrier.settlement.allocation', string='Reversed Allocation',
+        readonly=True, help='The original allocation that was reversed')
+    correction_case_id = fields.Many2one(
+        'tlmp.carrier.settlement.case', string='Correction Case',
+        readonly=True)
+    correction_reason = fields.Text(string='Correction Reason')
+    correction_user_id = fields.Many2one(
+        'res.users', string='Corrected By', readonly=True)
+    correction_date = fields.Datetime(string='Correction Date', readonly=True)
     change_reason = fields.Char(string='Change Reason')
 
     # Audit trail
