@@ -33,6 +33,7 @@ class CarrierMatchRule(models.Model):
     match_ref_value = fields.Char(
         string='Match Ref Value', required=True,
         help='待匹配的 reference.ref_value')
+    min_auto_confirm_score = fields.Float(string='Min Auto Score', default=0.0, help='覆盖全局阈值，0=使用 ir.config_parameter tlms.auto_match.min_score')
     is_active = fields.Boolean(string='Active', default=True)
     company_id = fields.Many2one(
         'res.company', string='Company',
@@ -77,7 +78,9 @@ class CarrierMatchSuggestion(models.Model):
         ('draft', 'Pending Review'),
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', required=True)
+    execution_id = fields.Many2one('tlmp.carrier.match.execution', string='Execution')
     operator = fields.Many2one('res.users', string='Operator')
     create_date = fields.Datetime(string='Created', default=fields.Datetime.now)
 
@@ -170,7 +173,11 @@ class CarrierMatchingHistory(models.Model):
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
     ], string='To State')
+    execution_id = fields.Many2one('tlmp.carrier.match.execution', string='Execution')
     operator = fields.Many2one('res.users', string='Operator')
     change_date = fields.Datetime(
         string='Change Date', default=fields.Datetime.now)
+    execution_id = fields.Many2one('tlmp.carrier.match.execution', string='Execution')
+    error_message = fields.Text(string='Error Message')
+    allocation_id = fields.Many2one('tlmp.carrier.settlement.allocation', string='Allocation')
     note = fields.Text(string='Note')

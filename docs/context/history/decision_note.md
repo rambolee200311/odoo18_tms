@@ -895,3 +895,31 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - models/transport_carrier_billing.py（增量）
 - 不影响 transport_event/exception/extra_charge 跟踪模型
 - 不影响 cmr/dgd/pod/shipment_label 文档模型
+
+## ADR-030: 自动匹配执行引擎 — Auto-Matching + Carrier Profile + Settlement Batch
+
+**日期**: 2026-07-28
+**Sprint**: Sprint30
+**影响域**: 结算匹配域
+
+### 决策
+1. **carrier.profile 一对一挂 res.partner**，不独立承运商主数据
+2. **auto-matching 幂等控制**：execution_batch_id 防重复
+3. **suggestion.state 扩展**：auto_confirmed/allocated/cancelled（审计完整）
+4. **batch.line 保存 snapshot**：防止后续修改影响历史批次
+5. **Aggregated total stored compute** + AllocationService 统一入口
+6. **Match Operator 角色**：execute + read，不确认建议
+7. **carrier.profile 创建策略**：manual 或 on_first_carrier_usage（不自动转换 supplier）
+8. **match.execution 模型**：自动匹配审计边界
+9. **阈值可配置**：ir.config_parameter tlms.auto_match.min_score（default=0.85）
+10. **confirmed/closed batch 保护**：禁止新增 allocation
+
+### 影响
+- models/transport_carrier_profile.py（新）
+- models/transport_carrier_batch.py（新）
+- models/transport_match_execution.py（新）
+- models/transport_match_rule.py（增量）
+- models/transport_carrier_billing.py（增量）
+- models/transport_carrier_allocation.py（增量）
+- 不影响 transport_event/exception/extra_charge 跟踪模型
+- 不影响 cmr/dgd/pod/shipment_label 文档模型

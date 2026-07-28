@@ -1,0 +1,288 @@
+# ==============================================================
+# 【Sprint30 意图契约】
+# 功能：自动匹配执行 + carrier.profile + settlement.batch
+# 前置基线：Sprint29 match.suggestion 匹配建议基石
+# 基线版本：context_version: 1.0.44 -> 1.0.45
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT30-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: 自动匹配执行 + Carrier Profile + Settlement Batch
+
+target_scope: >
+  基于《承运商结算需求说明书 V1.2》Sprint30-B P0 要求和架构评审结论，
+  实现自动匹配执行引擎 + carrier.profile（挂 res.partner）+ settlement.batch（含 batch.line）。
+  核心链路：match.rule → match.suggestion → auto_confirm → allocation → batch。
+  不创建独立的 carrier.company 主数据（改用 carrier.profile 扩展 res.partner）。
+  不做自动争议 Case（延后 Sprint31），不做费用差异对比（延后 Sprint31）。
+
+accept_criteria:
+  # auto-matching 引擎
+  - "TransportAutoMatchService：collect_all_candidates 策略（收集所有候选，取最高 confidence 自动确认）"
+  - "suggestion.state 扩展为：draft / auto_confirmed / manual_confirmed / rejected / allocated / cancelled"
+  - "auto-matching 仅匹配 billing.line 剩余金额 > 0 且未被该 rule 匹配过的行"
+  - "auto-confirm 阈值通过 ir.config_parameter tlms.match.auto_confirm_threshold（默认 0.85）配置"
+  - "幂等控制：同一 billing_line + rule + execution_batch 的匹配不重复创建 allocation"
+  - "AllocationService auto 模式仅允许 create，禁止 update/delete 已存在的 allocation"
+  - "matching.history 增量：execution_id / error_message / allocation_id / from_state / to_state"
+  # carrier.profile
+  - "tlmp.carrier.profile：partner_id(unique)/carrier_code/carrier_type/is_active/settlement_mode"
+  - "carrier_type 枚举：truck/express/_3pl"
+  - "partner_id = Many2one(res.partner, unique) —— carrier.profile 不独立创建承运商身份"
+  - "carrier.profile 创建策略：manual 或 on_first_carrier_usage（不自动转换 supplier）"
+  # settlement.batch + batch.line
+  - "tlmp.carrier.settlement.batch：name/carrier_partner_id/period_start/period_end/state"
+  - "state 状态机：draft → processing → confirmed → closed (+ cancelled)"
+  - "aggregated_total stored compute（allocation create/write/unlink 触发重新计算）"
+  - "tlmp.carrier.settlement.batch.line：batch_id/billing_document_id/billing_line_id/allocation_ids/amount"
+  - "CRUD 视图 + 搜索（按 carrier/period/state）"
+  # 集成
+  - "auto-matching 可手动触发（action_run_matching 按钮）"
+  - "settlement.batch 可从 billing.document 创建"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+
+source:
+  type: customer_demand
+  origin_team: 财务/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - carrier_profile（新——扩展 res.partner）
+    - carrier_settlement_batch（新）
+    - carrier_settlement_batch_line（新）
+    - transport_match_service（增量：auto-matching）
+    - carrier_allocation_service（增量：auto-allocation）
+    - carrier_match_suggestion（增量：auto_confirmed/allocated 状态）
+  architecture:
+    - settlement_batch_views（新视图）
+    - module_map（更新结算域）
+
+#
+# tlmp.carrier.match.execution
+#   自动匹配执行批次（审计边界）
+#
+#   name = Char(string="Execution Batch", default="New")
+#   operator = Many2one(res.users)
+#   start_time = Datetime
+#   end_time = Datetime
+#   state = Selection([("running","Running"),("completed","Completed"),("failed","Failed")])
+#   matched_count = Integer
+#   failed_count = Integer
+#   suggestion_ids = One2many(match.suggestion)
+#   history_ids = One2many(matching.history)
+
+# 模型设计参考
+#
+# tlmp.carrier.profile
+#   承运商运输属性扩展（不独立创建承运商主数据）
+#   核心：partner_id(unique) 一对一绑定 res.partner
+#
+#   partner_id = Many2one(res.partner, required=True, unique=True)
+#   carrier_code = Char(string='Carrier Code')
+#   carrier_type = Selection([
+#     ('truck', 'Truck FTL/LTL'),
+#     ('express', 'Express Parcel'),
+#     ('_3pl', '3PL Groupage'),
+#   ], string='Transport Mode', required=True)
+#   settlement_mode = Selection([
+#     ('auto', 'Auto Settlement'),
+#     ('manual', 'Manual Review'),
+#   ], default='auto')
+#   min_auto_confirm_score = Float(string="Min Auto Score", default=0.0, help="覆盖全局阈值，0=使用全局配置"）
+#   is_active = Boolean(default=True)
+#   company_id = Many2one(res.company)
+#
+# tlmp.carrier.settlement.batch
+#   月度结算批次（含 batch.line 明细）
+#
+#   name = Char(default='New')
+#   carrier_partner_id = Many2one(res.partner, domain=[('supplier_rank','>',0)], required)
+#   period_start = Date(required)
+#   period_end = Date(required)
+#   state = Selection([
+#     ('draft', 'Draft'),
+#     ('processing', 'Processing'),
+#     ('confirmed', 'Confirmed'),
+#     ('closed', 'Closed'),
+#     ('cancelled', 'Cancelled'),
+#   ], default='draft')
+#   line_ids = One2many(batch.line)
+#   aggregated_total = Monetary(compute='_compute_total', store=True)
+#   currency_id = Many2one(res.currency)
+#   company_id = Many2one(res.company)
+#   confirmed_by = Many2one(res.users)
+#   confirmed_date = Datetime
+#   note = Text
+#
+# tlmp.carrier.settlement.batch.line
+#
+#   batch_id = Many2one(settlement.batch, required)
+#   billing_document_id = Many2one(billing.document)
+#   billing_line_id = Many2one(billing.line)
+#   allocation_ids = One2many(settlement.allocation)
+#   snapshot_amount = Monetary（结算快照，防止后续修改影响批次）
+#   snapshot_currency_id = Many2one(related, store=False）
+#   created_date = Datetime(default=now）
+
+validation_strategy:
+  layers:
+    - static_check
+    - build_verify
+    - auto_test
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  # 新模型
+  - "models/transport_carrier_profile.py（挂 res.partner，不独立主数据）"
+  - "models/transport_carrier_batch.py（settlement.batch）"
+  - "models/transport_carrier_batch.py（batch.line inline 在同一文件）"
+  # 自动匹配服务（增量扩展 Sprint29 MatchService）
+  - "models/transport_match_service.py（增量：auto-matching execution + 幂等控制）"
+  # 存量扩展
+  - "models/transport_match_execution.py（match.execution 模型）"
+  - "models/transport_match_rule.py（增量：suggestion.state 扩展 + min_auto_confirm_score）"
+  - "models/transport_carrier_billing.py（增量：billing.document batch_id）"
+  - "models/transport_carrier_allocation.py（增量：batch_id）"
+  # 视图
+  - "views/transport_carrier_profile_views.xml"
+  - "views/transport_carrier_batch_views.xml"
+  # 权限
+  - "security/security.xml（新增 Match Operator 组）"
+  - "security/ir.model.access.csv"
+  # 测试
+  - "tests/test_transport_auto_matching.py（含幂等 + 状态 + 阈值）"
+  - "tests/test_carrier_profile.py"
+  - "tests/test_settlement_batch.py（含金额一致性 + 状态机）"
+  - "tests/test_security_roles.py（权限隔离验证）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.44 -> 1.0.45）"
+  - "docs/context/architecture/module_map.md（更新）"
+  - "docs/context/history/decision_note.md（新增 ADR-030）"
+
+limit_constraints: |
+  1. auto-matching 仅匹配 billing.line 剩余金额 > 0。
+  2. auto-matching 幂等控制：同一 billing_line + rule + execution_batch 不重复创建。
+  3. auto-matching mode=only_create（禁止 update/delete allocation）。
+  4. auto-confirm 阈值通过 ir.config_parameter 配置（tlms.match.auto_confirm_threshold, default=0.85）。
+  5. carrier.profile 一对一绑定 res.partner（partner_id unique），不独立创建承运商身份。
+  6. settlement.batch aggregated_total 为 stored compute，由 allocation 变化触发重算。
+  7. 本期不做自动争议 Case（延后 Sprint31）。
+  8. 本期不做费用差异对比（延后 Sprint31）。
+  9. 本期不做 Credit/Debit 红字单据（Sprint31）。
+  10. 本期不做 billing.upload/OCR（Sprint31-32）。
+  11. 本期不做 AI/OCR（Sprint32 P2）。
+  12. carrier.profile 不自动转换 supplier。
+  13. auto matching 不允许匹配已 closed batch 的 billing.line。
+  14. confirmed/closed batch 不允许新增 allocation。
+  15. allocation 创建必须通过 AllocationService。
+  16. manual correction 必须产生 matching.history。
+
+risk_precheck: |
+  1. auto-matching 幂等控制依赖 execution_batch_id，防止重复执行。
+  2. carrier.profile pre_init 需处理大量存量 partner 的性能（分批创建）。
+  3. settlement.batch aggregated_total stored compute 需确保 allocation 变更时正确触发。
+  4. suggestion.state 扩展 auto_confirmed/allocated 不破坏 Sprint29 存量状态。
+
+# Goal
+goal: >
+  建设自动匹配执行引擎，将 Sprint29 的匹配规则从手动建议升级为自动执行。
+  同时落地 carrier.profile（扩展 res.partner）+ settlement.batch（含 batch.line）结算基础。
+
+  本期交付：
+  1. TransportAutoMatchService（auto-matching 引擎 + 幂等控制）
+  2. tlmp.carrier.profile（一对一挂 res.partner，不独立主数据）
+  3. tlmp.carrier.settlement.batch + batch.line（月度结算批次）
+  4. suggestion.state 扩展 + auto-confirm 阈值可配置
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_carrier_profile.py"
+    - "addons/wd_tlms/models/transport_carrier_batch.py"
+    - "addons/wd_tlms/models/transport_match_service.py（增量：auto-matching）"
+    - "addons/wd_tlms/models/transport_match_rule.py（增量：suggestion.state）"
+    - "addons/wd_tlms/models/transport_carrier_billing.py（增量）"
+    - "addons/wd_tlms/models/transport_carrier_allocation.py（增量）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/views/transport_carrier_profile_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_batch_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml（增量）"
+    - "addons/wd_tlms/security/security.xml（新增 Match Operator 组）"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_transport_auto_matching.py"
+    - "addons/wd_tlms/tests/test_carrier_profile.py"
+    - "addons/wd_tlms/tests/test_settlement_batch.py"
+    - "addons/wd_tlms/tests/test_security_roles.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/architecture/module_map.md"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止创建独立的 carrier.company 主数据模型
+    - 禁止 auto-matching update/delete 已有 allocation
+    - 禁止创建 settlement.case 争议工单
+    - 禁止费用差异对比
+    - 禁止 Credit/Debit 红字单据
+    - 禁止 billing.upload/OCR
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+    - 禁止 carrier API 集成
+
+# 权限设计：
+#   新增组：group_tlm_match_operator（Match Operator，继承 group_tlm_operator）
+#     auto-matching: execute
+#     suggestion: R + confirm/reject
+#   settlement_clerk:
+#     batch: RWC (no unlink)
+#     profile: R
+#     suggestion: R + confirm/reject
+#     auto-matching: no execute
+#   settlement_config:
+#     profile: RWC
+#     batch: RW
+#     match.rule: RWC
+#   match_operator:
+#     auto-matching: execute
+#     suggestion: R + confirm/reject
+#   manager:
+#     batch: RW
+#     profile: RWC
+#   operator:
+#     batch: R
+#     profile: R
+#   financier:
+#     batch: R
+#     profile: R
+#
+# ADR-030 关键决策：
+#   1. carrier.profile 一对一挂 res.partner（partner_id unique），不独立承运商主数据
+#      — res.partner 是身份主实体，carrier.profile 仅存运输领域属性
+#      — 不造成两个 DHL 主数据问题
+#   2. suggestion.state 扩展 auto_confirmed + allocated（不跳过程序审计）
+#   3. auto-confirm 阈值通过 ir.config_parameter 可配置（tlms.match.auto_confirm_threshold）
+#   4. auto-matching 幂等控制：execution_batch_id 防重复
+#   5. auto-matching mode=only_create（不修改已有 allocation）
+#   6. settlement.batch aggregated_total stored compute（allocation 变化触发）
+#   7. settlement.batch.state 增加 processing + cancelled（财务场景完整）
+#   8. 新增 Match Operator 角色隔离执行权限

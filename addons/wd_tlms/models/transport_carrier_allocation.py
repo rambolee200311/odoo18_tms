@@ -24,6 +24,7 @@ class CarrierSettlementAllocation(models.Model):
     allocation_method = fields.Selection([
         ('manual', 'Manual'),
     ], string='Allocation Method', default='manual')
+    batch_line_id = fields.Many2one('tlmp.carrier.settlement.batch.line', string='Batch Line')
     change_reason = fields.Char(string='Change Reason')
 
     # Audit trail

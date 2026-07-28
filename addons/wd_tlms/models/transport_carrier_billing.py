@@ -131,6 +131,8 @@ class CarrierBillingLine(models.Model):
         help='Quick manual match to a transport order.')
 
     # Allocations
+    is_auto_matched = fields.Boolean(string='Auto Matched', default=False)
+    batch_line_id = fields.Many2one('tlmp.carrier.settlement.batch.line', string='Batch Line')
     allocation_ids = fields.One2many(
         'tlmp.carrier.settlement.allocation', 'billing_line_id',
         string='Allocations')
