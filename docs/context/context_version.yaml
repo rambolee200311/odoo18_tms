@@ -330,3 +330,17 @@ bind_asset_folder:
       - 写入教训：RNG 校验陷阱、XML 结构规范、sed 替换风险、沙箱局限
     update_type: Bug修复
     effect_scope: 全模块 XML 数据文件合规
+  1.0.52:
+    update_content: |
+      Sprint36-A Carrier Invoice Import — Settlement External Intake Layer
+      - 新增 Settlement Intake Layer 作为唯一外部数据入口
+      - Invoice Template: field transformation rules + target_field whitelist
+      - Import Batch + Import Line: 完整 Intake 生命周期 + waiting_confirm + partial_failure
+      - 服务层: Parser/Validator/Writer 三服务 + SHA256 hash 幂等
+      - Billing: external_invoice_no/invoice_version/idempotency_hash/import_batch_id/import_line_id
+      - 版本策略 supersede（不覆盖） + line-isolated processing
+      - 6 个测试文件覆盖 parser/validator/flow/partial_failure/supersede/security_boundary
+      - docs/context/invoice_mapping_schema.yaml 上下文资产
+    update_type: 新功能开发 + 领域边界建立
+    effect_scope: settlement_intake_layer
+

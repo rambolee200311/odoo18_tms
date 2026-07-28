@@ -1,0 +1,72 @@
+# ==============================================================
+# Invoice Field Mapping Schema — Context Asset
+# Defines the field transformation rules for Carrier Invoice Import.
+# Shared across DHL/UPS/FedEx/EDI adapters.
+# ==============================================================
+
+version: 1.0
+last_updated: 2026-07-28
+domain: settlement_domain / settlement_intake_layer
+
+# ── Mapping Rule Structure ──────────────────────────────────
+# Each mapping entry is a JSON object with:
+#   source_column:  Column header in the uploaded file (string)
+#   target_field:   Target billing document field (whitelist only)
+#   transform:      Data transformation type
+#   format_params:  Optional formatting parameters (future)
+
+allowed_target_fields:
+  external_invoice_no: { type: char, required: false, description: "Carrier invoice number (business identity key)" }
+  invoice_version:     { type: char, required: false, description: "Invoice version for supersede tracking" }
+  document_no:         { type: char, required: false, description: "Alternative document number" }
+  carrier_reference:   { type: char, required: false, description: "Carrier shipment/tracking reference" }
+  service_date:        { type: date, required: false, description: "Service date of the transport" }
+  raw_description:     { type: char, required: false, description: "Line description from carrier bill" }
+  net_amount:          { type: decimal, required: false, description: "Net amount (excl. tax)" }
+  tax:                 { type: decimal, required: false, description: "Tax amount" }
+  line_total:          { type: decimal, required: false, description: "Total line amount (net + tax)" }
+  charge_type_code:    { type: char, required: false, description: "Charge type code for auto-mapping" }
+  raw_reference:       { type: char, required: false, description: "Raw reference text" }
+  document_type:       { type: char, required: false, description: "Document type (invoice/statement/...)" }
+  billing_period_start: { type: date, required: false, description: "Billing period start date" }
+  billing_period_end:  { type: date, required: false, description: "Billing period end date" }
+
+forbidden:
+  - model_method
+  - python_expression
+  - arbitrary_eval
+  - eval
+  - exec
+
+allowed_transform_types:
+  char:     "String passthrough"
+  decimal:  "Numeric with comma/space/symbol stripping"
+  integer:  "Integer conversion"
+  date:     "Date string (ISO 8601 or parseable)"
+  datetime: "Datetime string"
+  boolean:  "Boolean parsing (true/false/1/0/yes/no)"
+  currency: "Currency string with symbol stripping"
+
+# ── Business Rules ──────────────────────────────────────────
+business_idempotency_key:
+  - carrier_partner_id
+  - external_invoice_no
+  - invoice_version
+
+technical_duplicate_detection_hash:
+  algorithm: SHA256
+  inputs:
+    - carrier_partner_id
+    - external_invoice_no
+    - invoice_version
+    - file_checksum
+
+version_supersede_policy:
+  old_version:
+    immutable: true
+    state: superseded
+  new_version:
+    action: create_new_billing_document
+    state: active
+  existing_settlement:
+    auto_recalculate: false

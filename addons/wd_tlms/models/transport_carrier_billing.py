@@ -13,6 +13,28 @@ class CarrierBillingDocument(models.Model):
     carrier_id = fields.Many2one(
         'res.partner', string='Carrier', required=True,
         domain="[('is_company', '=', True)]")
+
+    # ── External Invoice Reference (for Import Idempotency) ──
+    external_invoice_no = fields.Char(
+        string='External Invoice No', index=True,
+        help='Carrier original invoice number. Part of business_idempotency_key.')
+    invoice_version = fields.Char(
+        string='Invoice Version', index=True,
+        help='Invoice version for supersede tracking.')
+    external_document_ref = fields.Char(string='External Document Ref')
+    idempotency_hash = fields.Char(
+        string='Idempotency Hash', index=True,
+        help='SHA256(carrier + invoice_no + version + checksum). Prevents duplicate import.')
+    file_checksum = fields.Char(string='File Checksum',
+                                help='SHA256 of original upload file.')
+
+    # ── Import Context (billing must come through Intake Layer) ──
+    import_batch_id = fields.Many2one(
+        'tlmp.carrier.invoice.import', string='Import Batch',
+        readonly=True, ondelete='restrict')
+    import_line_id = fields.Many2one(
+        'tlmp.carrier.invoice.import.line', string='Import Line',
+        readonly=True, ondelete='restrict')
     document_no = fields.Char(string='Original Document No.',
                               help='Carrier original invoice/statement number.')
     document_type = fields.Selection([
@@ -48,10 +70,12 @@ class CarrierBillingDocument(models.Model):
         ('negative', 'Negative (Credit)'),
     ], string='Amount Sign', default='positive')
 
-    # State machine (simplified: Draft -> Confirmed -> Cancelled)
+    # State machine (extended: Draft -> Active -> Superseded | Cancelled)
     state = fields.Selection([
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed'),
+        ('active', 'Active'),
+        ('superseded', 'Superseded'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', required=True)
     confirmed_by = fields.Many2one(
@@ -82,10 +106,13 @@ class CarrierBillingDocument(models.Model):
 
     def action_confirm(self):
         self.write({
-            'state': 'confirmed',
+            'state': 'active',
             'confirmed_by': self.env.uid,
             'confirmed_date': fields.Datetime.now(),
         })
+
+    def action_supersede(self):
+        self.write({'state': 'superseded'})
 
     def action_cancel(self):
         self.write({'state': 'cancelled'})
@@ -108,6 +135,9 @@ class CarrierBillingLine(models.Model):
     raw_reference = fields.Char(
         string='Raw Reference',
         help='Original reference text from the carrier bill.')
+    external_line_key = fields.Char(
+        string='External Line Key', index=True,
+        help='Unique key within document for idempotency.')
     charge_type_id = fields.Many2one(
         'tlmp.carrier.charge.type', string='Charge Type')
     net_amount = fields.Monetary(string='Net Amount', currency_field='currency_id')

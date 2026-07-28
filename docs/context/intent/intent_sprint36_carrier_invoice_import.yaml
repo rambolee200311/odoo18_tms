@@ -1,0 +1,316 @@
+# ==============================================================
+# 【Sprint36-A Intent 契约 V3】
+# 功能：建立 Settlement Domain External Input Boundary Layer
+# 前置基线：Sprint35 字段遗漏修复
+# 基线版本：context_version: 1.0.51 -> 1.0.52
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT36-001
+intent_work_type: Development
+intent_change_type: New Feature + Domain Boundary Establishment
+title: >
+  Settlement External Intake Layer —
+  Carrier Invoice Import（CSV/XLSX Adapter）
+
+target_scope: >
+  Sprint27-35 完成了 Settlement Domain 核心闭环：
+  billing → matching → allocation → batch → case → correction → approval → export。
+
+  本期最重要的不是你做了一个导入功能，而是：
+
+  架构变化：
+  Settlement Domain 新增 External Input Boundary Layer。
+
+  外部数据禁止直接进入 billing，必须经过：
+
+  ```
+  External Carrier Data（CSV/XLSX）
+            ↓
+  Settlement Intake Layer
+     ├── Parser（CSV/XLSX Adapter）
+     ├── Validator（幂等 + 字段校验）
+     ├── Preview（人工确认）
+     └── Writer（生成 Billing Document）
+            ↓
+  Billing Domain
+            ↓
+  Matching Domain
+            ↓
+  Settlement
+  ```
+
+  本期实现 P0：
+  - Invoice Template（可配置字段转换规则）
+  - Import Batch + Import Line（Intake 生命周期）
+  - Parser/Validator/Writer 三服务职责拆分
+  - Partial Failure + Idempotency + Version Supersede
+
+  不做边界：Rule Engine、Dashboard、PDF/OCR、自动记账、Audit、自动触发 Matching。
+
+accept_criteria:
+  # ========== P0: Invoice Template ==========
+  - "tlmp.carrier.invoice.template：carrier_partner_id/name/file_type/mapping_json/is_active"
+  - "mapping_json 升级为字段转换规则：{source_column, target_field, transform, format_params}"
+  - "transform 预定义类型：char/decimal/integer/date/datetime/boolean"
+  - "target_field 仅允许白名单字段，禁止 model_method/python_expression/arbitrary_eval"
+  - "不同 carrier_partner 可绑定不同模板"
+
+  # ========== P0: Import Batch ==========
+  - "tlmp.carrier.invoice.import：name/carrier_partner_id/template_id/state/file_name/total_lines/success_lines/error_lines"
+  - "state 状态机：draft → uploaded → preview → validated → waiting_confirm → importing → completed / partial_failed / failed / cancelled"
+  - "preview 不产生任何业务数据（只解析不写入）"
+  - "waiting_confirm 必须人工确认后才进入 importing"
+  - "validated 不等于确认——财务场景必须有人工确认环节"
+
+  # ========== P0: Import Line（临时 Intake 层）==========
+  - "tlmp.carrier.invoice.import.line：import_id/line_no/raw_data(JSON)/parsed_data(JSON)/billing_line_id/import_status/validation_error_code/validation_message"
+  - "import_status 状态机：pending → parsed → validated → imported → failed | skipped"
+  - "Import Line 非业务事实，禁止直接查询 Line 做结算"
+  - "人工确认发生在 Batch 层（waiting_confirm），Line 层不设 confirmed 状态"
+
+  # ========== P0: Idempotency（业务幂等 + 技术去重双层）==========
+  - "business_idempotency_key：carrier_partner_id + external_invoice_no + invoice_version"
+  - "technical_duplicate_detection_hash：SHA256(carrier_partner_id + external_invoice_no + invoice_version + file_checksum)"
+  - "billing.document 增加 external_invoice_no + invoice_version + external_document_ref + idempotency_hash + file_checksum + import_batch_id + import_line_id"
+  - "billing.line 增加 external_line_key（import_line_id 引用）"
+  - "版本策略 supersede：新版本导入后旧版本标记 superseded，不覆盖、不删除"
+  - "billing.document 状态集：draft / active / superseded / cancelled"
+  - "supersede 后处理规则：旧版本 immutable=true，新版本创建新 billing.document，已有 settlement 不自动重算"
+
+  # ========== P0: Partial Failure ==========
+  - "Import Batch 作为独立业务事务单元"
+  - "Each Import Line 作为隔离处理单元"
+  - "Failure：仅当前行回滚"
+  - "Success：持久化 billing.line"
+  - "Batch 最终状态：completed（全成功）/ partial_failed（部分成功）/ failed（全失败）"
+
+  # ========== P0: Billing Document 创建必须经过 Import ==========
+  - "billing.document 创建时必须携带 import_batch_id + import_line_id"
+  - "直接通过 UI/API 创建 billing.document 无 import 上下文的请求被拒绝"
+  - "实现方式：model level constraint 或 context flag（from_invoice_import=True）"
+
+  # ========== P0: 编码支持 ==========
+  - "CSV 自动识别编码 UTF-8/GBK/ISO-8859-1"
+  - "无法识别时导入失败并提示编码问题"
+
+source:
+  type: product_roadmap
+  origin_team: 产品/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+domain_invariants:
+  import_line_is_staging_only:
+    rule: Import Line 是临时导入层，不是会计事实
+    validation: 任何结算查询禁止直接引用 import.line，必须经过 billing.line
+    criticality: P0
+
+  invoice_business_identity:
+    rule: 承运商发票的业务身份 = carrier + invoice_no + version
+    validation: 同 business_idempotency_key 不可重复入账
+    criticality: P0
+
+  invoice_import_duplicate_detection:
+    rule: 同一文件重复上传通过 SHA256 hash 检测
+    validation: 同 technical_duplicate_detection_hash 拒绝重复处理
+    criticality: P0
+
+  billing_is_single_source_of_truth:
+    rule: billing.document + billing.line 是唯一结算业务事实
+    validation: Import Batch/Line 不可用于结算计算
+    criticality: P0
+
+  invoice_version_immutable:
+    rule: 已导入的旧版本标记 superseded，不可覆盖/删除
+    validation: 旧版本 billing.document state=superseded，数据不可变
+    criticality: P0
+
+  external_input_must_pass_validation:
+    rule: 所有外部账单数据必须经过 Import Validation，禁止绕过 Import Layer 创建 Billing Document
+    validation: billing.document 创建时必须携带 import_batch_id + import_line_id
+    criticality: P0
+
+  billing_import_no_auto_matching:
+    rule: Import 完成后不自动触发 Matching，留待现有 Matching Scheduler 处理
+    validation: Import Writer 不调用 matching engine
+    criticality: P0
+
+affected_assets:
+  business:
+    - settlement_domain
+    - settlement_intake_layer
+    - carrier_billing
+  architecture:
+    - settlement_module_map
+    - external_input_boundary_pattern
+    - import_staging_pattern
+  business_rule:
+    - carrier_invoice_identity_rule
+    - invoice_mapping_rule
+  governance:
+    - idempotency_rule
+    - invoice_version_policy
+    - partial_failure_handling_rule
+    - external_data_entry_policy
+
+deliverables:
+  # 新模型
+  - "models/transport_carrier_invoice_template.py"
+  - "models/transport_carrier_invoice_import.py（Import Batch + Import Line）"
+  # 新服务
+  - "services/invoice_import_service.py（Intake Orchestrator）"
+  - "services/invoice_parser.py（CSV/XLSX Adapter + 编码解析）"
+  - "services/invoice_validator.py（校验 + 幂等检查 + hash 验证）"
+  - "services/invoice_writer.py（line-isolated processing + billing.document 写入）"
+  # 存量扩展
+  - "models/transport_carrier_billing.py（external_invoice_no/invoice_version/external_line_key/idempotency_hash/file_checksum/import_batch_id/import_line_id/supersede 逻辑）"
+  # 视图
+  - "views/transport_carrier_invoice_template_views.xml"
+  - "views/transport_carrier_invoice_import_views.xml"
+  - "views/tlmp_menus.xml（菜单增量）"
+  # 权限
+  - "security/security.xml（invoice_operator/settlement_config 组）"
+  - "security/ir.model.access.csv"
+  # 测试
+  - "tests/test_invoice_parser.py"
+  - "tests/test_invoice_validator.py"
+  - "tests/test_invoice_import_flow.py"
+  - "tests/test_invoice_partial_failure.py"
+  - "tests/test_invoice_version_supersede.py"
+  - "tests/test_invoice_security_boundary.py（测试 bypass import 创建 billing 被拒绝）"
+  # Mapping Schema（Context Asset）
+  - "docs/context/invoice_mapping_schema.yaml（字段转换规则 Schema，供 DHL/UPS/FedEx 复用）"
+  # Migration
+  - "migrations/post-migration.py（旧 billing.document 补充 external 字段 + state 默认值）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.51 -> 1.0.52）"
+  - "docs/context/history/decision_note.md（新增 ADR-036-A：External Intake Layer 架构决策）"
+
+limit_constraints: |
+  1. Invoice Import 一期仅支持 CSV 和 .xlsx（PDF 延后）。
+  2. mapping_json 采用 JSON 字段转换规则格式（不做 UI 编辑器）。
+  3. target_field 仅允许白名单字段，禁止 model_method/python_expression/arbitrary_eval。
+  4. Import Line 是临时导入层，确认后业务数据进入 billing.line。
+  5. Preview 不产生任何业务数据。
+  6. Partial Failure：line-isolated processing，单行失败不影响其他行。
+  7. 版本策略 supersede（不覆盖、不删除），旧版本标记 superseded，immutable=true。
+  8. 幂等键双层设计：business_idempotency_key + technical_duplicate_detection_hash。
+  9. billing.document 创建必须携带 import_batch_id + import_line_id。
+  10. Import 完成后不自动触发 Matching。
+  11. 本期不做 Match Rule Engine。
+  12. 本期不做 Dashboard。
+  13. 本期不做 Audit Log（已有 matching.history + 平台审计）。
+  14. 本期不做 account.move 自动记账。
+  15. 本期不做 Settlement Test Hardening（见 INT-TMS-SPRINT36-002）。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_carrier_invoice_template.py"
+    - "addons/wd_tlms/models/transport_carrier_invoice_import.py"
+    - "addons/wd_tlms/models/transport_carrier_billing.py（增量 external 字段）"
+    - "addons/wd_tlms/services/invoice_import_service.py"
+    - "addons/wd_tlms/services/invoice_parser.py"
+    - "addons/wd_tlms/services/invoice_validator.py"
+    - "addons/wd_tlms/services/invoice_writer.py"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/services/__init__.py"
+    - "addons/wd_tlms/views/transport_carrier_invoice_template_views.xml"
+    - "addons/wd_tlms/views/transport_carrier_invoice_import_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml（菜单增量）"
+    - "addons/wd_tlms/security/security.xml"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_invoice_parser.py"
+    - "addons/wd_tlms/tests/test_invoice_validator.py"
+    - "addons/wd_tlms/tests/test_invoice_import_flow.py"
+    - "addons/wd_tlms/tests/test_invoice_partial_failure.py"
+    - "addons/wd_tlms/tests/test_invoice_version_supersede.py"
+    - "addons/wd_tlms/tests/test_invoice_security_boundary.py"
+    - "addons/wd_tlms/migrations/post-migration.py"
+    - "docs/context/invoice_mapping_schema.yaml"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止直接创建 billing.document bypass import service
+    - 禁止 Import Line 参与 settlement calculation
+    - 禁止修改 matching engine
+    - 禁止修改 allocation calculation
+    - 禁止修改 approval workflow
+    - 禁止 Import 完成后自动触发 Matching
+    - 禁止创建 match.rule.condition（Rule Engine 延后）
+    - 禁止创建 settlement.audit.log（复用平台审计）
+    - 禁止创建 settlement dashboard
+    - 禁止创建 account.move 自动记账
+    - 禁止 Carrier API 对接
+    - 禁止 PDF/OCR 导入
+    - 禁止修改 transport_event/exception/extra_charge 跟踪模型
+    - 禁止修改 cmr/dgd/pod/shipment_label 文档模型
+    - 禁止修改 pricing_rule/fee/rate_base 计算逻辑
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+risk_precheck: |
+  1. CSV 编码自动识别失败率需测试（UTF-8/GBK/ISO-8859-1）。
+  2. Invoice Import 不负责匹配，仅负责外部账单落地。
+  3. Import Line 数量可能很大（单次万级），考虑分批处理。
+  4. superseded 版本的数据不可变策略需 migration 脚本支持。
+  5. Odoo ORM 默认 transaction 不适用于 partial success——Import Batch 应使用独立业务事务，每行作为隔离处理单元。
+
+# ======== Goal ========
+goal: >
+  建立 Settlement Domain External Input Boundary Layer（Settlement Intake Layer）。
+
+  本期实现 CSV/XLSX Adapter：
+  - Carrier Invoice Template（可配置字段转换规则，target_field 白名单）
+  - Import Batch + Import Line（完整 Intake 生命周期）
+  - Partial Failure（line-isolated processing）+ 双层 Idempotency（业务键 + 技术 hash）+ Version Supersede
+  - Template 可配置化，新增承运商无需开发
+
+  同时建立四条核心规范：
+  1. 外部数据必须经过 Intake Layer，禁止绕过 Import 直接创建 Billing Document
+  2. Import Line 是临时层，Billing Document 是唯一业务事实
+  3. 幂等双层 + 版本不可变 + 人工确认审批
+  4. Import 完成后不自动触发 Matching
+
+# ======== 权限设计 ========
+#   Invoice Operator（新增组，继承 group_tlm_operator）：
+#     upload + preview Import（上传/预览不写入）
+#   Settlement Clerk：
+#     validate + confirm import（校验/确认写入）
+#     Template: R（只读）
+#   Settlement Config（新增组）：
+#     Template: CRUD（维护模板配置）
+#   Manager：
+#     Template: approve template activation（审批启用）
+#     confirm import
+#   Finance：
+#     R on all
+#
+# ADR-036-A 关键决策：
+#   1. Settlement Intake Layer 作为 Settlement Domain 唯一外部数据入口
+#   2. Import Batch + Import Line 是临时 Intake 层，Billing Document 是唯一业务事实
+#   3. Import 支持 partial success，line-isolated processing（单行失败不影响其他行）
+#   4. 双层 Idempotency：business_idempotency_key（业务幂等）+ technical_duplicate_detection_hash（文件去重）
+#   5. Version 策略 supersede 不覆盖，旧版本标记 superseded（immutable=true）
+#   6. Supersede 后处理：已有 settlement 不自动重算
+#   7. billing.document 创建必须携带 import_batch_id + import_line_id
+#   8. mapping_json 升级为字段转换规则（{source_column, target_field, transform}），target_field 白名单
+#   9. Template 权限：Settlement Config CRUD，Manager 审批启用
+#   10. Import 完成后不自动触发 Matching
+#   11. 审计复用平台能力（matching.history + chatter）
+#   12. 本期实现 CSV/XLSX Adapter，PDF/OCR/API 延后
+#   13. Settlement Test Hardening 见 INT-TMS-SPRINT36-002

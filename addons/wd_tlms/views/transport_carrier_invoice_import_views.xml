@@ -22,8 +22,10 @@
             <form>
                 <header>
                     <button name="action_preview" string="Preview" type="object" class="btn-primary"/>
+                    <button name="action_validate" string="Validate" type="object"/>
+                    <button name="action_confirm_import" string="Confirm Import" type="object" class="btn-primary"/>
                     <button name="action_cancel" string="Cancel" type="object"/>
-                    <field name="state" widget="statusbar"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,preview,validated,waiting_confirm,importing,completed" />
                 </header>
                 <sheet>
                     <group>
@@ -46,6 +48,7 @@
                                 <list>
                                     <field name="line_no"/>
                                     <field name="import_status"/>
+                                    <field name="parsed_data"/>
                                     <field name="raw_data"/>
                                     <field name="validation_error_code"/>
                                     <field name="validation_error_message"/>

@@ -21,6 +21,7 @@ class CarrierInvoiceImport(models.Model):
         ('preview', 'Preview'),
         ('validating', 'Validating'),
         ('validated', 'Validated'),
+        ('waiting_confirm', 'Waiting Confirmation'),
         ('importing', 'Importing'),
         ('completed', 'Completed'),
         ('partial_failed', 'Partially Failed'),
@@ -56,6 +57,9 @@ class CarrierInvoiceImport(models.Model):
     def action_validate(self):
         self.write({'state': 'validating'})
 
+    def action_confirm_import(self):
+        self.write({'state': 'importing'})
+
     def action_import(self):
         self.write({'state': 'importing'})
 
@@ -86,7 +90,9 @@ class CarrierInvoiceImportLine(models.Model):
         readonly=True)
     import_status = fields.Selection([
         ('pending', 'Pending'),
+        ('parsed', 'Parsed'),
         ('validated', 'Validated'),
+        ('waiting_confirm', 'Waiting Confirmation'),
         ('imported', 'Imported'),
         ('failed', 'Failed'),
         ('skipped', 'Skipped'),

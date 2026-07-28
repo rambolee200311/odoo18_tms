@@ -32,7 +32,7 @@
                         </group>
                     </group>
                     <group string="Column Mapping (JSON)">
-                        <field name="mapping_json" nolabel="1"/>
+                        <field name="mapping_json" nolabel="1" placeholder='[{"source_column":"Invoice No","target_field":"external_invoice_no","transform":"char"}]'/>
                     </group>
                 </sheet>
             </form>

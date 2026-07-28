@@ -1065,3 +1065,44 @@ KeyError: 'correction_case_id'  → HTTP 500
 - sed 批量修改 Python 文件容易遗漏换行/引号
 - 字段增改应优先使用 Python 脚本（非 sed）
 - 模块升级后应执行 odoo_check 验证
+
+---
+
+## ADR-036-A: Settlement External Intake Layer
+
+**Date**: 2026-07-28
+**Sprint**: 36-A
+**Intent**: INT-TMS-SPRINT36-001
+**Type**: Architecture Decision Record
+
+### Context
+Sprint27-35 built Settlement Domain core (billing → matching → allocation → batch → case → correction → approval → export). The biggest bottleneck before Sprint36 was manual data entry — carrier invoices had to be manually entered into billing.document.
+
+### Decision
+Establish **Settlement External Input Boundary Layer (Settlement Intake Layer)** as the only external data entry point for Settlement Domain.
+
+**Architecture:**
+```
+External Carrier Data (CSV/XLSX)
+         ↓
+Settlement Intake Layer
+   ├── Parser (CSV/XLSX Adapter)
+   ├── Validator (business idempotency + technical hash)
+   ├── Preview (human confirmation)
+   └── Writer (billing.document creation with import context)
+         ↓
+Billing Domain (single source of truth)
+```
+
+**Key Rules:**
+1. `external_input_must_pass_validation` — billing.document creation requires `import_batch_id` and `import_line_id`
+2. `import_line_is_staging_only` — Import Lines are not business facts
+3. `billing_is_single_source_of_truth` — only billing.document/billing.line can be used in settlement
+4. `invoice_import_is_idempotent` — business_idempotency_key + technical_duplicate_detection_hash (SHA256)
+5. `invoice_version_immutable` — supersede (not replace), old version marked superseded, immutable
+6. `billing_import_no_auto_matching` — Import doesn't auto-trigger matching
+
+### Consequences
+- Manual billing creation still allowed but identifiable (no import_batch_id)
+- Future API/EDI/OCR adapters reuse the same Intake Layer pattern
+- Template mapping uses field transformation rules (JSON array with source_column/target_field/transform)
