@@ -1019,3 +1019,22 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - 新增 7 个测试文件 + 1 个 test_helper（纯 Python）
 - 不修改任何业务模型
 - 不新增视图/菜单/权限
+
+## ADR-035: Match Rule Engine 2.0 + Settlement Dashboard
+
+**日期**: 2026-07-28
+**Sprint**: Sprint35
+**影响域**: 匹配引擎 / 运营监控
+
+### 决策
+1. Match Rule condition line 拆表，与 condition_json 并存
+2. Dashboard 使用 Odoo native 能力，不做 BI
+3. Sprint34 测试结果作为质量基线（verify 8/8, odoo_check PASS, --test-enable 沙箱阻塞已知）
+4. --test-enable 沙箱问题作为已知技术债，不阻塞本期
+
+### Sprint34 生产硬化总结
+- 7 个测试文件 + 1 个 test_helper（纯 Python）
+- 全链路覆盖：billing / matching / allocation / batch / case / security / consistency
+- domain_invariants 纳入认知资产：allocation 不变量 / closed_batch 保护 / correction 审计 / 幂等
+- verify 8/8 PASS, odoo_check PASS
+- --test-enable 沙箱阻塞（已知技术债，Exit 255）
