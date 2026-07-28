@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.48
+context_version: 1.0.49
 update_time: 2026-07-27
-adapt_sprint: Sprint33-Invoice-Import
+adapt_sprint: Sprint34-Production-Hardening
 update_author: AI-Engineering-Team
 
 version_log:

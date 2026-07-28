@@ -28,3 +28,11 @@ from . import test_settlement_export
 from . import test_closed_batch_protection
 from . import test_invoice_template
 from . import test_invoice_import
+from . import settlement_test_helpers
+from . import test_settlement_billing
+from . import test_settlement_matching
+from . import test_settlement_allocation
+from . import test_settlement_batch
+from . import test_settlement_case
+from . import test_settlement_security
+from . import test_settlement_consistency

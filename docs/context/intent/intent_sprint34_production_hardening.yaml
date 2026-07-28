@@ -1,0 +1,208 @@
+# ==============================================================
+# 【Sprint34 意图契约】
+# 功能：结算域生产硬化 — Settlement Domain Production Hardening
+# 前置基线：Sprint33 承运商账单导入
+# 基线版本：context_version: 1.0.48 -> 1.0.49
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT34-001
+intent_work_type: Maintenance
+intent_change_type: Quality Hardening
+title: 结算域生产硬化 — Production Test Hardening
+
+target_scope: >
+  Sprint27-33 完成了 Settlement Domain 核心功能闭环：
+  billing → matching → allocation → batch → case → correction → approval → export → import。
+  Sprint34 不做新功能，专注生产硬化：
+  - P0: 结算域全链路自动化测试体系
+  - P0: 金额一致性 + 状态机 + 幂等 + 权限 测试矩阵
+  - P1: 性能基线 + 边界条件测试
+  目标：证明结算域在真实场景下不会错账、不会重复、不会越权。
+
+domain_invariants:
+  allocation_never_exceed_billing:
+    rule: allocation_total <= billing_line_total
+    validation:
+      type: automated_test
+  closed_batch_immutable:
+    rule: state=closed => no allocation modification
+    validation:
+      type: state_machine_test
+  correction_preserves_history:
+    rule: reversal + replacement required, original allocation preserved
+    validation:
+      type: audit_test
+  duplicate_execution_no_duplicate_effect:
+    rule: same execution_id => same result
+    validation:
+      type: idempotency_test
+
+accept_criteria:
+  # Billing
+  - billing.document 创建成功、billing.line 金额正确、external_reference 唯一
+  # Matching
+  - confidence >= 0.85 → auto_confirmed + allocation 创建
+  - confidence < 0.85 → draft、不创建 allocation
+  - 重复执行 run_matching() → allocation 数量不变
+  # Allocation
+  - allocation_total <= billing_line_total
+  - reverse+replacement：原 allocation 保留（is_reversal=True）
+  - 修正产生 matching.history
+  # Batch
+  - closed 后禁止修改 allocation
+  - batch.aggregated_total = sum(line.snapshot_amount)
+  # Security
+  - operator：只读，不可创建/修改/删除 allocation
+  - clerk：可修正 allocation
+  - manager：可审批 batch
+  - financier：可导出、不可修改
+  # 门禁
+  - 全部测试 PASS
+  - verify.py 8/8 PASS + odoo_check PASS
+
+source:
+  type: quality_improvement
+  origin_team: 质量保障
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - settlement_domain_model
+    - settlement_business_rule
+    - settlement_state_machine
+  architecture:
+    - test_suite（增强）
+  history:
+    - previous_settlement_bugs
+    - sprint27_33_decision_records
+  governance:
+    - test_coverage（建立结算域测试基线）
+    - domain_invariants（纳入认知资产）
+
+deliverables:
+  test_cases:
+    - tests/test_settlement_billing.py
+    - tests/test_settlement_matching.py
+    - tests/test_settlement_allocation.py
+    - tests/test_settlement_batch.py
+    - tests/test_settlement_case.py
+    - tests/test_settlement_security.py
+    - tests/test_settlement_consistency.py
+
+  test_support:
+    - tests/settlement_test_helpers.py（纯 Python，非 Odoo AbstractModel）
+
+  context:
+    - docs/context/context_version.yaml（1.0.48 -> 1.0.49）
+    - docs/context/history/decision_note.md（新增 ADR-034）
+    - docs/context/history/sprint_log.md（新增 SPRINT34 回顾）
+
+asset_version_change:
+  validation:
+    from: 1.0.0
+    to: 1.1.0
+
+limit_constraints: |
+  1. 本期不开发 API/界面新功能。
+  2. 禁止修改 models/*.py 中任何业务模型及字段。
+  3. 业务模型缺陷不在本期修复范围（发现后记录 sprint_log 待 Sprint35 修复）。
+  4. --test-enable 已知问题保持现状（不阻塞本次开发）。
+  5. 测试数据工厂为纯 Python（非 Odoo AbstractModel）。
+  6. Security 测试只可创建测试用户和分配已有角色，不可新建 group 或修改 ACL XML。
+  7. test_helpers 不应依赖于 Odoo 环境之外的第三方库。
+
+risk_precheck: |
+  1. 全链路一致性测试可能需要大量 setUp 数据（使用 test_helpers 工厂复用）。
+  2. auto-matching 幂等测试依赖 Sprint30 的 execution_id 机制。
+  3. Security matrix 测试需要创建不同角色的用户并验证行为差异。
+
+# Goal
+goal: >
+  建立结算域全链路自动化测试基线，
+  在定义测试覆盖范围内验证账务一致性、执行幂等性、权限边界正确性。
+
+  本期不开发新功能，仅测试和质量保障。
+  发现的业务缺陷记录到 sprint_log，留待 Sprint35 修复。
+
+change_policy:
+  business_logic_change: forbidden
+  test_only_change: allowed
+  defect_fix: record_only
+
+scope:
+  allow:
+    - "addons/wd_tlms/tests/settlement_test_helpers.py"
+    - "addons/wd_tlms/tests/test_settlement_billing.py"
+    - "addons/wd_tlms/tests/test_settlement_matching.py"
+    - "addons/wd_tlms/tests/test_settlement_allocation.py"
+    - "addons/wd_tlms/tests/test_settlement_batch.py"
+    - "addons/wd_tlms/tests/test_settlement_case.py"
+    - "addons/wd_tlms/tests/test_settlement_security.py"
+    - "addons/wd_tlms/tests/test_settlement_consistency.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/history/sprint_log.md"
+
+  forbid:
+    - 禁止创建新业务模型
+    - 禁止修改 models/*.py 中任何业务模型
+    - 禁止修改现有业务模型字段/逻辑
+    - 禁止新增视图/菜单/权限
+    - 禁止修改 ACL/security.xml
+    - 禁止修改 services/ 下任何业务服务
+    - 禁止修改 execution/scripts/ governance/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+  security_test:
+    create_test_users: allowed
+    assign_existing_groups: allowed
+    create_new_groups: forbidden
+    modify_acl_xml: forbidden
+    modify_models: forbidden
+
+# 测试矩阵覆盖范围（聚焦边界条件，不测试完整状态机）：
+#
+# Billing:
+#   - document 创建 + line 金额正确 + external_reference 唯一
+# Matching:
+#   - 高置信度(>=0.85) → auto_confirmed + allocation
+#   - 低置信度(<0.85) → draft、不创建 allocation
+#   - 幂等：执行两次 → allocation_count 不变
+# Allocation:
+#   - allocation_total <= billing_line_total（不变量）
+#   - 修正 reverse+replacement：原 allocation 保留
+#   - 修正产生 matching.history
+#   - original + reversal + replacement = final amount（不变量）
+# Batch:
+#   - closed 后禁止修改 allocation（不变量）
+#   - batch.aggregated_total = sum(line.snapshot_amount)（不变量）
+# Security:
+#   - operator：只读
+#   - clerk：可修正 allocation
+#   - manager：审批
+#   - financier：导出
+#
+# ADR-034 关键决策：
+#   1. Sprint34 不做新功能，专注生产硬化测试
+#   2. intent_work_type = Maintenance / Quality Hardening
+#   3. change_policy：business_logic_change=forbidden, test_only=allowed, defect_fix=record_only
+#   4. domain_invariants 结构化纳入认知资产（rule + validation.type）
+#   5. validation_asset_version 独立版本（非 context_version）
+#   6. 测试文件 7+1 结构：billing/matching/allocation/batch/case/security/consistency + helpers
+#   7. Security 测试：create_users=allowed + assign_groups=allowed + create_groups=forbidden
+#   8. max_iteration=3, escalation=2（测试失败不无限修复）
+#   9. 发现的业务缺陷记录 sprint_log，留待 Sprint35 修复

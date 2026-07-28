@@ -998,3 +998,24 @@ Sprint16/17 开发时字段从 `event_type`（Selection） 改名 `event_type_id
 - services/invoice_parser.py / invoice_validator.py / invoice_writer.py（新）
 - services/invoice_import_service.py（新）
 - models/transport_carrier_billing.py（增量）
+
+## ADR-034: 结算域生产硬化 — Settlement Domain Production Hardening
+
+**日期**: 2026-07-28
+**Sprint**: Sprint34
+**影响域**: 质量保障
+
+### 决策
+1. Sprint34 不做新功能，专注生产硬化测试
+2. intent_work_type = Maintenance / Quality Hardening
+3. change_policy: business_logic_change=forbidden, test_only=allowed, defect_fix=record_only
+4. domain_invariants 结构化纳入认知资产（rule + validation.type）
+5. 测试文件 7+1 结构：billing/matching/allocation/batch/case/security/consistency + helpers
+6. Security 测试：create_users=allowed + assign_groups=allowed + create_groups=forbidden
+7. max_iteration=3, escalation=2（测试失败不无限修复）
+8. 发现的业务缺陷记录 sprint_log，留待 Sprint35 修复
+
+### 影响
+- 新增 7 个测试文件 + 1 个 test_helper（纯 Python）
+- 不修改任何业务模型
+- 不新增视图/菜单/权限
