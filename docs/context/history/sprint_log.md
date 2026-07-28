@@ -530,3 +530,22 @@ Odoo 18 的 TransientModel（`models.TransientModel`）在用户打开视图时�
 | Reports 只能展示 count-by-scene/type | Odoo 18 框架拒绝 `aggregator` | Odoo 18 官方补丁 |
 | 测试无法在 CI 中自动执行 | 沙箱拦截 `--test-enable`（EXIT 255） | 沙箱配置修改 |
 | 部分 Sprint21 测试用例未通过（12/132 fail） | 模板兼容/数据依赖问题 | 待排查 |
+
+#### 8. Odoo 18 UI 模块升级的 RNG 校验陷阱
+
+**现象**: UI 点击 Upgrade 时，Odoo 18 的 `convert_xml_import()` 对 `data/` 下所有 XML 文件做 `import_xml.rng` 验证。验证失败直接 `raise` 返回 500，导致模块加载崩溃。
+
+**根因**: 7 个 XML 文件使用 `<odoo><data noupdate="1">` 遗留包装，`import_xml.rng` 不接受 `<data>` 作为 `<odoo>` 子元素。`data/sequences.xml` 另有 4 个 `<record>` 标签缺少 `</record>` 闭合形成嵌套，XML 结构错误。
+
+**教训**:
+- 每次 Sprint 开发后，必须对所有 data/ 和 security/ 下的 XML 文件执行 `import_xml.rng` 合规校验
+- Odoo 18 原生格式是 `<odoo noupdate="1">` 直接包 `<record>`，不使用 `<data>` 包装
+- `<record>` 标签必须在同一文件中闭合，不能跨记录嵌套
+- 永远不要用 `sed` 做 Python 文件批量替换——缺少语法感知，会损坏未匹配的代码行
+- 发现问题后应立即写入上下文资产再修复，而非闷头修复数小时
+
+#### 9. 沙箱环境无法验证 odoo_check.py
+
+**现象**: 沙箱阻断 5432/5555 端口连接 PostgreSQL，`odoo_check.py` 必然失败。
+
+**教训**: odoo_check.py 的数据库连接依赖无法在沙箱中满足，验证应以 verify.py 静态检查为主。

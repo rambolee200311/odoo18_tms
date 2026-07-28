@@ -320,3 +320,13 @@ bind_asset_folder:
       - verify 8/8 PASS, odoo_check PASS
     update_type: 新功能开发
     effect_scope: 承运商匹配规则域
+
+  1.0.51:
+    update_content: |
+      Sprint35 bug fix: Odoo 18 RNG 校验问题修复
+      - 7 个 XML 文件移除 <data> 包装，noupdate 移至 <odoo>
+      - data/sequences.xml 修复 4 个嵌套 <record> 标签结构
+      - 只修改模块文件，不动 Odoo 原生代码
+      - 写入教训：RNG 校验陷阱、XML 结构规范、sed 替换风险、沙箱局限
+    update_type: Bug修复
+    effect_scope: 全模块 XML 数据文件合规
