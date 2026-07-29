@@ -1,0 +1,95 @@
+# ==============================================================
+# Settlement Exception Type Policy
+# Domain: settlement_exception
+# Version: 1.0
+# Last Updated: 2026-07-29
+# Sprint: 37
+# Source: docs/context/intent/intent_sprint37_exception_management.yaml
+# ==============================================================
+#
+# 本文件定义 Settlement Exception 的类型枚举目录。
+# 新增 exception_type 必须通过 governance_review 后修改本文件。
+# Sprint38 Rule Engine 将直接读取此目录作为规则配置基线。
+#
+
+exception_types:
+
+  MATCH_FAILED:
+    category: matching
+    resolution_mode: manual
+    priority_default: high
+    description: "自动匹配引擎无法为 billing.line 找到对应 transport.order"
+    auto_close_allowed: false
+    requires_case: true
+    note: "最常见异常类型，通常由 reference 缺失/不一致导致"
+
+  AMOUNT_MISMATCH:
+    category: financial
+    resolution_mode: manual
+    priority_default: urgent
+    description: "billing.line 金额与 transport.order 计算金额不一致"
+    auto_close_allowed: false
+    requires_case: true
+    note: "可能由税率/汇率/计费规则变更导致，需财务确认"
+
+  DUPLICATE_INVOICE:
+    category: billing
+    resolution_mode: auto
+    priority_default: normal
+    description: "同 carrier + external_invoice_no + version 的账单已存在"
+    auto_close_allowed: true
+    requires_case: false
+    note: "唯一允许 auto_resolution 的类型——系统自动拒绝重复导入"
+
+  INVALID_REFERENCE:
+    category: data_quality
+    resolution_mode: manual
+    priority_default: high
+    description: "billing.line 引用的外部单据编号在系统中不存在"
+    auto_close_allowed: false
+    requires_case: true
+    note: "可能是承运商账单数据错误或系统导入顺序问题"
+
+  IMPORT_ERROR:
+    category: operational
+    resolution_mode: manual
+    priority_default: normal
+    description: "Invoice Import 解析/校验失败——部分或全部行失败"
+    auto_close_allowed: false
+    requires_case: false
+    note: "import 失败后自动创建，修复后可重新导入"
+
+  APPROVAL_TIMEOUT:
+    category: operational
+    resolution_mode: manual
+    priority_default: urgent
+    description: "Settlement Batch 审批超时——超过 SLA deadline 未审批"
+    auto_close_allowed: false
+    requires_case: false
+    note: "升级处理——批量审批超时可能导致结算延迟"
+
+# ── Category 目录 ───────────────────────────────────────
+categories:
+  matching:      "匹配异常——Matching Engine 层面的问题"
+  billing:       "账单异常——Billing Document 层面的问题"
+  financial:     "财务异常——金额/汇率/税率相关"
+  operational:   "运营异常——流程/审批/导入相关"
+  data_quality:  "数据质量——引用/编码/格式问题"
+
+# ── 新增类型审核要求 ────────────────────────────────────
+extension_policy:
+  governance_review_required: true
+  review_fields:
+    - exception_type
+    - category
+    - resolution_mode
+    - priority_default
+    - auto_close_allowed
+    - requires_case
+  prohibited_extensions:
+    - python_expression
+    - arbitrary_eval
+
+# ── 版本控制 ────────────────────────────────────────────
+version: "1.0"
+change_policy: governance_review_required

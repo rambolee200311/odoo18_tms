@@ -111,4 +111,10 @@
         <field name="prefix">MEX/</field>
         <field name="padding">5</field>
     </record>
+    <record id="seq_tlmp_settlement_exception" model="ir.sequence">
+        <field name="name">TLM Settlement Exception</field>
+        <field name="code">tlmp.settlement.exception.seq</field>
+        <field name="prefix">EXC-%(year)s%(month)s-</field>
+        <field name="padding">4</field>
+    </record>
 </odoo>

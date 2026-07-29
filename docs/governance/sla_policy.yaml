@@ -1,0 +1,52 @@
+# ==============================================================
+# Settlement Exception SLA Policy
+# Domain: settlement_exception
+# Version: 1.0
+# Last Updated: 2026-07-29
+# Sprint: 37
+# Source: docs/context/intent/intent_sprint37_exception_management.yaml
+# ==============================================================
+#
+# 本文件定义 Settlement Exception 的 SLA deadline 计算规则。
+# 不硬编码在代码中——修改此文件即可调整 SLA，无需改模型/视图。
+#
+
+# ── Priority → SLA 映射 ──────────────────────────────────
+# deadline_hours: 从 created_at 起算的处理时限
+# escalation_threshold: 超过 deadline 多少倍后标记 escalation
+priority:
+
+  urgent:
+    deadline_hours: 4
+    escalation_threshold: 1.5   # 4h × 1.5 = 6h 后 escalation
+    description: "金额异常或审批超时——需立即处理"
+
+  high:
+    deadline_hours: 8
+    escalation_threshold: 1.5   # 8h × 1.5 = 12h 后 escalation
+    description: "匹配失败或引用缺失——需当日处理"
+
+  normal:
+    deadline_hours: 24
+    escalation_threshold: 2.0   # 24h × 2 = 48h 后 escalation
+    description: "常规异常——1个工作日内"
+
+  low:
+    deadline_hours: 72
+    escalation_threshold: 2.0   # 72h × 2 = 144h 后 escalation
+    description: "低优先级异常——可延后处理"
+
+# ── SLA Status Compute 规则 ──────────────────────────────
+# sla_status 是 compute field，不 stored，实时计算
+status_rules:
+  on_track: "now < sla_deadline"
+  at_risk: "now >= sla_deadline * 0.8 AND now < sla_deadline"
+  overdue: "now >= sla_deadline"
+  escalated: "now >= sla_deadline * escalation_threshold"
+
+# ── 默认值 ──────────────────────────────────────────────
+default_priority: normal
+
+# ── 版本控制 ────────────────────────────────────────────
+version: "1.0"
+change_policy: governance_review_required

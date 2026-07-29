@@ -1,0 +1,257 @@
+# ==============================================================
+# 【Sprint37 Intent 契约 V3】
+# 功能：Settlement Exception Domain — 异常检测与人工闭环
+# 前置基线：Sprint36 Settlement Intake Layer + Quality Gate
+# 基线版本：context_version: 1.0.53 -> 1.0.54
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT37-001
+intent_work_type: Development
+intent_change_type: New Feature + Domain Boundary Establishment
+title: Settlement Exception Domain — 异常检测与人工闭环
+
+target_scope: >
+  Sprint27-36 完成了 Settlement Domain 核心功能闭环。
+
+  Sprint37 建设 Settlement Exception Domain。
+
+  P0: exception 模型（source_reference + snapshot 运营证据链）
+  P0: 生命周期（new → assigned(requires_owner) → processing → resolved → closed / cancelled）
+  P0: Auto Resolution（白名单 DUPLICATE_INVOICE → auto_closed，其余人工→case）
+  P0: Settlement Review Queue（基于 exception 的待处理优先级视图）
+  P1: exception_category（matching/billing/financial/operational/data_quality）
+  P1: SLA 策略资产化 + compute sla_status
+
+  不做边界：Dashboard、BI、Rule Engine、OCR、Carrier API、自动付款、自动记账、复杂审批流。
+
+accept_criteria:
+  # ======== P0: Settlement Exception Model ========
+  - "tlmp.settlement.exception：name/exception_type/exception_category/state/priority/resolution_mode/source_reference/resolution"
+  - "source_reference = {model(Char), res_id(Integer), display_name(Char), snapshot(JSON), captured_at(Datetime)}"
+  - "snapshot 记录异常发生时的源数据快照（运营证据链）"
+  - "exception_type 初版枚举（治理受控，新增需 governance_review）：
+       MATCH_FAILED, AMOUNT_MISMATCH, DUPLICATE_INVOICE,
+       INVALID_REFERENCE, IMPORT_ERROR, APPROVAL_TIMEOUT"
+  - "exception_category：matching / billing / financial / operational / data_quality"
+
+  # ======== P0: State Machine ========
+  - "state：new → assigned → processing → resolved → closed"
+  - "state：new → assigned → processing → cancelled（无需处理）"
+  - "assigned 状态要求 assigned_to != null（invariant: assigned_requires_owner）"
+  - "closed 和 cancelled 均为终态，不可逆"
+
+  # ======== P0: Resolution Mode ========
+  - "resolution_mode：manual（默认）| auto"
+  - "auto_resolution 白名单：仅 DUPLICATE_INVOICE 允许 resolution_mode=auto"
+  - "MATCH_FAILED / AMOUNT_MISMATCH / INVALID_REFERENCE / IMPORT_ERROR / APPROVAL_TIMEOUT → manual"
+  - "auto 模式必须记录 resolution_note（system-generated）"
+
+  # ======== P0: Manual → Case Routing ========
+  - "exception.case_id = Many2one(tlmp.carrier.settlement.case)（可选）"
+  - "case.exception_ids = One2many(exception)（反向）"
+  - "manual exception 在 state IN [assigned, processing, resolved] 时要求 case_id 非空"
+  - "state=new 时不要求 case_id（等待人工领取）"
+
+  # ======== P0: Resolution Notes ========
+  - "resolved：resolution_note required"
+  - "auto_closed：resolution_note required（system-generated）"
+  - "cancelled：cancel_reason required"
+
+  # ======== P0: Review Queue（纯视图） ========
+  - "基于 exception tree view，按 priority + created_at 排序"
+  - "分组：urgent/high 在前，normal/low 在后"
+  - "filter by exception_category / exception_type / state / assigned_to"
+  - "sla_status 为 compute field（on_track / at_risk / overdue）"
+  - "不建独立模型"
+
+  # ======== P1: SLA ========
+  - "SLA deadline 从 governance/sla_policy.yaml 加载，不硬编码"
+  - "priority → SLA: urgent=4h, high=8h, normal=24h, low=72h"
+  - "sla_deadline 为 stored field（created_at + policy lookup on create）"
+  - "sla_status 为 compute field（不 stored，实时计算）"
+  - "escalation_time（逾期时间，policy 中 escalation_threshold=1.5x）"
+
+  # ======== Gate ========
+  - "verify.py 8/8 PASS"
+  - "odoo_check.py PASS（require_escalated）"
+
+source:
+  type: architecture_upgrade
+  origin_team: 产品/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+domain_invariants:
+  exception_closed_immutable:
+    rule: closed / cancelled 状态的 exception 不可修改
+    validation: state=closed/cancelled 时 write/set_state 拒绝
+    criticality: P0
+
+  exception_assigned_requires_owner:
+    rule: assigned 状态要求 assigned_to != null
+    validation: state=assigned 时 assigned_to 不可空
+    criticality: P0
+
+  resolution_required:
+    rule: resolved 必须有 resolution_note，cancelled 必须有 cancel_reason
+    validation: state 迁移时验证对应字段非空
+    criticality: P0
+
+  case_created_for_manual_exception:
+    rule: manual exception 在 assigned/processing/resolved 时必须关联 case
+    validation: state in [assigned, processing, resolved] → case_id 非空
+    criticality: P0
+
+  auto_resolution_whitelist:
+    rule: 仅 DUPLICATE_INVOICE 允许 resolution_mode=auto
+    validation: 非 DUPLICATE_INVOICE 类型的 auto_close 被拒绝
+    criticality: P0
+
+  source_snapshot_is_traceable:
+    rule: source_reference 必须包含 model + res_id + display_name + snapshot
+    validation: create 时验证四字段完整
+    criticality: P0
+
+affected_assets:
+  business:
+    - settlement_domain
+    - settlement_exception
+  architecture:
+    - settlement_module_map
+  governance:
+    - exception_invariant
+    - exception_policy
+    - sla_policy
+
+deliverables:
+  # 新模型
+  - "models/transport_settlement_exception.py"
+  # 存量扩展
+  - "models/transport_carrier_billing.py（exception auto-detect on import failure）"
+  - "models/transport_carrier_case.py（exception_ids inverse One2many）"
+  # 新服务（Handler 架构 + Registry）
+  - "services/exception_detector.py（主 Orchestrator + ExceptionHandlerRegistry）"
+  - "services/exception_handlers/__init__.py"
+  - "services/exception_handlers/base.py（BaseExceptionHandler 基类）"
+  - "services/exception_handlers/registry.py（ExceptionHandlerRegistry.register/discover）"
+  - "services/exception_handlers/matching_handler.py"
+  - "services/exception_handlers/billing_handler.py"
+  - "services/exception_handlers/import_handler.py"
+  # 视图
+  - "views/transport_settlement_exception_views.xml"
+  - "views/transport_settlement_review_queue_views.xml（纯视图，不建模型）"
+  # 菜单
+  - "views/tlmp_menus.xml"
+  # 权限
+  - "security/security.xml"
+  - "security/ir.model.access.csv"
+  # 测试
+  - "tests/test_exception_lifecycle.py"
+  - "tests/test_exception_auto_resolution.py"
+  - "tests/test_exception_invariant.py"
+  - "tests/test_exception_case_link.py"
+  - "tests/test_exception_sla.py"
+  - "tests/test_exception_traceability.py"
+  # 策略资产
+  - "docs/governance/sla_policy.yaml"
+  - "docs/governance/exception_policy.yaml（exception_type catalog + category + resolution_mode）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.53 -> 1.0.54）"
+  - "docs/context/history/decision_note.md（ADR-037）"
+  - "docs/context/history/validation_records.yaml"
+
+limit_constraints: |
+  1. exception_type 为治理受控枚举——新增需 governance_review。
+  2. auto_resolution 白名单仅 DUPLICATE_INVOICE。
+  3. Review Queue 不建独立模型，纯视图 + action + filter + compute field。
+  4. SLA deadline 从 governance/sla_policy.yaml 加载；sla_status 为 compute field（不 stored）。
+  5. exception.case_id 为 Optional Many2one，case.exception_ids 为 One2many inverse。
+  6. 本期不做复杂审批流 / Dashboard / BI / Rule Engine / OCR / API / 自动付款 / 自动记账。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_settlement_exception.py"
+    - "addons/wd_tlms/models/transport_carrier_billing.py（增量）"
+    - "addons/wd_tlms/models/transport_carrier_case.py（增量 exception_ids）"
+    - "addons/wd_tlms/services/exception_detector.py"
+    - "addons/wd_tlms/services/exception_handlers/*"
+    - "addons/wd_tlms/__init__.py"
+    - "addons/wd_tlms/views/transport_settlement_exception_views.xml"
+    - "addons/wd_tlms/views/transport_settlement_review_queue_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml"
+    - "addons/wd_tlms/security/security.xml"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_exception_*.py"
+    - "docs/governance/sla_policy.yaml"
+    - "docs/governance/exception_policy.yaml"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/history/validation_records.yaml"
+
+  forbid:
+    - 禁止新建 Dashboard/BI 视图
+    - 禁止创建 Rule Engine 相关模型
+    - 禁止创建 OCR/Carrier API 对接
+    - 禁止创建自动付款/自动记账逻辑
+    - 禁止修改 Sprint36-A import 流程
+    - 禁止修改 matching confidence 算法
+    - 禁止修改 allocation 计算逻辑
+    - 禁止修改已有 governance baseline（允许新增 versioned 策略资产）
+    - 禁止修改 execution/scripts/ 下任何文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+risk_precheck: |
+  1. source_reference.snapshot 避免存储过大 JSON——仅关键字段（amount/currency/reference/carrier）。
+  2. AMOUNT_MISMATCH 检测复用现有金额比对逻辑，不重复造轮。
+  3. sla_status compute field 避免频繁 re-compute——使用 depends on created_at + sla_deadline。
+  4. exception_policy.yaml 与 sprint38 Rule Engine 的关系：37 固定策略 → 38 规则配置化。
+
+goal: >
+  建立 Settlement Exception Domain v1.0，
+  让 Settlement Domain 从「可以运行」进入「可运营」。
+
+  本期交付能力：
+
+  1. Exception Detection — 系统自动检测（matching/billing/import handler）
+  2. Auto Resolution — DUPLICATE_INVOICE 系统自动 closed（白名单）
+  3. Case Routing — 人工类型 exception 自动关联 case
+  4. SLA Governance — 策略资产化，compute sla_status
+  5. Operational Evidence — source_reference.snapshot 证据链
+
+  架构变化：
+
+  ```
+  Import → Billing → Matching → Allocation → Batch
+              |          |            |          |
+              v          v            v          v
+            Exception_Detection_Engine（Handler Registry）
+              |          |
+              v          v
+        Auto-Resolution  Manual → Case → Resolution
+         (whitelist)
+  ```
+
+# ADR-037 关键决策：
+#   1. Exception 是系统检测层，Case 是人工处理层，职责分离
+#   2. source_reference 包含 snapshot JSON（运营证据链）
+#   3. assigned 状态要求 assigned_to != null（invariant）
+#   4. resolution_mode: manual(default) | auto，DUPLICATE_INVOICE 白名单
+#   5. manual exception 在 assigned/processing/resolved 时要求 case_id 非空（new 时不要求）
+#   6. sla_status 为 compute field，不 stored
+#   7. Policy 资产化（sla_policy.yaml + exception_policy.yaml）
+#   8. Exception Handler Registry 预留 Sprint38 Rule Engine 接管
+#   9. Sprint38: Rule Engine  /  Sprint39: Dashboard / Analytics

@@ -352,3 +352,15 @@ bind_asset_folder:
       - 测试失败只记录缺陷，不自动修复业务逻辑
     update_type: 质量硬化
     effect_scope: settlement_domain_invariant
+  1.0.54:
+    update_content: |
+      Sprint37 Settlement Exception Domain v1.0
+      - 新增 tlmp.settlement.exception（source_reference + snapshot 运营证据链）
+      - 状态机 new→assigned→processing→resolved→closed|cancelled
+      - Auto Resolution 白名单（仅 DUPLICATE_INVOICE）
+      - Exception Handler Registry（预留 Sprint38 Rule Engine 接管）
+      - Review Queue 视图（优先级待处理队列）
+      - SLA 策略资产化（governance/sla_policy.yaml）
+      - 6 个 Domain Invariant（closed_immutable/assigned_requires_owner/...）
+    update_type: 新功能开发 + 领域边界建立
+    effect_scope: settlement_exception_domain

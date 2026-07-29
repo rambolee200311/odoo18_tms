@@ -40,3 +40,4 @@ from . import test_settlement_consistency
 from . import test_invoice_import_flow
 from . import test_invoice_validator
 from . import test_settlement_regression
+from . import test_exception_lifecycle

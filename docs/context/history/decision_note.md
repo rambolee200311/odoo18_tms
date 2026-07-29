@@ -1138,3 +1138,43 @@ Establish Domain Invariant automated quality gate as the first AI Agent-consumab
 - Domain Invariants now part of Governance Asset baseline
 - Future Sprints auto-load invariants via Intent profile
 - Test failure → record defect → not auto-fix business logic
+
+
+---
+
+## ADR-037: Settlement Exception Domain v1.0
+
+**Date**: 2026-07-29
+**Sprint**: 37
+**Intent**: INT-TMS-SPRINT37-001
+
+### Context
+Sprint27-36 completed Settlement Domain core (Import → Billing → Matching → Allocation → Batch → Approval → Export). The domain lacked operational closure — when something goes wrong (match failure, amount mismatch, etc.), there was no systematic detection, assignment, tracking, or resolution workflow.
+
+### Decision
+Build Settlement Exception Domain as the operational closure layer.
+
+**Architecture:**
+```
+Settlement Domain (Billing/Matching/Batch/Approval)
+       |
+       v
+Exception Detection Engine (Handler Registry)
+       |
+       +-- Auto Resolution (DUPLICATE_INVOICE whitelist → closed)
+       +-- Manual Handling → Settlement Case → Resolution
+```
+
+**Key Rules:**
+1. Exception = system detection layer, Case = human resolution layer (NOT same concept)
+2. `exception_assigned_requires_owner` — assigned state requires assigned_to
+3. `case_created_for_manual_exception` — manual exceptions in assigned/processing/resolved require case_id
+4. `auto_resolution_whitelist` — only DUPLICATE_INVOICE can auto-close
+5. `source_snapshot_is_traceable` — source_reference includes snapshot JSON + captured_at
+6. SLA policy from governance/sla_policy.yaml (not hardcoded)
+7. Exception Handler Registry maps type→handler, Sprint38 Rule Engine replaces registry
+
+### Consequences
+- Exception is NOT Case — two separate domains with different lifecycles
+- SLA deadlines are governance assets, not code constants
+- Handler Registry architecture allows Sprint38 Rule Engine to replace static handlers

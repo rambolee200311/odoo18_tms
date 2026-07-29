@@ -196,3 +196,6 @@ access_import_manager,tlmp.import.manager,model_tlmp_carrier_invoice_import,wd_t
 access_importline_invoiceop,tlmp.importline.invoiceop,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_invoice_operator,1,0,0,0
 access_importline_clerk,tlmp.importline.clerk,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_settlement_clerk,1,1,0,0
 access_importline_manager,tlmp.importline.manager,model_tlmp_carrier_invoice_import_line,wd_tlms.group_tlm_manager,1,1,0,0
+access_exception_clerk,tlmp.exception.clerk,model_tlmp_settlement_exception,wd_tlms.group_tlm_settlement_clerk,1,1,1,0
+access_exception_manager,tlmp.exception.manager,model_tlmp_settlement_exception,wd_tlms.group_tlm_manager,1,1,1,0
+access_exception_financier,tlmp.exception.financier,model_tlmp_settlement_exception,wd_tlms.group_tlm_financier,1,0,0,0
