@@ -1,3 +1,19 @@
+---
+
+## Prerequisites
+在开始前，确保以下基础档案已存在。如果缺失，需要先创建或导入：
+
+| # | 档案 | 检查方式 | 如果缺失 |
+|---|------|---------|---------|
+| 0.1 | Transport Scene: **terminal_to_warehouse** | Settings → Technical → Scenes，看列表 | 升级模块（`-u wd_tlms`）或手动创建 |
+| 0.2 | Transport Type: **port_to_warehouse** | Settings → Technical → Transport Types | 升级模块或手动创建 |
+| 0.3 | Partner（客户/承运商）：至少一个公司 partner | Contacts → 确认存在 | 手动创建（如 "HOYMILES B.V."） |
+| 0.4 | 仓库（Warehouse）：至少一个仓库 | Inventory → Configuration → Warehouses | 手动创建（如 "Rotterdam Warehouse"） |
+| 0.5 | Terminal/Port partner：标记为 `is_company=True` 的 partner | Contacts → 确认存在 terminal partner | 手动创建（如 "Rotterdam Maasvlakte Terminal"） |
+| 0.6 | 用户有 plan_driven request 权限 | Settings → Users & Companies → Users | 管理员赋权 |
+
+> 注意：如果已运行 `odoo_check.py` 或升级了模块，**data/golden/base_data.xml** 会自动导入黄金数据（HOYMILES 客户、DHL 承运商、Rotterdam/Den Haag 仓库等）。
+
 # Terminal → Warehouse — Operation Guide + Issue Log + Fix Record
 
 **Flow**: plan_driven | **Entry**: Pickup Plan → Order | **Expected Scene**: terminal_to_warehouse
