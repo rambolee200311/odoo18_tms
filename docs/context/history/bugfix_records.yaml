@@ -1,5 +1,4 @@
-# Settlement Domain Bugfix Records
-# Each fix requires: bug_id / root_cause / fix_summary / regression_test
-# Format: YYYY-MM-DD | bug_id | module | root_cause | fix | regression_test
+# Sprint42 Bugfix Records
+# Fields: bug_id / scene_id / root_cause / fix_scope / commit / regression_test / status
 version: 1.0
 records: []

@@ -1,30 +1,33 @@
-# Scene: Empty Container Move — 详细操作指导
+# Empty Container Move — Operation Guide + Issue Log + Fix Record
 
-**Flow**: plan_driven | **Entry**: Container Service Request | **Expected Scene**: empty_depot
+**Flow**: plan_driven | **Entry**: Container Service → Order | **Expected Scene**: empty_depot
 
-## Prerequisites
-- Golden dataset base_data.xml imported
-- Scene `empty_depot` exists in transport.scene
+---
 
-## Steps for plan_driven
+## Step-by-Step Operation
 
-### Step 1: Create Transport Request
-1. Open Transport Requests menu → Create
-2. Fill request_type = **plan_driven**, destination_type = **empty**
-3. Save
+| # | Action | Instructions | Expected Result | Pass? |
+|---|--------|-------------|-----------------|-------|
+| 8.1 | Create Container Service Request | Open Container Service → Create, fill depot+warehouse+cargo, save | Saved | [ ] |
+| 8.2 | Confirm + Create Dispatch Order | Click Confirm → Create Dispatch Order | Transport Order created | [ ] |
+| 8.3 | Verify Scene | Open created Order → check scene_id | scene_id = empty_depot (from container service context, NOT transport.request) | [ ] |
 
-### Step 2: Schedule → Pickup Plan → Create Transport Order
-1. Go to Schedule Calendar, drag to date, open Pickup Plan, click Create Transport Order
-2. Verify scene chain
+---
 
-### Step 3: Verify
-- Request.scene_id = empty_depot
-- Order.scene_id = empty_depot (immutable snapshot)
-- Flow validation: allowed_flows matches request_type
+## Issues Found
+| Step | Issue Description | Severity | Reported | Fix Status |
+|------|------------------|----------|----------|------------|
+| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
-## Checklist
-- [ ] Entry doc created successfully
-- [ ] Scene source correct: empty_depot
-- [ ] Scene_id not lost in chain
-- [ ] Order snapshot immutable (readonly)
-- [ ] Related object state matches expectations
+---
+
+## Fix Record
+| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
+|--------|-------|-----------|-----------|--------|-----------------|--------|
+| | | | | | | |
+
+---
+
+## Final Result
+- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk

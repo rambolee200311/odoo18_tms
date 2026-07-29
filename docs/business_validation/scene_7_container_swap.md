@@ -1,30 +1,32 @@
-# Scene: Container Swap — 详细操作指导
+# Container Swap — Operation Guide + Issue Log + Fix Record
 
 **Flow**: N/A | **Entry**: Field Extension | **Expected Scene**: N/A
 
-## Prerequisites
-- Golden dataset base_data.xml imported
-- Scene `N/A` exists in transport.scene
+---
 
-## Steps for N/A
+## Step-by-Step Operation
 
-### Step 1: Create Transport Request
-1. Open Transport Requests menu → Create
-2. Fill request_type = **N/A**, destination_type = **warehouse**
-3. Save
+| # | Action | Instructions | Expected Result | Pass? |
+|---|--------|-------------|-----------------|-------|
+| 7.1 | Open Transport Order with container | Find order with container_line, open form | Container line visible | [ ] |
+| 7.2 | Verify needs_swap field | Check container_line form for needs_swap checkbox, swap_location field | needs_swap exists, swap_location exists | [ ] |
 
-### Step 2: Schedule → Pickup Plan → Create Transport Order
-1. Go to Schedule Calendar, drag to date, open Pickup Plan, click Create Transport Order
-2. Verify scene chain
+---
 
-### Step 3: Verify
-- Request.scene_id = N/A
-- Order.scene_id = N/A (immutable snapshot)
-- Flow validation: allowed_flows matches request_type
+## Issues Found
+| Step | Issue Description | Severity | Reported | Fix Status |
+|------|------------------|----------|----------|------------|
+| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
-## Checklist
-- [ ] Entry doc created successfully
-- [ ] Scene source correct: N/A
-- [ ] Scene_id not lost in chain
-- [ ] Order snapshot immutable (readonly)
-- [ ] Related object state matches expectations
+---
+
+## Fix Record
+| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
+|--------|-------|-----------|-----------|--------|-----------------|--------|
+| | | | | | | |
+
+---
+
+## Final Result
+- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk

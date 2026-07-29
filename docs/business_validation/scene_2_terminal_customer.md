@@ -1,50 +1,35 @@
-# Scene 2: Terminal → Customer — 详细操作指导
+# Terminal → Customer — Operation Guide + Issue Log + Fix Record
 
-## Prerequisites
-- [ ] Golden dataset base_data.xml imported
-- [ ] Customer partner exists
-- [ ] Scene `terminal_to_customer` exists
+**Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: terminal_to_customer
 
-## Step-by-Step
+---
 
-### Step 1: Create Transport Request
-1. Open Transport Requests → Create
-2. Fill: Request Type = **Commercial**, Destination = **Terminal / Depot to Customer**
-3. Fill: Customer = a company partner, Origin Terminal = a terminal
-4. Fill: Cargo Type = **Container**, add container details
-5. Save
+## Step-by-Step Operation
 
-### Step 2: Start Inquiry
-1. Click "Start Inquiry" header button
-2. **Expected**: Inquiry created with state = draft
-3. **Expected**: Inquiry.request_id = the request
+| # | Action | Instructions | Expected Result | Pass? |
+|---|--------|-------------|-----------------|-------|
+| 2.1 | Create Transport Request | Transport Requests → Create, request_type=commercial, destination_type=customer, save | Request state=draft | [ ] |
+| 2.2 | Start Inquiry | Click "Start Inquiry" | Inquiry created, state=draft, request_id=the request | [ ] |
+| 2.3 | Accept Carrier Response | Add carrier response (DHL, 850 EUR), accept | Inquiry state=accepted | [ ] |
+| 2.4 | Create & Accept Quote | Create Quote from inquiry, set cost+margin, accept | Order auto-created, scene_id=request.scene_id | [ ] |
+| 2.5 | Verify Fee Lines | Open Order → Fees tab | carrier_cost line exists, customer_charge line exists (if applicable) | [ ] |
 
-### Step 3: Accept Carrier Quote
-1. Add a carrier response (e.g., DHL Freight, €850)
-2. Click Accept
-3. **Expected**: Inquiry state = accepted
+---
 
-### Step 4: Create & Accept Quote
-1. From the inquiry, create Quote
-2. **Expected**: Quote.request_id = original request
-3. **Expected**: Quote.scene_id inherited from request
-4. Set Carrier Cost, add Margin
-5. Set Quote state to "accepted"
-6. **Expected**: Transport Order auto-created
-7. Verify Order:
-   - [ ] order.scene_id = request.scene_id
-   - [ ] order.quote_id = the quote
-   - [ ] order.request_id = the request
+## Issues Found
+| Step | Issue Description | Severity | Reported | Fix Status |
+|------|------------------|----------|----------|------------|
+| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
-### Step 5: Verify Fee Lines
-1. Open the created Transport Order
-2. Go to Fees tab
-3. **Expected**: At least 1 fee line exists (carrier_cost)
-4. **Expected**: If applicable, customer_charge fee line exists
+---
 
-## Checklist
-- [ ] Request.scene_id = terminal_to_customer
-- [ ] Inquiry → Quote → Order scene chain consistent
-- [ ] Order.scene_id = terminal_to_customer (immutable)
-- [ ] Fee line(s) exist
-- [ ] Flow type = commercial matches scene
+## Fix Record
+| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
+|--------|-------|-----------|-----------|--------|-----------------|--------|
+| | | | | | | |
+
+---
+
+## Final Result
+- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk

@@ -1,30 +1,32 @@
-# Scene: Customer → Customer — 详细操作指导
+# Customer → Customer — Operation Guide + Issue Log + Fix Record
 
-**Flow**: commercial | **Entry**: Inquiry → Quote | **Expected Scene**: customer_to_customer
+**Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: customer_to_customer
 
-## Prerequisites
-- Golden dataset base_data.xml imported
-- Scene `customer_to_customer` exists in transport.scene
+---
 
-## Steps for commercial
+## Step-by-Step Operation
 
-### Step 1: Create Transport Request
-1. Open Transport Requests menu → Create
-2. Fill request_type = **commercial**, destination_type = **customer**
-3. Save
+| # | Action | Instructions | Expected Result | Pass? |
+|---|--------|-------------|-----------------|-------|
+| 4.1 | Create Request (commercial, customer) | Create request: commercial, destination=customer, no warehouse_id | Saved, partner_id required validated | [ ] |
+| 4.2 | Inquiry → Quote → Order | Same flow as S2 | Order created, scene_id=customer_to_customer | [ ] |
 
-### Step 2: Start Inquiry → Accept Quote → Order auto-created
-1. Click "Start Inquiry", add carrier response, create Quote, accept
-2. Verify scene chain
+---
 
-### Step 3: Verify
-- Request.scene_id = customer_to_customer
-- Order.scene_id = customer_to_customer (immutable snapshot)
-- Flow validation: allowed_flows matches request_type
+## Issues Found
+| Step | Issue Description | Severity | Reported | Fix Status |
+|------|------------------|----------|----------|------------|
+| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
-## Checklist
-- [ ] Entry doc created successfully
-- [ ] Scene source correct: customer_to_customer
-- [ ] Scene_id not lost in chain
-- [ ] Order snapshot immutable (readonly)
-- [ ] Related object state matches expectations
+---
+
+## Fix Record
+| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
+|--------|-------|-----------|-----------|--------|-----------------|--------|
+| | | | | | | |
+
+---
+
+## Final Result
+- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk

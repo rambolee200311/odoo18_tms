@@ -1,30 +1,33 @@
-# Scene: Warehouse Transfer — 详细操作指导
+# Warehouse Transfer — Operation Guide + Issue Log + Fix Record
 
-**Flow**: plan_driven | **Entry**: Pickup Plan | **Expected Scene**: warehouse_transfer
+**Flow**: plan_driven | **Entry**: Pickup Plan → Order | **Expected Scene**: warehouse_transfer
 
-## Prerequisites
-- Golden dataset base_data.xml imported
-- Scene `warehouse_transfer` exists in transport.scene
+---
 
-## Steps for plan_driven
+## Step-by-Step Operation
 
-### Step 1: Create Transport Request
-1. Open Transport Requests menu → Create
-2. Fill request_type = **plan_driven**, destination_type = **warehouse**
-3. Save
+| # | Action | Instructions | Expected Result | Pass? |
+|---|--------|-------------|-----------------|-------|
+| 5.1 | Create Request (plan_driven, transfer) | Create request: plan_driven, destination=warehouse_transfer, source_WH + dest_WH | Saved | [ ] |
+| 5.2 | Verify Bonded Transfer | If source/dest WH is bonded → is_bonded_transfer=True required | Constraint enforced | [ ] |
+| 5.3 | Schedule → Pickup Plan → Order | Drag to calendar, open Pickup Plan, Create Transport Order | Order created, scene_id=warehouse_transfer | [ ] |
 
-### Step 2: Schedule → Pickup Plan → Create Transport Order
-1. Go to Schedule Calendar, drag to date, open Pickup Plan, click Create Transport Order
-2. Verify scene chain
+---
 
-### Step 3: Verify
-- Request.scene_id = warehouse_transfer
-- Order.scene_id = warehouse_transfer (immutable snapshot)
-- Flow validation: allowed_flows matches request_type
+## Issues Found
+| Step | Issue Description | Severity | Reported | Fix Status |
+|------|------------------|----------|----------|------------|
+| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
-## Checklist
-- [ ] Entry doc created successfully
-- [ ] Scene source correct: warehouse_transfer
-- [ ] Scene_id not lost in chain
-- [ ] Order snapshot immutable (readonly)
-- [ ] Related object state matches expectations
+---
+
+## Fix Record
+| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
+|--------|-------|-----------|-----------|--------|-----------------|--------|
+| | | | | | | |
+
+---
+
+## Final Result
+- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
