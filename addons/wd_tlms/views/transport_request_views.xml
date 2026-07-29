@@ -44,7 +44,8 @@
                      <group>
                          <group string="Identity">
                              <field name="name" readonly="1"/>
-                             <field name="request_type"/>
+                             <field name="scene_id" options="{'no_create': True}"/>
+                            <field name="request_type"/>
                              <field name="destination_type"/>
                              <field name="cargo_type"/>
                              <field name="source_type"/>

@@ -1,138 +1,139 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class TransportRequest(models.Model):
-   _name = 'tlmp.transport.request'
-   _description = 'Transport Request (Unified Entry Point)'
-   _inherit = ['mail.thread', 'mail.activity.mixin']
-   _order = 'create_date desc, id desc'
-   _rec_name = 'name'
+    _name = 'tlmp.transport.request'
 
-   # ---- Identity ----
-   name = fields.Char(string='Request No.', required=True, copy=False,
+    _name = 'tlmp.transport.request'
+    _description = 'Transport Request (Unified Entry Point)'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'create_date desc, id desc'
+    _rec_name = 'name'
+        # ---- Identity ----
+    name = fields.Char(string='Request No.', required=True, copy=False,
                       default=lambda self: _('New'))
 
-   # ---- Flow Control (determines downstream path) ----
-   request_type = fields.Selection([
+    # ---- Flow Control (determines downstream path) ----
+    request_type = fields.Selection([
        ('plan_driven', 'Plan-Driven'),
        ('commercial', 'Commercial'),
-   ], string='Request Type', required=True, default='plan_driven',
+    ], string='Request Type', required=True, default='plan_driven',
        help='Plan-Driven: Schedule + pickup.plan + order. Commercial: Inquiry + Quote + order.')
 
-   destination_type = fields.Selection([
+    destination_type = fields.Selection([
        ('warehouse', 'Terminal / Depot to Our Warehouse'),
        ('warehouse_transfer', 'Our Warehouse Transfer'),
        ('customer', 'Terminal / Depot to Customer'),
        ('self_pickup', 'Customer Self-Pickup'),
-   ], string='Destination', required=True, default='warehouse',
+    ], string='Destination', required=True, default='warehouse',
        help='Aligns with IFFM import.pickup.requirement.pickup_scene.')
 
-   source_type = fields.Selection([
+    source_type = fields.Selection([
        ('iff', 'From IFF (wd_iffm)'),
        ('manual', 'Manual Entry'),
-   ], string='Source', default='manual', required=True)
+    ], string='Source', default='manual', required=True)
 
-   transport_type_id = fields.Many2one('tlmp.transport.type',
+    transport_type_id = fields.Many2one('tlmp.transport.type',
        string='Transport Type', required=True,
        default=lambda self: self.env['tlmp.transport.type']._get_by_code('port_to_warehouse').id)
 
-   # ---- Cargo type control ----
-   cargo_type = fields.Selection([
+    # ---- Cargo type control ----
+    cargo_type = fields.Selection([
        ('container', 'Container'),
        ('pallet', 'Pallet / Piece'),
-   ], string='Cargo Type', default='container', required=True)
+    ], string='Cargo Type', default='container', required=True)
 
-   # ---- Cargo fields (pallet goes to pickup.plan, container mgmt at pickup.plan level) ----
-   cargo_line_ids = fields.One2many("tlmp.transport.cargo.line", "request_id", string="Cargo Lines")
-   pallet_count = fields.Integer(string="Pallets")
-   package_count = fields.Integer(string='Packages')
-   cargo_weight = fields.Float(string='Weight (kg)', digits='Stock Weight')
-   cargo_volume = fields.Float(string='Volume (m3)', digits='Volume')
-   cargo_description = fields.Text(string='Cargo Description')
+    # ---- Cargo fields (pallet goes to pickup.plan, container mgmt at pickup.plan level) ----
+    cargo_line_ids = fields.One2many("tlmp.transport.cargo.line", "request_id", string="Cargo Lines")
+    pallet_count = fields.Integer(string="Pallets")
+    package_count = fields.Integer(string='Packages')
+    cargo_weight = fields.Float(string='Weight (kg)', digits='Stock Weight')
+    cargo_volume = fields.Float(string='Volume (m3)', digits='Volume')
+    cargo_description = fields.Text(string='Cargo Description')
 
-   # ---- Partner ----
-   partner_id = fields.Many2one('res.partner', string='Customer',
+    # ---- Partner ----
+    partner_id = fields.Many2one('res.partner', string='Customer',
                                 domain=[('is_company', '=', True)])
-   customer_ref = fields.Char(string='Customer Reference')
-   contact_person = fields.Char(string='Contact Person')
-   contact_phone = fields.Char(string='Contact Phone')
-   contact_email = fields.Char(string='Contact Email')
+    customer_ref = fields.Char(string='Customer Reference')
+    contact_person = fields.Char(string='Contact Person')
+    contact_phone = fields.Char(string='Contact Phone')
+    contact_email = fields.Char(string='Contact Email')
 
-   # ---- Destination / Scene fields ----
-   terminal_id = fields.Many2one('res.partner', string='Origin Terminal / Port',
+    # ---- Destination / Scene fields ----
+    terminal_id = fields.Many2one('res.partner', string='Origin Terminal / Port',
                                  domain=[('is_company', '=', True)])
-   warehouse_id = fields.Many2one('stock.warehouse', string='Destination Warehouse')
-   source_warehouse_id = fields.Many2one('stock.warehouse', string='Source Warehouse')
-   delivery_address = fields.Text(string='Delivery Address')
-   delivery_contact = fields.Char(string='Delivery Contact')
-   delivery_phone = fields.Char(string='Delivery Phone')
-   pickup_location_id = fields.Many2one('res.partner', string='Pickup Location')
-   delivery_location_id = fields.Many2one('res.partner', string='Delivery Location')
+    warehouse_id = fields.Many2one('stock.warehouse', string='Destination Warehouse')
+    source_warehouse_id = fields.Many2one('stock.warehouse', string='Source Warehouse')
+    delivery_address = fields.Text(string='Delivery Address')
+    delivery_contact = fields.Char(string='Delivery Contact')
+    delivery_phone = fields.Char(string='Delivery Phone')
+    pickup_location_id = fields.Many2one('res.partner', string='Pickup Location')
+    delivery_location_id = fields.Many2one('res.partner', string='Delivery Location')
 
-   # ---- Scheduling fields ----
-   carrier_id = fields.Many2one('res.partner', string='Trucking Company',
+    # ---- Scheduling fields ----
+    carrier_id = fields.Many2one('res.partner', string='Trucking Company',
                                 domain=[('is_carrier', '=', True)])
-   planned_pickup_date = fields.Datetime(string='Planned Pickup')
-   driver_name = fields.Char(string='Driver Name')
-   driver_phone = fields.Char(string='Driver Phone')
-   vehicle_plate = fields.Char(string='Vehicle Plate')
+    planned_pickup_date = fields.Datetime(string='Planned Pickup')
+    driver_name = fields.Char(string='Driver Name')
+    driver_phone = fields.Char(string='Driver Phone')
+    vehicle_plate = fields.Char(string='Vehicle Plate')
 
-   # ---- Dates ----
-   requested_pickup_date = fields.Datetime(string='Requested Pickup')
-   requested_delivery_date = fields.Datetime(string='Requested Delivery')
+    # ---- Dates ----
+    requested_pickup_date = fields.Datetime(string='Requested Pickup')
+    requested_delivery_date = fields.Datetime(string='Requested Delivery')
 
-   # ---- Downstream document links ----
-   pickup_plan_ids = fields.One2many('pickup.plan', 'transport_request_id',
+    # ---- Downstream document links ----
+    pickup_plan_ids = fields.One2many('pickup.plan', 'transport_request_id',
                                       string='Pickup Plans', copy=False)
-   inquiry_ids = fields.One2many('tlmp.transport.inquiry', 'request_id',
+    inquiry_ids = fields.One2many('tlmp.transport.inquiry', 'request_id',
                                   string='Inquiries', copy=False)
-   quote_ids = fields.One2many('tlmp.transport.quote', 'request_id',
+    quote_ids = fields.One2many('tlmp.transport.quote', 'request_id',
                                 string='Quotes', copy=False)
 
-   # ---- Misc ----
-   special_requirements = fields.Text(string='Special Requirements')
-   has_dangerous_goods = fields.Boolean(string='Dangerous Goods', default=False)
-   customs_declaration_ref = fields.Char(string='Customs Decl. Ref.')
-   wms_transfer_order_ref = fields.Char(string='WMS Transfer Ref.')
+    # ---- Misc ----
+    special_requirements = fields.Text(string='Special Requirements')
+    has_dangerous_goods = fields.Boolean(string='Dangerous Goods', default=False)
+    customs_declaration_ref = fields.Char(string='Customs Decl. Ref.')
+    wms_transfer_order_ref = fields.Char(string='WMS Transfer Ref.')
 
-   # ---- Status ----
-   state = fields.Selection([
+    # ---- Status ----
+    state = fields.Selection([
        ('draft', 'Draft'),
        ('confirmed', 'Confirmed'),
        ('cancelled', 'Cancelled'),
-   ], string='Status', default='draft', tracking=True)
+    ], string='Status', default='draft', tracking=True)
 
-   company_id = fields.Many2one('res.company', string='Company',
+    company_id = fields.Many2one('res.company', string='Company',
                                  default=lambda self: self.env.company)
-   active = fields.Boolean(default=True)
+    active = fields.Boolean(default=True)
 
-   # -----------------------------------------------------------
-   # Sequence
-   # -----------------------------------------------------------
-   @api.model_create_multi
-   def create(self, vals_list):
+    # -----------------------------------------------------------
+    # Sequence
+    # -----------------------------------------------------------
+    @api.model_create_multi
+    def create(self, vals_list):
        for vals in vals_list:
            if vals.get('name', _('New')) == _('New'):
                vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.request.seq') or _('New')
        return super().create(vals_list)
 
-   # -----------------------------------------------------------
-   # State transitions
-   # -----------------------------------------------------------
-   def action_confirm(self):
+    # -----------------------------------------------------------
+    # State transitions
+    # -----------------------------------------------------------
+    def action_confirm(self):
        self.write({'state': 'confirmed'})
        return True
 
-   def action_cancel(self):
+    def action_cancel(self):
        self.write({'state': 'cancelled'})
        return True
 
-   # -----------------------------------------------------------
-   # Plan-Driven flow: Schedule
-   # -----------------------------------------------------------
-   def action_go_schedule(self):
+    # -----------------------------------------------------------
+    # Plan-Driven flow: Schedule
+    # -----------------------------------------------------------
+    def action_go_schedule(self):
        self.ensure_one()
        if self.request_type != 'plan_driven':
            raise UserError(_('Schedule is only available for plan-driven requests.'))
@@ -142,10 +143,10 @@ class TransportRequest(models.Model):
            'target': 'self',
        }
 
-   # -----------------------------------------------------------
-   # Plan-Driven flow: Create Transport Order
-   # -----------------------------------------------------------
-   def action_create_transport_order(self):
+    # -----------------------------------------------------------
+    # Plan-Driven flow: Create Transport Order
+    # -----------------------------------------------------------
+    def action_create_transport_order(self):
        self.ensure_one()
        if self.request_type != 'plan_driven':
            raise UserError(_('Direct order creation is for plan-driven requests only.'))
@@ -173,10 +174,10 @@ class TransportRequest(models.Model):
            'res_id': order.id, 'target': 'current',
        }
 
-   # -----------------------------------------------------------
-   # Commercial flow: Start Inquiry
-   # -----------------------------------------------------------
-   def action_start_inquiry(self):
+    # -----------------------------------------------------------
+    # Commercial flow: Start Inquiry
+    # -----------------------------------------------------------
+    def action_start_inquiry(self):
        self.ensure_one()
        if self.request_type != 'commercial':
            raise UserError(_('Inquiry is only available for commercial requests.'))
@@ -193,12 +194,12 @@ class TransportRequest(models.Model):
            'res_id': inquiry.id, 'target': 'current',
        }
 
-   # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-   # -----------------------------------------------------------
-   # Commercial flow: Create Orders from Accepted Quotes
-   # -----------------------------------------------------------
-   def action_create_orders_from_quotes(self):
+    # -----------------------------------------------------------
+    # Commercial flow: Create Orders from Accepted Quotes
+    # -----------------------------------------------------------
+    def action_create_orders_from_quotes(self):
        self.ensure_one()
        if self.request_type != 'commercial':
           raise UserError(_('This action is only available for commercial requests.'))
@@ -215,10 +216,10 @@ class TransportRequest(models.Model):
        return {'type': 'ir.actions.act_window', 'res_model': 'tlmp.transport.request', 'view_mode': 'form', 'res_id': self.id}
 
 
-   # Constraints
-   # -----------------------------------------------------------
-   @api.constrains('destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id')
-   def _check_destination_fields(self):
+    # Constraints
+    # -----------------------------------------------------------
+    @api.constrains('destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id')
+    def _check_destination_fields(self):
        for rec in self:
            if rec.destination_type in ('warehouse', 'warehouse_transfer') and not rec.warehouse_id:
                raise UserError(_('Destination Warehouse required for warehouse/transfer.'))
@@ -227,24 +228,24 @@ class TransportRequest(models.Model):
            if rec.destination_type in ('customer', 'self_pickup') and not rec.partner_id:
                raise UserError(_('Customer required for delivery/self-pickup.'))
 
-   # -----------------------------------------------------------
-   # IFFM reference (read-only soft link)
-   # -----------------------------------------------------------
-   @api.model
-   def _get_reference_models(self):
+    # -----------------------------------------------------------
+    # IFFM reference (read-only soft link)
+    # -----------------------------------------------------------
+    @api.model
+    def _get_reference_models(self):
        models = []
        if self.env.get('import.pickup.requirement'):
            models.append(('import.pickup.requirement', 'Import Pickup Requirement'))
        return models
 
-   iff_requirement_ref = fields.Reference(
+    iff_requirement_ref = fields.Reference(
        selection=lambda self: self._get_reference_models(),
        string='IFF Pickup Requirement',
        help='Read-only reference to import.pickup.requirement (wd_iffm). No hard dependency.')
 
-   # ---- Onchange: auto-fill from IFFM reference ----
-   @api.onchange('iff_requirement_ref')
-   def _onchange_iff_requirement_ref(self):
+    # ---- Onchange: auto-fill from IFFM reference ----
+    @api.onchange('iff_requirement_ref')
+    def _onchange_iff_requirement_ref(self):
        if not self.iff_requirement_ref:
            return
        req = self.iff_requirement_ref

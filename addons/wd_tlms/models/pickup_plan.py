@@ -14,6 +14,11 @@ class PickupPlan(models.Model):
                        default=lambda self: _('New'))
 
     # ---- Source ----
+    # Sprint40: Scene inheritance from request (related, readonly)
+    scene_id = fields.Many2one(
+        'tlmp.transport.scene', string='Transport Scene',
+        related='transport_request_id.scene_id', store=True, readonly=True)
+
     source_type = fields.Selection([
         ('iff', 'From IFF (wd_iffm)'),
         ('manual', 'Manual Entry'),

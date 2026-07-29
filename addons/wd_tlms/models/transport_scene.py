@@ -23,6 +23,17 @@ class TransportScene(models.Model):
     active = fields.Boolean(string='Active', default=True)
     description = fields.Text(string='Description')
 
+    # Sprint40: flow + destination validation
+    allowed_flow_ids = fields.Many2many(
+        'tlmp.transport.flow.type', string='Allowed Flow Types',
+        help='Request types this scene supports (e.g. plan_driven, commercial)')
+    allowed_destination_ids = fields.Many2many(
+        'tlmp.transport.destination.type', string='Allowed Destination Types',
+        help='Destination types this scene supports (e.g. warehouse, customer)')
+    default_transport_type_id = fields.Many2one(
+        'tlmp.transport.type', string='Default Transport Type',
+        help='Default transport type for this scene (reduces hardcoded mapping)')
+
     event_path_ids = fields.One2many(
         'tlmp.transport.scene.event', 'scene_id',
         string='Scene-Event Paths')

@@ -13,7 +13,9 @@ class TransportOrder(models.Model):
                        default=lambda self: _('New'))
     transport_type_id = fields.Many2one('tlmp.transport.type',
         string='Transport Type', required=True)
-    scene_id = fields.Many2one('tlmp.transport.scene', string='Transport Scene')
+    scene_id = fields.Many2one('tlmp.transport.scene', string='Transport Scene',
+        readonly=True, copy=False,
+        help='Immutable snapshot — set at creation from request.scene_id, cannot change later.')
     fleet_operation_mode = fields.Selection([
         ('own_fleet', 'Own Fleet'),
         ('contracted', 'Contracted'),

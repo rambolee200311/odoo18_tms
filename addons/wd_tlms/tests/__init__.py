@@ -48,3 +48,4 @@ from . import test_settlement_invariants
 from . import test_settlement_security_matrix
 from . import test_settlement_upgrade
 from . import test_settlement_performance_baseline
+from . import test_scene_flow

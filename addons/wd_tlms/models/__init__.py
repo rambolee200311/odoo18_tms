@@ -54,3 +54,5 @@ from . import transport_settlement_exception
 
 from . import transport_settlement_exception_rule
 from . import transport_settlement_exception_rule_execution
+from . import transport_flow_type
+from . import transport_destination_type
