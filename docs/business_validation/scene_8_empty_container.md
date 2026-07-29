@@ -1,41 +1,70 @@
-# Empty Container Move — Operation Guide + Issue Log + Fix Record
-
-**Flow**: plan_driven | **Entry**: Container Service → Order | **Expected Scene**: empty_depot
-
 ## Prerequisites
-| # | 档案 | 检查方式 | 如果缺失 |
-|---|------|---------|---------|
-| 0.1 | Scene: **empty_depot** | Scenes 列表 | 升级模块或手动创建 |
-| 0.2 | Container Master：至少一个柜档案 | Container → Masters | 手动创建（如 "MSCU1234567", 40HQ） |
-| 0.3 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
-| 0.4 | Warehouse | Inventory → Warehouses | 手动创建 |
-| 0.5 | Depot Partner | Contacts | 手动创建（如 "ECT Delta Terminal"） |
 
+### Required Data
+| Item | Status | How to Verify |
+|------|--------|--------------|
+| Scene: empty_depot | [ ] | Settings -> Scenes |
+| Container Master record | [ ] | Container -> Masters |
+| Depot Partner | [ ] | Contacts |
+| Warehouse | [ ] | Inventory -> Warehouses |
+| Carrier Partner | [ ] | Contacts |
 
+### If Missing
+| Item | How to Create |
+|------|--------------|
+| Scene | Upgrade module (-u wd_tlms) or create manually |
+| Partners | Create in Contacts |
+| Warehouses | Create in Inventory configuration |
 
+### Verification Checklist
+- [ ] Scene empty_depot exists
+- [ ] Container Master exists (e.g. MSCU1234567)
+- [ ] Depot and warehouse exist
+- [ ] Carrier partner exists
+- [ ] User has required permissions
 
+---
 
 ## Step-by-Step Operation
 
-| # | Action | Instructions | Expected Result | Pass? |
-|---|--------|-------------|-----------------|-------|
-| 8.1 | Create Container Service Request | Open Container Service → Create, fill depot+warehouse+cargo, save | Saved | [ ] |
-| 8.2 | Confirm + Create Dispatch Order | Click Confirm → Create Dispatch Order | Transport Order created | [ ] |
-| 8.3 | Verify Scene | Open created Order → check scene_id | scene_id = empty_depot (from container service context, NOT transport.request) | [ ] |
+### Step 8.1: Create Container Service Request
+1. Container Service -> Create. Direction = Depot -> Warehouse (or reverse)
+2. Fill Container, Depot, Warehouse, Carrier, Planned Date. Save.
 
+### Step 8.2: Confirm -> Create Transport Order
+1. Click Confirm, then Create Dispatch Order
+2. Expected: Transport Order created
+
+### Step 8.3: Verify Scene
+1. Open created Order -> check scene_id
+2. Expected: order.scene_id = empty_depot (from container service, NOT transport.request)
+
+---
+
+## Failure Handling
+
+| Symptom | Likely Cause | Action |
+|---------|-------------|--------|
+| Field or button missing | View bug / missing permission | Record bug -> Codex fixes |
+| Cannot select value | Missing prerequisite | Check Prerequisites section |
+| Save fails | Validation error | Follow error message |
+| Scene chain broken | scene_id not inherited | Record as blocking bug |
+
+---
 
 ## Issues Found
-| Step | Issue Description | Severity | Reported | Fix Status |
-|------|------------------|----------|----------|------------|
-| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
-
+| Bug ID | Scene | Step | Description | Severity | Root Cause | Fix Scope | Commit | Status |
+|--------|-------|------|-------------|----------|-----------|-----------|--------|--------|
+| | | | | | | | | |
 
 ## Fix Record
-| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
-|--------|-------|-----------|-----------|--------|-----------------|--------|
-| | | | | | | |
-
+| Bug ID | Root Cause | Fix Summary | Commit | Regression Test | Status |
+|--------|-----------|-------------|--------|-----------------|--------|
+| | | | | | |
 
 ## Final Result
-- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
-- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Executor**:
+- **Date**:
+- **Environment**:
+- **Context Version**:

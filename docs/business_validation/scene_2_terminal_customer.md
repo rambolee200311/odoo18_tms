@@ -1,43 +1,76 @@
-# Terminal → Customer — Operation Guide + Issue Log + Fix Record
-
-**Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: terminal_to_customer
-
 ## Prerequisites
-| # | 档案 | 检查方式 | 如果缺失 |
-|---|------|---------|---------|
-| 0.1 | Scene: **terminal_to_customer** | Scenes 列表 | 升级模块或手动创建 |
-| 0.2 | Partner: 至少一个客户公司（is_company=True） | Contacts | 手动创建（如 "ACME B.V."） |
-| 0.3 | Partner: 至少一个承运商（is_carrier=True） | Contacts → 筛选 carrier | 手动创建（如 "DHL Freight"） |
-| 0.4 | Terminal Partner | Contacts | 手动创建（如 "Rotterdam Maasvlakte Terminal"） |
-| 0.5 | 费用类型：至少一个 charge type | Settlement → Charge Types | 升级模块 |
 
+### Required Data
+| Item | Status | How to Verify |
+|------|--------|--------------|
+| Scene: terminal_to_customer | [ ] | Settings -> Scenes |
+| Company Partner (customer) | [ ] | Contacts |
+| Carrier Partner (is_carrier=True) | [ ] | Contacts |
+| Terminal Partner | [ ] | Contacts |
 
+### If Missing
+| Item | How to Create |
+|------|--------------|
+| Scene | Upgrade module (-u wd_tlms) or create manually |
+| Partners | Create in Contacts |
+| Warehouses | Create in Inventory configuration |
 
+### Verification Checklist
+- [ ] Scene terminal_to_customer exists
+- [ ] Customer partner exists
+- [ ] Carrier partner exists
+- [ ] User has required permissions
 
+---
 
 ## Step-by-Step Operation
 
-| # | Action | Instructions | Expected Result | Pass? |
-|---|--------|-------------|-----------------|-------|
-| 2.1 | Create Transport Request | Transport Requests → Create, request_type=commercial, destination_type=customer, save | Request state=draft | [ ] |
-| 2.2 | Start Inquiry | Click "Start Inquiry" | Inquiry created, state=draft, request_id=the request | [ ] |
-| 2.3 | Accept Carrier Response | Add carrier response (DHL, 850 EUR), accept | Inquiry state=accepted | [ ] |
-| 2.4 | Create & Accept Quote | Create Quote from inquiry, set cost+margin, accept | Order auto-created, scene_id=request.scene_id | [ ] |
-| 2.5 | Verify Fee Lines | Open Order → Fees tab | carrier_cost line exists, customer_charge line exists (if applicable) | [ ] |
+### Step 2.1: Create Transport Request
+1. Transport Requests -> Create -> Request Type = **Commercial**, Destination = **Terminal / Depot to Customer**
+2. Fill Customer, Origin Terminal, Delivery Address. Save.
 
+### Step 2.2: Start Inquiry
+1. Click **Start Inquiry**
+2. Expected: Inquiry created (state=Draft)
+
+### Step 2.3: Accept Carrier Response
+1. Add carrier response (e.g. DHL, EUR 850), click Accept
+2. Expected: Inquiry state = Accepted
+
+### Step 2.4: Create and Accept Quote
+1. From Inquiry -> Create Quote. Set Carrier Cost + Margin. Set state to Accepted.
+2. Expected: Order auto-created. order.scene_id = terminal_to_customer
+
+### Step 2.5: Verify Fee Lines
+1. Open Order -> Fees tab
+2. Expected: carrier_cost fee line exists
+
+---
+
+## Failure Handling
+
+| Symptom | Likely Cause | Action |
+|---------|-------------|--------|
+| Field or button missing | View bug / missing permission | Record bug -> Codex fixes |
+| Cannot select value | Missing prerequisite | Check Prerequisites section |
+| Save fails | Validation error | Follow error message |
+| Scene chain broken | scene_id not inherited | Record as blocking bug |
+
+---
 
 ## Issues Found
-| Step | Issue Description | Severity | Reported | Fix Status |
-|------|------------------|----------|----------|------------|
-| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
-
+| Bug ID | Scene | Step | Description | Severity | Root Cause | Fix Scope | Commit | Status |
+|--------|-------|------|-------------|----------|-----------|-----------|--------|--------|
+| | | | | | | | | |
 
 ## Fix Record
-| Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
-|--------|-------|-----------|-----------|--------|-----------------|--------|
-| | | | | | | |
-
+| Bug ID | Root Cause | Fix Summary | Commit | Regression Test | Status |
+|--------|-----------|-------------|--------|-----------------|--------|
+| | | | | | |
 
 ## Final Result
-- **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
-- **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Manual**: pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Executor**:
+- **Date**:
+- **Environment**:
+- **Context Version**:
