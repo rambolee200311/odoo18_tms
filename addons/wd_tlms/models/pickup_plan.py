@@ -17,7 +17,7 @@ class PickupPlan(models.Model):
     # Sprint40: Scene inheritance from request (related, readonly)
     scene_id = fields.Many2one(
         'tlmp.transport.scene', string='Transport Scene',
-        related='transport_request_id.scene_id', store=True, readonly=True)
+        readonly=True, help='Set from request when created. Not using related to avoid setup_related ordering issues (pickup.plan < transport.request alphabetically).')
 
     source_type = fields.Selection([
         ('iff', 'From IFF (wd_iffm)'),
