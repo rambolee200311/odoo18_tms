@@ -41,7 +41,6 @@ from . import transport_carrier_allocation
 from . import transport_reference
 from . import transport_match_rule
 from . import transport_match_service
-from .. import services
 from . import transport_carrier_profile
 from . import transport_carrier_batch
 from . import transport_match_execution
@@ -52,7 +51,8 @@ from . import transport_carrier_invoice_template
 from . import transport_carrier_invoice_import
 from . import transport_settlement_exception
 
-from . import transport_settlement_exception_rule
-from . import transport_settlement_exception_rule_execution
 from . import transport_flow_type
 from . import transport_destination_type
+from . import transport_settlement_exception_rule
+from . import transport_settlement_exception_rule_execution
+from .. import services
