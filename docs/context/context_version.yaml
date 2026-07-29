@@ -377,3 +377,13 @@ bind_asset_folder:
       - 8 test classes covering rule lifecycle/evaluator/execution/scope/migration
     update_type: 架构升级 + 新功能开发
     effect_scope: settlement_exception_rule_engine
+  1.0.58:
+    update_content: |
+      Sprint41 Transport Scenario Validation & Operational Readiness
+      - 8/8 场景目录覆盖（Business Scenario Catalog）
+      - 4 个黄金数据集（最小自洽 base_data + scenario_s*）
+      - 4 个自动化 BAT（标准化 6 项断言模板）
+      - 8 份人工验证流程 + 结果记录
+      - 不修改任何业务模型
+    update_type: 质量硬化
+    effect_scope: transport_scenario_validation

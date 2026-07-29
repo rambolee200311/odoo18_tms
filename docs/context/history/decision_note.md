@@ -1212,3 +1212,33 @@ Freeze Settlement Domain Contract. Sprint39 stops all new feature development.
 - Settlement Domain Contract is now a governance asset
 - Future changes require formal intent + invariant update
 - Sprint39 does not bump context_version (domain contract unchanged)
+
+
+---
+
+## ADR-041: Transport Scenario Validation
+
+**Date**: 2026-07-29
+**Sprint**: 41
+**Intent**: INT-TMS-SPRINT41-001
+
+### Context
+Sprint40 completed Scene Domain Alignment (scene_id贯穿 + flow validation + order snapshot). Technical correctness verified. Business correctness unverified — the 8 transport scenarios may not be fully expressible by the unified model.
+
+### Decision
+Validate business scenarios without modifying any models. Three-layer coverage:
+- 8/8 scenarios → Business Scenario Catalog (directory with mapping matrix)
+- 4/8 scenarios → Business Acceptance Tests (S1/S5/S6/S8 × 6 assertion template)
+- 8/8 scenarios → Manual Verification Procedures (QA-verifiable docs)
+
+**Key Rules:**
+1. No model changes — pure validation sprint
+2. Golden datasets are minimal and self-contained (base_data + per-scenario)
+3. BATs use unified 6-assertion template (entry/scene/chain/snapshot/state/settlement)
+4. Scenario catalog serves as contract document between business and engineering
+5. Result summary closes the validation loop
+
+### Consequences
+- Sprint42 can start from a validated scenario baseline
+- Future functional changes must update the scenario catalog
+- Golden datasets become the long-term regression baseline
