@@ -8,7 +8,7 @@
 
 | # | Action | Instructions | Expected Result | Pass? |
 |---|--------|-------------|-----------------|-------|
-| 1.1 | Create Transport Request | Transport Requests → Create, fill request_type=plan_driven, destination_type=warehouse, save | Request state=draft, request_type=plan_driven | [ ] |
+| 1.1 | Create Transport Request | Transport Requests → Create. Fill: **Request Type**=Plan-Driven, **Cargo Type**=Container, **Destination**=Terminal / Depot to Our Warehouse, **Origin Terminal**=选一个 terminal partner（如 Rotterdam Maasvlakte Terminal），**Destination Warehouse**=选一个仓库（如 Rotterdam Warehouse）。Save | Request state=draft, request_type=plan_driven, terminal_id 和 warehouse_id 已填写 | [ ] |
 | 1.2 | Open Schedule Calendar | Click "Go to Schedule" header button | Calendar opens with request in left panel | [ ] |
 | 1.3 | Schedule via Drag-and-Drop | Drag request to a date cell | Pickup Plan created automatically | [ ] |
 | 1.4 | Verify Scene Chain | Open Pickup Plan → confirm scene_id inherited from request (readonly) | scene_id = terminal_to_warehouse, NOT editable | [ ] |
