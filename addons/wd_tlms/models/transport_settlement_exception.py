@@ -145,6 +145,9 @@ class SettlementException(models.Model):
 
     # ── State Transitions ──
     def action_assign(self):
+        for r in self:
+            if not r.assigned_to:
+                r.assigned_to = self.env.uid
         self.write({'state': 'assigned', 'assigned_at': fields.Datetime.now()})
 
     def action_start_processing(self):
@@ -197,7 +200,7 @@ class SettlementException(models.Model):
     @api.constrains('state', 'case_id')
     def _check_manual_exception_requires_case(self):
         for r in self:
-            if r.resolution_mode == 'manual' and r.state in ('assigned', 'processing', 'resolved') and not r.case_id:
+            if r.resolution_mode == 'manual' and r.state in ('processing', 'resolved') and not r.case_id:
                 raise ValidationError(_('Manual exception in %s requires case_id (invariant: case_created_for_manual_exception).') % r.state)
 
     @api.constrains('state')

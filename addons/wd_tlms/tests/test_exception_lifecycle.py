@@ -36,6 +36,10 @@ class TestExceptionLifecycle(TransactionCase):
     def test_04_processing_to_resolved_requires_note(self):
         self.exception.write({'assigned_to': self.env.uid})
         self.exception.action_assign()
+        case = self.env['tlmp.carrier.settlement.case'].create({
+            'name': 'Test Case', 'case_type': 'match_failed',
+        })
+        self.exception.write({'case_id': case.id})
         self.exception.action_start_processing()
         with self.assertRaises(ValidationError):
             self.exception.action_resolve()
@@ -43,6 +47,10 @@ class TestExceptionLifecycle(TransactionCase):
     def test_05_full_lifecycle(self):
         self.exception.write({'assigned_to': self.env.uid})
         self.exception.action_assign()
+        case = self.env['tlmp.carrier.settlement.case'].create({
+            'name': 'Test Case', 'case_type': 'match_failed',
+        })
+        self.exception.write({'case_id': case.id})
         self.exception.action_start_processing()
         self.exception.write({'resolution_note': 'Resolved by test'})
         self.exception.action_resolve()
@@ -101,7 +109,7 @@ class TestExceptionCaseLink(TransactionCase):
             'source_snapshot': '{}',
         })
         case = self.env['tlmp.carrier.settlement.case'].create({
-            'name': 'Test Case',
+            'name': 'Test Case', 'case_type': 'match_failed',
         })
         exc.write({'case_id': case.id})
         self.assertEqual(exc.case_id.id, case.id)
