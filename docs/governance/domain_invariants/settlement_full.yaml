@@ -1,0 +1,87 @@
+# Settlement Domain Invariant Aggregation Manifest
+# Sprint39: Sprint36/37/38 invariants aggregated. NOT copied — each invariant lives in its original sprint.
+# Any invariant change requires new intent + regression scenario.
+# Version: 1.0 | Sprint: 39
+
+invariants:
+
+  billing_amount_conservation:
+    source: sprint36
+    file: intent_sprint36_settlement_test_hardening.yaml
+    invariant: settlement_amount_reconciliation
+    rule: billing_line_amount = allocated_amount + remaining_amount + adjustment_amount
+    automated_test: TestSettlementAmountInvariant
+    criticality: P0
+
+  allocation_never_exceeds_billing:
+    source: sprint36
+    file: intent_sprint36_settlement_test_hardening.yaml
+    invariant: allocation_never_exceed_billing
+    rule: allocation_total <= billing_line_total
+    automated_test: TestSettlementAmountInvariant.test_01
+    criticality: P0
+
+  closed_batch_immutable:
+    source: sprint36
+    file: intent_sprint36_settlement_test_hardening.yaml
+    invariant: closed_batch_immutable
+    rule: closed batch = allocation immutable
+    automated_test: TestSettlementStateMachine.test_02
+    criticality: P0
+
+  exception_closed_immutable:
+    source: sprint37
+    file: intent_sprint37_exception_management.yaml
+    invariant: exception_closed_immutable
+    rule: closed/cancelled exception immutable
+    automated_test: TestExceptionLifecycle
+    criticality: P0
+
+  exception_assigned_requires_owner:
+    source: sprint37
+    file: intent_sprint37_exception_management.yaml
+    invariant: exception_assigned_requires_owner
+    criticality: P0
+
+  case_created_for_manual_exception:
+    source: sprint37
+    file: intent_sprint37_exception_management.yaml
+    invariant: case_created_for_manual_exception
+    criticality: P0
+
+  auto_resolution_whitelist:
+    source: sprint37
+    file: intent_sprint37_exception_management.yaml
+    invariant: auto_resolution_whitelist
+    criticality: P0
+
+  single_active_rule_version:
+    source: sprint38
+    file: intent_sprint38_rule_engine.yaml
+    invariant: single_active_rule_version
+    automated_test: TestExceptionRule.test_03
+    criticality: P0
+
+  rule_execution_traceable:
+    source: sprint38
+    file: intent_sprint38_rule_engine.yaml
+    invariant: rule_execution_traceable
+    criticality: P0
+
+  rule_action_safe:
+    source: sprint38
+    file: intent_sprint38_rule_engine.yaml
+    invariant: rule_action_safe
+    criticality: P0
+
+  settlement_fact_source_only:
+    source: sprint39
+    file: intent_sprint39_stabilization.yaml
+    invariant: settlement_fact_source_only
+    rule: settlement calculation uses billing/allocation only
+    validation: import/exception/rule_execution cannot participate
+    criticality: P0
+
+frozen: true
+freeze_date: 2026-07-29
+change_policy: new_intent_required

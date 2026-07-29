@@ -1,0 +1,198 @@
+# ==============================================================
+# 【Sprint39 Intent 契约 V2】
+# 功能：Settlement Domain Production Readiness — 生产就绪验证
+# 前置基线：Sprint38 Exception Rule Engine
+# 基线版本：context_version: 1.0.55（不升级——本 sprint 不改变领域契约）
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT39-001
+intent_work_type: Maintenance
+intent_change_type: Quality Hardening
+title: Settlement Domain Production Readiness — 生产就绪验证
+
+target_scope: >
+  Sprint27-38 完成了 Settlement Domain 全功能闭环。
+  Sprint39 停止所有新业务能力建设，专注冻结 Settlement Domain Contract。
+
+  当前最大风险：
+  - Domain Contract 未冻结——模型/服务边界仍可被任意修改
+  - Invariant 未形成自动门禁——金额守恒、幂等、权限没有自动化保障
+  - 回归链无法证明 Settlement 全流程正确——Import→Billing→Matching→...→Export 的端到端一致性未验证
+  - 升级路径未经验证——Sprint30→39 的 schema 迁移未被测试
+
+  Sprint39 只做四件事：
+  1. E2E 回归基线（4 Case：正常链 / 异常链 / Rule 链 / 修正链）
+  2. Domain Invariant 全量自动检查（aggregation manifest，不复制 invariants）
+  3. 已有缺陷修复（严格受控——每个 fix 需 bug_id + root_cause + regression_test）
+  4. 升级测试（Sprint30→39 schema 验证）
+
+  不做：新模型 / 新字段 / 新状态机 / 新规则 / Dashboard / BI / Intelligence / UI 优化。
+  不做：性能基准设 SLA（仅做观察记录 P2）。
+  不做：复制或合并现有 invariants（仅 aggregation manifest）。
+
+accept_criteria:
+  # ======== P0: E2E 回归基线（4 Case）========
+  - "test_settlement_e2e_regression.py 覆盖 4 个 Case"
+  - "Case 1（正常链）：invoice → billing → matching → allocation → batch → approval → export——金额一致"
+  - "Case 2（异常链）：bad invoice → exception → case → resolution——异常闭环"
+  - "Case 3（Rule 链）：rule → execution → exception → rule_execution_id 追溯完整"
+  - "Case 4（修正链）：original allocation → correction/reversal → replacement → final reconciliation——original + reversal + replacement = final"
+
+  # ======== P0: Domain Invariant 全量自动检查 ========
+  - "governance/domain_invariants/settlement_full.yaml 作为 aggregation manifest（不复制原始 invariants）"
+  - "来源：billing.yaml / matching.yaml / allocation.yaml / batch.yaml / case.yaml / exception.yaml / rule.yaml"
+  - "自动化测试：每个 invariant 对应一个自动化 TestCase，100% PASS"
+  - "新增：settlement_fact_source_only — 结算计算仅允许 billing/allocation 事实，禁止使用 import/exception/rule_execution"
+
+  # ======== P0: 缺陷修复（严格受控）========
+  - "每个代码 fix 必须记录：bug_id / root_cause / 修复内容 / regression_test"
+  - "禁止改变业务规则 / 状态机设计 / 模型字段定义"
+  - "修复范围仅限已有 bug，不新增逻辑"
+  - "禁止在修复过程中引入新字段 / 新方法 / 新状态"
+  - "未记录在 bugfix_records.yaml 的修改视为违规"
+
+  # ======== P0: Domain Coverage（非 assertion count）========
+  - "Settlement domain test coverage（按领域场景）"
+  - "billing 场景覆盖：创建/确认/取消/幂等/金额计算"
+  - "matching 场景覆盖：自动匹配/低置信度/幂等"
+  - "allocation 场景覆盖：创建/金额守恒/修正/历史"
+  - "batch 场景覆盖：submit/approve/close/cancel/reject"
+  - "case 场景覆盖：创建/生命周期/关闭"
+  - "exception 场景覆盖：生命周期/auto_resolution/case_link/SLA"
+  - "rule 场景覆盖：CRUD/activate/version/single_active/scope/evaluator"
+
+  # ======== P1: 升级测试 ========
+  - "test_settlement_upgrade.py 验证 Sprint30→39 schema 升级不报错"
+  - "验证字段/模型/governance asset 完整性"
+
+  # ======== P2: 性能观察 ========
+  - "test_settlement_performance_baseline.py 仅记录观察值（不设 SLA）"
+  - "记录：execution_time / dataset_size / 环境信息"
+
+  # ======== P0: Gate ========
+  - "verify.py 8/8 PASS"
+  - "odoo_check.py PASS（require_escalated）"
+  - "全量 settlement tests PASS"
+
+source:
+  type: regular_audit
+  origin_team: 工程/QA
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+change_control:
+  every_code_fix_requires:
+    - bug_id
+    - root_cause
+    - regression_test
+  forbidden:
+    - new_field_in_existing_model
+    - new_state_in_existing_state_machine
+    - new_business_rule
+
+affected_assets:
+  business:
+    - settlement_domain
+  architecture:
+    - settlement_module_map
+  governance:
+    - settlement_invariant_aggregation
+    - bugfix_records
+
+deliverables:
+  # 回归测试
+  - "tests/test_settlement_e2e_regression.py（4 Case：正常链/异常链/Rule链/修正链）"
+  # Invariant 全量检查
+  - "tests/test_settlement_invariants.py（每个 invariant 一个 TestCase，100% PASS）"
+  - "docs/governance/domain_invariants/settlement_full.yaml（aggregation manifest，不复制原始 invariants）"
+  # 安全矩阵
+  - "tests/test_settlement_security_matrix.py"
+  # 升级测试
+  - "tests/test_settlement_upgrade.py（Sprint30→39 schema 验证）"
+  # 性能观察
+  - "tests/test_settlement_performance_baseline.py（仅观察记录，不设 SLA）"
+  # 缺陷记录
+  - "docs/context/history/bugfix_records.yaml（bug_id/root_cause/regression）"
+  # 测试报告
+  - "docs/context/history/test_report_sprint39.yaml"
+  # 上下文
+  - "docs/context/context_version.yaml（不升级——本 sprint 不改变领域契约）"
+  - "docs/context/history/decision_note.md（ADR-039）"
+
+limit_constraints: |
+  1. 禁止新建模型 / 字段 / 状态机 / 规则 / 菜单。
+  2. 禁止改变现有业务规则。
+  3. 禁止修改 invariant 定义。
+  4. 禁止 Dashboard / BI / Intelligence / UI 优化。
+  5. 缺陷修复必须受 change_control 约束。
+  6. 性能基线仅做观察记录，不设 SLA。
+  7. Invariant 验证使用 aggregation manifest（不复制原始 invariants）。
+  8. 本 sprint 不升级 context_version（领域契约未改变）。
+
+scope:
+  allow:
+    - "addons/wd_tlms/tests/*"
+    - "addons/wd_tlms/models/*（仅 bugfix——需 change_control 审批）"
+    - "addons/wd_tlms/services/*（仅 bugfix——需 change_control 审批）"
+    - "docs/governance/domain_invariants/settlement_full.yaml"
+    - "docs/governance/domain_invariants/*.yaml（新增 aggregation manifest）"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/history/bugfix_records.yaml"
+    - "docs/context/history/test_report_sprint39.yaml"
+
+  forbid:
+    - 禁止新建模型
+    - 禁止新增字段
+    - 禁止新增状态机
+    - 禁止新增规则
+    - 禁止新增菜单
+    - 禁止新增 action
+    - 禁止修改 invariant 定义
+    - 禁止 Dashboard / BI / Intelligence / UI 优化
+    - 禁止改变业务规则
+    - 禁止修改 intent 体系 / profile / context_loader
+    - 禁止复制或合并现有 invariants（仅 aggregation manifest）
+
+risk_precheck: |
+  1. 当前 6 failures + 121 errors 中大部分是 Sprint21 预存问题——Sprint39 仅修复 Settlement Domain 内的缺陷。
+  2. 性能基线在沙箱环境中可能不准确——记录环境信息以供后续对比。
+  3. domain invariants 的 aggregation manifest 需要明确的 invariant 索引路径，避免指向 git blob 而非文件。
+
+goal: >
+  冻结 Settlement Domain Contract，从「Feature Complete」进入「Production Ready」。
+
+  Sprint39 不做新功能。通过 4 条核心措施建立生产准入门槛：
+
+  1. E2E 回归基线（4 Case 覆盖完整结算链 + 异常链 + Rule 链 + 修正链）
+  2. Domain Invariant 全量自动检查（aggregation manifest，100% PASS）
+  3. 缺陷修复严格受控（change_control：bug_id + root_cause + regression_test）
+  4. 升级测试（Sprint30→39 schema 验证）
+
+  Sprint39 完成后，Settlement Domain Contract 冻结。
+  任何未来修改需：new intent → invariant update → regression scenario。
+
+# ADR-039 关键决策：
+#   1. Sprint39 不增加业务能力，专注 Settlement Domain 生产就绪验证
+#   2. 缺陷修复受 change_control 约束（bug_id + root_cause + regression_test）
+#   3. Domain Invariant 使用 aggregation manifest（不复制原始 invariants）
+#   4. 性能基线仅做观察记录，不设 SLA
+#   5. 测试覆盖率按领域场景（scenario coverage），不按 assertion count
+#   6. E2E 回归 4 Case：正常链 / 异常链 / Rule 链 / 修正链
+#   7. 本 sprint 不升级 context_version（领域契约未改变）
+#   8. Settlement Domain Contract frozen after Sprint39
+#   9. Any future settlement change requires: new intent → invariant update → regression scenario
+#   10. Dashboard / Intelligence 暂缓，待稳定版本后重新评估

@@ -1,0 +1,5 @@
+# Settlement Domain Bugfix Records
+# Each fix requires: bug_id / root_cause / fix_summary / regression_test
+# Format: YYYY-MM-DD | bug_id | module | root_cause | fix | regression_test
+version: 1.0
+records: []

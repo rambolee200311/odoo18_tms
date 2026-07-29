@@ -1,0 +1,14 @@
+# Sprint39 Settlement Domain Test Report
+# Generated: {{date}}
+# Status: pending / in_progress / completed
+version: 1.0
+status: pending
+domains:
+  billing: {scenarios: [], pass_rate: 0}
+  matching: {scenarios: [], pass_rate: 0}
+  allocation: {scenarios: [], pass_rate: 0}
+  batch: {scenarios: [], pass_rate: 0}
+  case: {scenarios: [], pass_rate: 0}
+  exception: {scenarios: [], pass_rate: 0}
+  rule: {scenarios: [], pass_rate: 0}
+e2e: {cases: [], pass: false}

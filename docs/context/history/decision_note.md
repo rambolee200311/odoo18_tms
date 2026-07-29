@@ -1178,3 +1178,37 @@ Exception Detection Engine (Handler Registry)
 - Exception is NOT Case — two separate domains with different lifecycles
 - SLA deadlines are governance assets, not code constants
 - Handler Registry architecture allows Sprint38 Rule Engine to replace static handlers
+
+
+---
+
+## ADR-039: Settlement Domain Production Readiness
+
+**Date**: 2026-07-29
+**Sprint**: 39
+**Intent**: INT-TMS-SPRINT39-001
+
+### Context
+Sprint27-38 completed Settlement Domain full feature closure. Domain risk shifted from "missing features" to "unfrozen contracts, uncovered regression chains, unverified upgrade paths".
+
+### Decision
+Freeze Settlement Domain Contract. Sprint39 stops all new feature development.
+
+**Scope:**
+- E2E regression baseline (4 cases: normal/exception/rule/correction chains)
+- Domain invariant automated gate (aggregation manifest, 100% PASS)
+- Bug fixes under change control (bug_id + root_cause + regression_test)
+- Schema upgrade test (Sprint30→39)
+
+**Key Rules:**
+1. Sprint39 does NOT add business capability
+2. Bug fixes require change control
+3. Domain invariants use aggregation manifest (no copy/merge)
+4. Performance baseline is observation only (no SLA)
+5. Settlement Domain Contract frozen after Sprint39
+6. Any future settlement change requires: new intent → invariant update → regression scenario
+
+### Consequences
+- Settlement Domain Contract is now a governance asset
+- Future changes require formal intent + invariant update
+- Sprint39 does not bump context_version (domain contract unchanged)

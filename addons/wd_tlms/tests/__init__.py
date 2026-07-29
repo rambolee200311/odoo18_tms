@@ -43,3 +43,8 @@ from . import test_settlement_regression
 from . import test_exception_lifecycle
 
 from . import test_exception_rule
+from . import test_settlement_e2e_regression
+from . import test_settlement_invariants
+from . import test_settlement_security_matrix
+from . import test_settlement_upgrade
+from . import test_settlement_performance_baseline

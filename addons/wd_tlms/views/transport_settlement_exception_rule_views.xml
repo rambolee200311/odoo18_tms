@@ -22,9 +22,9 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_activate" string="Activate" type="object" states="draft"/>
-                    <button name="action_deprecate" string="Deprecate" type="object" states="active"/>
-                    <button name="action_draft" string="Revert to Draft" type="object" states="deprecated"/>
+                    <button name="action_activate" string="Activate" type="object"/>
+                    <button name="action_deprecate" string="Deprecate" type="object"/>
+                    <button name="action_draft" string="Revert to Draft" type="object"/>
                     <field name="rule_state" widget="statusbar"/>
                 </header>
                 <sheet>
