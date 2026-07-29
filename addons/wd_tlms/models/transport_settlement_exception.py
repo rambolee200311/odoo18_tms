@@ -92,6 +92,16 @@ class SettlementException(models.Model):
     resolved_by = fields.Many2one('res.users', string='Resolved By')
 
     # ── Company ──
+    # Sprint38: Rule Engine traceability
+    rule_execution_id = fields.Many2one(
+        'tlmp.settlement.exception.rule.execution',
+        string='Rule Execution', readonly=True)
+    creation_method = fields.Selection([
+        ('rule_engine', 'Rule Engine'),
+        ('legacy_handler', 'Legacy Handler'),
+        ('manual', 'Manual'),
+    ], string='Creation Method', default='manual')
+
     company_id = fields.Many2one(
         'res.company', string='Company',
         default=lambda self: self.env.company)

@@ -1,0 +1,19 @@
+# Exception Rule Field Catalog — allowed fields for condition_expression
+# Any field NOT in this list is forbidden.
+# Version: 1.0 | Sprint: 38
+fields:
+  billing_amount: {type: float, source: billing.document.total_amount}
+  billing_currency: {type: char, source: billing.document.currency_id.name}
+  matching_confidence: {type: float, source: match.suggestion.confidence_score}
+  matching_confidence_source: {type: char, source: match.suggestion.confidence_source}
+  carrier_code: {type: char, source: carrier.profile.carrier_code}
+  invoice_age_days: {type: integer, source: "compute: (now - billing.create_date).days"}
+  import_error_count: {type: integer, source: invoice.import.error_lines}
+  batch_age_hours: {type: integer, source: "compute: (now - batch.create_date).hours"}
+forbidden:
+  - any_other_field
+  - python_expression
+  - script
+  - eval
+update_policy:
+  governance_review_required: true

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tlmp_rule_tree" model="ir.ui.view">
+        <field name="name">tlmp.settlement.exception.rule.tree</field>
+        <field name="model">tlmp.settlement.exception.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="rule_state" widget="badge"/>
+                <field name="version"/>
+                <field name="exception_type"/>
+                <field name="scope_type"/>
+                <field name="rule_sequence"/>
+                <field name="exception_priority"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_tlmp_rule_form" model="ir.ui.view">
+        <field name="name">tlmp.settlement.exception.rule.form</field>
+        <field name="model">tlmp.settlement.exception.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" string="Activate" type="object" states="draft"/>
+                    <button name="action_deprecate" string="Deprecate" type="object" states="active"/>
+                    <button name="action_draft" string="Revert to Draft" type="object" states="deprecated"/>
+                    <field name="rule_state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="exception_type"/>
+                            <field name="rule_sequence"/>
+                            <field name="exception_priority"/>
+                        </group>
+                        <group>
+                            <field name="version"/>
+                            <field name="action_type"/>
+                            <field name="effective_from"/>
+                            <field name="effective_to"/>
+                        </group>
+                    </group>
+                    <group string="Scope">
+                        <field name="scope_type"/>
+                        <field name="carrier_partner_id"/>
+                        <field name="customer_partner_id"/>
+                        <field name="transport_scene_id"/>
+                    </group>
+                    <group string="Condition">
+                        <field name="condition_expression" nolabel="1" placeholder='{"operator":"gt","field":"matching_confidence","value":0.7}'/>
+                    </group>
+                    <group string="Publishing Audit">
+                        <group>
+                            <field name="created_by"/>
+                            <field name="approved_by"/>
+                        </group>
+                        <group>
+                            <field name="published_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_tlmp_rule" model="ir.actions.act_window">
+        <field name="name">Exception Rules</field>
+        <field name="res_model">tlmp.settlement.exception.rule</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

@@ -1,0 +1,18 @@
+# Exception Rule DSL — condition_expression Schema
+# Version: 1.0 | Sprint: 38
+operators:
+  gt: "Greater than (numeric)"
+  lt: "Less than (numeric)"
+  eq: "Equals (string/numeric)"
+  contains: "String contains"
+  is_null: "Field is null/empty"
+boolean:
+  AND: "All sub-expressions true"
+  OR: "Any sub-expression true"
+  NOT: "Negate sub-expression"
+forbidden:
+  - python_expression
+  - sql
+  - eval
+  - script
+  - lambda

@@ -1,0 +1,17 @@
+# Exception Rule Policy — lifecycle + version + scope + cache
+# Version: 1.0 | Sprint: 38
+rule_lifecycle:
+  states: [draft, active, deprecated]
+  transitions:
+    draft_to_active: {action: action_activate, validation: condition_expression_required}
+    active_to_deprecated: {action: action_deprecate, note: "auto-deprecate on new version"}
+version_policy:
+  single_active_version: true
+  version_format: "semver (X.Y)"
+scope_policy:
+  types: [global, carrier, customer, scene]
+  isolation: rule_scope_isolation
+cache_policy:
+  mode: worker_memory
+  refresh: manual_on_publish
+  sprint39_issue: multi_worker_consistency

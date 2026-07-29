@@ -53,6 +53,9 @@
               action="action_tlmp_settlement" sequence="20"/>
     <menuitem id="menu_tlmp_exception" name="Settlement Exceptions" parent="menu_tlmp_finance"
               action="action_tlmp_exception_review_queue" sequence="25"/>
+    <menuitem id="menu_tlmp_exception_rule" name="Exception Rules" parent="menu_tlmp_finance"
+              action="action_tlmp_rule" sequence="26"
+              groups="wd_tlms.group_tlm_settlement_rule_manager"/>
     <menuitem id="menu_tlmp_surcharges" name="Surcharges" parent="menu_tlmp_finance"
               action="action_tlmp_surcharge" sequence="30"/>
     <menuitem id="menu_tlmp_billing_documents" name="Billing Documents" parent="menu_tlmp_finance"

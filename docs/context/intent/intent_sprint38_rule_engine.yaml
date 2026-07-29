@@ -1,0 +1,261 @@
+# ==============================================================
+# 【Sprint38 Intent 契约 V3】
+# 功能：Settlement Exception Rule Engine — 治理型异常规则引擎
+# 前置基线：Sprint37 Exception Domain v1.0
+# 基线版本：context_version: 1.0.54 -> 1.0.55
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT38-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade + New Feature
+title: Settlement Exception Rule Engine — 治理型异常规则引擎
+
+target_scope: >
+  Sprint37 建立了 Exception Domain，但检测逻辑仍硬编码。
+  Sprint38 将异常检测从代码升级为可配置、可版本化、可审计的规则治理能力。
+
+  架构：
+
+  ```
+  Sprint37:                          Sprint38:
+  Exception Detector                 Exception Detector
+       |                                  |
+       v                                  v
+  Handler Registry              Rule Engine (priority) → Legacy Handler (fallback)
+  (硬代码)                          ↑                    ↑ (Sprint40 删除)
+                              Rule DB (catalog)   Sprint37 handler (deprecated)
+  ```
+
+  P0: Rule 模型 + condition_expression Schema + field_catalog 白名单
+  P0: Rule Engine 四服务（Loader/Evaluator/ActionExecutor/Engine）
+  P0: Action 白名单 + 幂等 + 防重复异常
+  P0: Execution 仅记录 MATCHED + 追溯
+  P0: Version 控制（single_active_rule_version）
+  P0: Scope 隔离（GLOBAL/CARRIER/CUSTOMER/SCENE）
+  P1: Rule Cache Policy + Field Catalog 资产
+  P1: Legacy Handler Sprint40 删除（Sprint39 观察期）
+
+  不做：Dashboard、BI、AI、自动修改业务数据、自动付款、OCR。
+
+accept_criteria:
+  # ======== P0: Exception Rule Model ========
+  - "tlmp.settlement.exception.rule：code/name/exception_type/condition_expression/rule_sequence/exception_priority/action_type/rule_state/version/effective_from/effective_to/created_by/approved_by/published_at"
+  - "condition_expression 使用声明式 Catalog：AND/OR/NOT 嵌套 + operator: gt/lt/eq/contains/is_null"
+  - "condition_expression 中的 field 必须来自 field_catalog 白名单（invariant: condition_field_whitelist）"
+  - "rule_state：draft → active → deprecated（替代 boolean active）"
+  - "UNIQUE(code, version)——同一规则不同版本唯一"
+  - "single_active_rule_version：同一 code 同一时间仅允许一个 active version（invariant）"
+  - "rule_sequence（整数）控制执行顺序，exception_priority 控制异常优先级"
+
+  # ======== P0: Rule Execution Model ========
+  - "tlmp.settlement.exception.rule.execution：rule_id/source_model/source_id/matched/created_exception_id/execution_time"
+  - "仅 MATCHED 命中时生成 execution 记录（不做全量 NO_MATCH 日志）"
+  - "Rule Engine 创建的 exception → rule_execution_id 必须填写"
+  - "手动创建的 exception → rule_execution_id 可选"
+  - "execution_id 全局唯一——保证 action 幂等（invariant: action_execution_idempotent）"
+  - "execution 数据保留建议 90 天或 100k 条后归档"
+
+  # ======== P0: Rule Engine ========
+  - "services/exception_engine/engine.py（Orchestrator）"
+  - "services/exception_engine/evaluator.py（condition_expression → true/false）"
+  - "services/exception_engine/action_executor.py（白名单 action + 幂等检查）"
+  - "services/exception_engine/rule_loader.py（DB → runtime cache）"
+  - "Rule Engine 优先执行——匹配则创建 exception，不匹配则走 Legacy Handler fallback"
+  - "CREATE_EXCEPTION 前检查同 source + exception_type 是否存在 active exception（防重复）"
+
+  # ======== P0: Action Type ========
+  - "action_type 白名单：CREATE_EXCEPTION / SET_PRIORITY / AUTO_CLOSE_EXCEPTION / CREATE_CASE"
+  - "禁止：UPDATE_BUSINESS_DATA / MODIFY_ALLOCATION / MODIFY_BILLING / 自动审批"
+  - "action_executor 执行前检查幂等——同 execution_id 不重复执行（invariant: action_execution_idempotent）"
+
+  # ======== P0: Rule Scope ========
+  - "scope_type：GLOBAL / CARRIER / CUSTOMER / SCENE"
+  - "scope_reference: carrier_partner_id / customer_id / transport_scene_id（scope type 对应必填）"
+  - "invariant: rule_scope_isolation — CARRIER scope 不影响其他 carrier，CUSTOMER 同理"
+
+  # ======== P0: Condition Field Catalog ========
+  - "governance/exception_rule_field_catalog.yaml（字段白名单）"
+  - "允许字段：billing.amount, billing.currency, matching.confidence, carrier.code, invoice.age_days 等"
+  - "禁止访问任意模型字段——field catalog 外字段拒绝（invariant: condition_field_whitelist）"
+
+  # ======== P0: Exception 扩展 ========
+  - "tlmp.settlement.exception 增加 rule_execution_id（可选 Many2one）"
+  - "tlmp.settlement.exception 增加 scope_type（反向记录）"
+  - "tlmp.settlement.exception 增加 creation_method：rule_engine / legacy_handler / manual"
+
+  # ======== P0: Domain Invariants ========
+  - "duplicate_exception_prevention：同一 source_reference + exception_type 不允许重复创建未关闭 exception"
+  - "single_active_rule_version：同一 code 同一时间仅允许一个 active version"
+  - "condition_field_whitelist：DSL field 必须来自 field catalog"
+  - "action_execution_idempotent：同 execution_id 不重复执行"
+  - "rule_version_immutable：active rule 不可修改"
+  - "rule_scope_isolation：scope 不影响范围外实体"
+
+  # ======== Gate ========
+  - "verify.py 8/8 PASS"
+  - "odoo_check.py PASS（require_escalated）"
+
+source:
+  type: architecture_upgrade
+  origin_team: 产品/结算
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - settlement_rule_engine
+    - settlement_exception
+  architecture:
+    - settlement_module_map
+  governance:
+    - exception_rule_policy
+    - exception_rule_dsl
+    - exception_action_policy
+    - exception_rule_field_catalog
+
+deliverables:
+  # 新模型
+  - "models/transport_settlement_exception_rule.py（scope + version + state + condition_expression）"
+  - "models/transport_settlement_exception_rule_execution.py"
+  # 存量扩展
+  - "models/transport_settlement_exception.py（rule_execution_id + scope_type + creation_method）"
+  # Rule Engine 服务
+  - "services/exception_engine/__init__.py"
+  - "services/exception_engine/engine.py（Orchestrator — Rule priority → Handler fallback）"
+  - "services/exception_engine/evaluator.py（condition_expression 解析器 + field catalog check）"
+  - "services/exception_engine/action_executor.py（白名单 action + 幂等检查 + 防重复）"
+  - "services/exception_engine/rule_loader.py（DB → runtime cache + active version resolve）"
+  # Sprint37 Handler 保留 fallback（Sprint40 删除）
+  - "services/exception_handlers/legacy_registry.py（deprecated，Sprint40 移除）"
+  - "services/exception_detector.py（Rule Engine priority + Handler fallback）"
+  # 视图
+  - "views/transport_settlement_exception_rule_views.xml"
+  - "views/tlmp_menus.xml"
+  # 权限
+  - "security/security.xml（settlement_rule_manager 组）"
+  - "security/ir.model.access.csv"
+  # 治理资产（4 文件）
+  - "docs/governance/exception_rule_policy.yaml（规则生命周期/scope/版本/缓存策略）"
+  - "docs/governance/exception_rule_dsl.yaml（condition_expression Schema + 运算符定义）"
+  - "docs/governance/exception_action_policy.yaml（action 白名单 + 幂等规则）"
+  - "docs/governance/exception_rule_field_catalog.yaml（允许字段白名单 + 禁止字段）"
+  # 测试
+  - "tests/test_exception_rule.py"
+  - "tests/test_rule_evaluator.py"
+  - "tests/test_rule_execution_trace.py"
+  - "tests/test_rule_version.py"
+  - "tests/test_rule_migration.py（行为一致性）"
+  - "tests/test_rule_security.py（权限隔离）"
+  - "tests/test_rule_duplicate_execution.py（幂等 + 防重复）"
+  - "tests/test_rule_scope.py（scope 隔离）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.54 -> 1.0.55）"
+  - "docs/context/history/decision_note.md（ADR-038）"
+
+limit_constraints: |
+  1. condition_expression 禁止 Python expression / SQL / eval / script——仅 catalog 语法。
+  2. condition_expression field 必须来自 field catalog 白名单。
+  3. Action 仅限 Exception Domain（CREATE_EXCEPTION/SET_PRIORITY/AUTO_CLOSE_EXCEPTION/CREATE_CASE）。
+  4. Rule Execution 仅记录 MATCHED，execution_id 全局唯一保证幂等。
+  5. CREATE_EXCEPTION 前检查同 source + type 的 active exception——防重复。
+  6. 同一 code 同一时间仅允许一个 active version。
+  7. Sprint37 Legacy Handler 保留 fallback（Sprint40 删除——Sprint39 观察期）。
+  8. 本期不做 Dashboard/BI/AI/自动付款/OCR。
+  9. Rule Cache Policy 一期简单实现（worker memory + manual refresh），二期优化。
+
+scope:
+  allow:
+    - "addons/wd_tlms/models/transport_settlement_exception_rule.py"
+    - "addons/wd_tlms/models/transport_settlement_exception_rule_execution.py"
+    - "addons/wd_tlms/models/transport_settlement_exception.py（增量）"
+    - "addons/wd_tlms/models/__init__.py"
+    - "addons/wd_tlms/services/exception_engine/*"
+    - "addons/wd_tlms/services/exception_detector.py"
+    - "addons/wd_tlms/services/exception_handlers/legacy_registry.py"
+    - "addons/wd_tlms/services/__init__.py"
+    - "addons/wd_tlms/views/transport_settlement_exception_rule_views.xml"
+    - "addons/wd_tlms/views/tlmp_menus.xml"
+    - "addons/wd_tlms/security/security.xml"
+    - "addons/wd_tlms/security/ir.model.access.csv"
+    - "addons/wd_tlms/__manifest__.py"
+    - "addons/wd_tlms/tests/test_exception_rule.py"
+    - "addons/wd_tlms/tests/test_rule_*.py"
+    - "docs/governance/exception_rule_policy.yaml"
+    - "docs/governance/exception_rule_dsl.yaml"
+    - "docs/governance/exception_action_policy.yaml"
+    - "docs/governance/exception_rule_field_catalog.yaml"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+
+  forbid:
+    - 禁止引入 Python expression / SQL eval / arbitrary eval
+    - 禁止创建 Dashboard/BI 视图
+    - 禁止 AI 预测异常
+    - 禁止自动修改业务数据
+    - 禁止自动付款逻辑
+    - 禁止修改 matching confidence 算法
+    - 禁止修改 allocation 计算逻辑
+    - 禁止修改 billing 逻辑
+    - 禁止修改 Sprint36-A import 流程
+    - 禁止修改 Sprint37 exception 模型核心字段
+    - 禁止修改已有 Sprint36/37 governance baseline
+    - 禁止修改 execution/scripts/ governance/ 下已有基线文件
+    - 禁止修改 profiles/context_loader/intent 体系
+
+risk_precheck: |
+  1. condition_expression field catalog 必须严格——防止"加个小字段"绕过白名单。
+  2. Rule Engine vs Legacy Handler 双写期间可能产生重复 exception——CREATE_EXCEPTION 防重复检查是底线。
+  3. Execution 只记录 MATCHED + execution_id 全局唯一——保证幂等 + 避免爆炸。
+  4. Rule Cache 一期 worker memory + manual refresh——二期可配置化。
+  5. Legacy Handler Sprint40 删除——Sprint39 Dashboard 观察覆盖度。
+
+goal: >
+  将 Settlement Exception 检测从代码硬编码升级为可配置、可版本化、可审计的规则治理能力。
+
+  架构：
+
+  ```
+  Rule Engine (priority)
+       |
+       +→ Rule Model (DB config)
+       |    condition_expression + field_catalog 白名单
+       |    scope (GLOBAL/CARRIER/CUSTOMER/SCENE)
+       |    version + state (draft/active/deprecated)
+       |
+       +→ Evaluator → ActionExecutor
+       |    action 白名单 + 幂等 + 防重复
+       |
+       +→ Legacy Handler (fallback, Sprint40 删除)
+            Sprint37 handler 作为兜底
+  ```
+
+  本期交付：
+  1. Rule Model + condition_expression + field_catalog + scope + version
+  2. Rule Engine 四服务（Engine/Evaluator/ActionExecutor/RuleLoader）
+  3. Action 白名单 + 幂等 + 防重复异常
+  4. Execution 追溯（仅 MATCHED，execution_id 幂等）
+  5. Legacy Handler fallback（Sprint40 删除）
+  6. 8 个测试文件 + 4 个 governance 资产
+
+# ADR-038 关键决策：
+#   1. Rule Engine 渐进迁移——Handler 保留 fallback（Sprint40 删除，Sprint39 观察期）
+#   2. Action 白名单——仅 exception domain 行为，禁止修改业务事实
+#   3. condition_expression field 来自 field_catalog 白名单——禁止任意字段访问
+#   4. Rule Execution 仅 MATCHED + execution_id 全局唯一——幂等 + 防膨胀
+#   5. CREATE_EXCEPTION 前检查同 source + type 的 active exception——防重复
+#   6. single active rule version——同一 code 同一时间仅一个 active version
+#   7. Rule Cache 一期 worker memory + manual refresh
+#   8. Sprint39: Dashboard + Rule Effectiveness / Sprint40: Intelligence + Legacy Removal

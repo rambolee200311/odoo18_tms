@@ -1,0 +1,15 @@
+# Exception Rule Action Policy
+# Version: 1.0 | Sprint: 38
+allowed:
+  create_exception: "Create exception record"
+  set_priority: "Set exception priority"
+  auto_close_exception: "Auto-close exception (duplicate whitelist)"
+  create_case: "Create settlement case from exception"
+forbidden:
+  - update_business_data
+  - modify_allocation
+  - modify_billing
+  - auto_approve
+  - auto_payment
+idempotency: required
+duplicate_check: required

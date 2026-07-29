@@ -20,12 +20,30 @@ class ExceptionDetector(models.AbstractModel):
 
     @api.model
     def scan_all(self):
-        """Scan all settlement domain sources for exceptions."""
+        """Scan all settlement domain sources for exceptions.
+        Sprint38: Rule Engine priority → Legacy Handler fallback."""
         results = []
-        registry = self.env['tlmp.exception.handler.registry']
-        for handler_cls in registry.discover_handlers():
-            handler = handler_cls
-            results += self._scan_source(handler)
+        engine = self.env['tlmp.rule.engine']
+        # Scan import batches, billing documents, suggestions
+        for batch in self.env['tlmp.carrier.invoice.import'].search([('state', '=', 'partial_failed')]):
+            result = engine.scan('tlmp.carrier.invoice.import', batch.id, {
+                'source_model': 'tlmp.carrier.invoice.import', 'source_res_id': batch.id,
+                'source_display_name': batch.name,
+            })
+            results.append(result)
+        for doc in self.env['tlmp.carrier.billing.document'].search([('state', '=', 'active')]):
+            result = engine.scan('tlmp.carrier.billing.document', doc.id, {
+                'source_model': 'tlmp.carrier.billing.document', 'source_res_id': doc.id,
+                'source_display_name': doc.name,
+                'billing_amount': doc.total_amount,
+            })
+            results.append(result)
+        for sug in self.env['tlmp.carrier.match.suggestion'].search([('state', '=', 'draft'), ('confidence_score', '<', 0.7)]):
+            result = engine.scan('tlmp.carrier.match.suggestion', sug.id, {
+                'source_model': 'tlmp.carrier.match.suggestion', 'source_res_id': sug.id,
+                'matching_confidence': sug.confidence_score,
+            })
+            results.append(result)
         return results
 
     @api.model
@@ -78,6 +96,7 @@ class ExceptionDetector(models.AbstractModel):
         description = detection_result.get('description', '')
 
         exception = self.env['tlmp.settlement.exception'].create({
+            'creation_method': 'legacy_handler',
             'exception_type': exception_type,
             'priority': priority,
             'description': description,

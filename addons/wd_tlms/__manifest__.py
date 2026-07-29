@@ -68,6 +68,7 @@
         'views/transport_carrier_invoice_template_views.xml',
         'views/transport_carrier_invoice_import_views.xml',
         'views/transport_settlement_exception_views.xml',
+        'views/transport_settlement_exception_rule_views.xml',
         'views/settlement_export_wizard.xml',
         'views/transport_match_rule_views.xml',
         'views/tlmp_menus.xml',

@@ -364,3 +364,16 @@ bind_asset_folder:
       - 6 个 Domain Invariant（closed_immutable/assigned_requires_owner/...）
     update_type: 新功能开发 + 领域边界建立
     effect_scope: settlement_exception_domain
+
+  1.0.55:
+    update_content: |
+      Sprint38 Settlement Exception Rule Engine
+      - Rule Model: condition_expression + field_catalog + scope + version + lifecycle
+      - Rule Engine: Loader/Evaluator/ActionExecutor (idempotent + duplicate prevention)
+      - Rule Execution: only MATCHED hits, execution_id unique idempotency
+      - Governance: 4 assets (rule_policy/dsl/action_policy/field_catalog)
+      - Legacy Handler kept as fallback (Sprint40 removal)
+      - Invariants: single_active_rule_version, duplicate_exception_prevention, condition_field_whitelist, action_execution_idempotent
+      - 8 test classes covering rule lifecycle/evaluator/execution/scope/migration
+    update_type: 架构升级 + 新功能开发
+    effect_scope: settlement_exception_rule_engine
