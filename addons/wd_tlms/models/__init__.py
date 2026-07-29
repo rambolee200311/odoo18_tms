@@ -53,4 +53,4 @@ from . import transport_settlement_exception
 
 from . import transport_flow_type
 from . import transport_destination_type
-# from . import transport_settlement_exception_rule  # TEMP removed for debug
+from . import transport_settlement_exception_rule
