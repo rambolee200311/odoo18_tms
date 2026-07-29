@@ -1,0 +1,143 @@
+# ==============================================================
+# 【Sprint42 Intent 契约】
+# 功能：Manual Verification Execution — 人工验证执行
+# 前置基线：Sprint41 Business Scenario Validation（文档 + BAT + 黄金数据集）
+# 基线版本：context_version: 1.0.58 -> 1.0.59
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT42-001
+intent_work_type: Maintenance
+intent_change_type: Quality Hardening
+title: Manual Verification Execution — 8 场景人工验证执行
+
+target_scope: >
+  Sprint41 建立了三层验证体系（场景目录 / 黄金数据集 / BAT / 人工验证流程 / 结果记录）。
+  但验证文档停留在「可验证」状态，未被实际执行。
+
+  Sprint42 的核心任务：把 Sprint41 的人工验证流程全部跑一遍。
+
+  P0: 编制 8 场景详细人工验证操作指导（逐步骤、逐字段）
+  P0: 执行 8 场景人工验证（在系统中逐项测试）
+  P0: 记录验证结果到 result_summary.md（通过/失败/原因/处理状态）
+  P0: 对失败项进行缺陷修复（scope 限定：仅修复验证发现的 bug，不改架构）
+  P1: BAT 回归——确认验证修复未破坏自动化测试
+
+  不做：新功能 / 新场景 / 架构变更 / 运营优化（Sprint43）。
+
+accept_criteria:
+  # ======== P0: 详细验证指导 ========
+  - "docs/business_validation/ 下每个 scene 的 .md 文件升级为逐步骤操作指导"
+  - "每个指导包含：前置条件 / 操作步骤（编号） / 预期结果（字段级别） / 检查项 checklist"
+  - "指导可供不熟悉系统的 QA 人员直接跟随操作"
+
+  # ======== P0: 执行验证 ========
+  - "8 个场景全部运行一次（系统中逐项测试）"
+  - "S1/S5/S6/S8：通过自动化 BAT + 手工补充验证"
+  - "S2/S3/S4/S7：纯手工验证（无自动化 BAT）"
+  - "每个场景记录：预期 vs 实际 / 场景 ID 是否一致 / flow 是否正确 / scene 链是否完整"
+
+  # ======== P0: 结果记录 ========
+  - "result_summary.md 更新为实际执行结果"
+  - "失败项标记：失败原因 / 是否已修复 / 修复 commit / 待处理"
+  - "所有失败项的修复必须记录到 bugfix_records.yaml"
+
+  # ======== P0: 缺陷修复（scope 受限） ========
+  - "仅修复验证中发现的 bug（不一致的字段/错误的默认值/wrong view）"
+  - "禁止修改：业务逻辑 / 状态机 / 模型字段定义 / 结算逻辑"
+  - "每个修复需 bug_id + root_cause + regression_test（遵循 Sprint39 change_control）"
+
+  # ======== P1: BAT 回归 ========
+  - "Sprint41 BAT 不受影响（test_business_scenarios.py 全 PASS）"
+  - "Sprint39 regression tests 不回归"
+
+  # ======== Gate ========
+  - "verify.py 8/8 PASS"
+  - "odoo_check.py PASS（require_escalated）"
+  - "所有 BAT PASS"
+  - "验证结果闭环（失败项 100% 有处理状态）"
+
+source:
+  type: regular_audit
+  origin_team: 产品/QA
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+    - all_validation_pass
+    - human_accept
+    - risk_block
+
+affected_assets:
+  business:
+    - transport_scenario_validation
+  architecture:
+    - scene_domain_model
+  governance:
+    - verification_results
+
+deliverables:
+  # 升级的验证指导
+  - "docs/business_validation/scene_1_terminal_warehouse.md（升级为详细操作指导）"
+  - "docs/business_validation/scene_2_terminal_customer.md"
+  - "docs/business_validation/scene_3_warehouse_customer.md"
+  - "docs/business_validation/scene_4_customer_customer.md"
+  - "docs/business_validation/scene_5_warehouse_transfer.md"
+  - "docs/business_validation/scene_6_customer_return.md"
+  - "docs/business_validation/scene_7_container_swap.md"
+  - "docs/business_validation/scene_8_empty_container.md"
+  # 验证结果
+  - "docs/business_validation/result_summary.md（实际执行结果）"
+  # 缺陷修复
+  - "docs/context/history/bugfix_records.yaml（验证发现的问题）"
+  # 上下文
+  - "docs/context/context_version.yaml（1.0.58 -> 1.0.59）"
+  - "docs/context/history/decision_note.md（ADR-042）"
+
+limit_constraints: |
+  1. 禁止新增模型 / 场景 / 结算逻辑 / 规则。
+  2. 禁止修改架构 / 状态机 / flow validation。
+  3. 缺陷修复仅限验证发现的问题，不改变业务规则。
+  4. 每个修复需 bug_id + root_cause + regression_test。
+
+scope:
+  allow:
+    - "docs/business_validation/*.md"
+    - "addons/wd_tlms/views/*.xml（仅修复验证发现的问题）"
+    - "addons/wd_tlms/models/*.py（仅修复验证发现的 bug——需 change_control）"
+    - "addons/wd_tlms/tests/*.py"
+    - "docs/context/context_version.yaml"
+    - "docs/context/history/decision_note.md"
+    - "docs/context/history/bugfix_records.yaml"
+
+  forbid:
+    - 禁止新增模型 / 场景
+    - 禁止修改结算 / 分配 / 批处理逻辑
+    - 禁止修改 matching / rule 算法
+    - 禁止修改 flow validation / scene constraints
+    - 禁止修改 Sprint39-41 governance assets
+    - 禁止运营优化（Sprint43）
+
+goal: >
+  把 Sprint41 的人工验证流程全部跑一遍。
+
+  Sprint42 完成后，组织应能回答：
+  - "8 个场景是否全部经过人工验证？"
+  - "验证结果是什么？失败项是否已处理？"
+  - "BAT 是否全部通过？"
+  - "result_summary.md 是否为闭环状态？"
+
+  这是 Sprint43 运营优化的前提——只有验证基线冻结后，才能放心改 UI。
+
+# ADR-042 关键决策：
+#   1. Sprint42 执行验证，不优化——Sprint43 再做运营优化
+#   2. 缺陷修复仅限验证发现的问题，不改变业务规则
+#   3. 验证结果为 Sprint43 运营优化提供安全基线
+#   4. Sprint41 文档 + Sprint42 执行 + Sprint43 优化 = 完整的三步走

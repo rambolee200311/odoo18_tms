@@ -1,0 +1,42 @@
+# ==============================================================
+# 【Sprint43 Intent 契约】
+# 功能：Operational Hardening — 结算与运输域运营优化
+# 前置基线：Sprint42 Manual Verification Execution
+# 基线版本：context_version: 1.0.59 -> 1.0.60
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT43-001
+intent_work_type: Development
+intent_change_type: Quality Hardening
+title: Operational Hardening — 结算与运输域运营优化
+
+target_scope: >
+  Sprint27-42 完成了全功能闭环 + 场景验证基线冻结。
+  Sprint43 不新增业务能力，专注消除运营摩擦。
+
+  P0: Settlement Review Queue 增强（排序/分组/快捷操作）
+  P0: Exception 批量处理（assign/close/create case）
+  P0: Transport Order 创建流程简化（智能默认值）
+  P1: 运营待办通知（badge 计数 / SLA 超期提示）
+  P1: UI/UX 一致性（按钮风格 / badge 颜色 / 统一布局）
+
+  不做：新模型 / 新场景 / 新结算逻辑 / 新规则 / 架构重构。
+
+accept_criteria:
+  - "Review Queue 按优先级+SLA排序，urgent/high 在前，红色标记"
+  - "Exception Tree View 支持多选+批量assign/close/create case"
+  - "创建 Transport Order 时自动预填 scene.default_transport_type"
+  - "未处理 exception 在菜单显示 badge 计数"
+  - "所有 settlement 视图按钮风格统一"
+  - "verify.py 8/8 PASS + odoo_check PASS"
+  - "Sprint39 regression + Sprint42 BAT 不回归"
+
+goal: >
+  消除 Sprint27-42 建设的功能与日常运营之间的摩擦。
+  从"能做"进入"好用"阶段。
+
+# ADR-043
+#   1. Sprint43 是运营优化 sprint——不新增业务能力
+#   2. Sprint42 验证基线已冻结，可以放心改 UI
+#   3. 批量 action 必须安全（确认弹窗 + 权限校验）
+#   4. UI 更改必须通过 Odoo18 兼容检查
