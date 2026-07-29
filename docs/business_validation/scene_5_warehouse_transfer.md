@@ -2,6 +2,19 @@
 
 **Flow**: plan_driven | **Entry**: Pickup Plan → Order | **Expected Scene**: warehouse_transfer
 
+## Prerequisites
+| # | 档案 | 检查方式 | 如果缺失 |
+|---|------|---------|---------|
+| 0.1 | Scene: **warehouse_transfer** | Scenes 列表 | 升级模块或手动创建 |
+| 0.2 | Transport Type: **warehouse_transfer** | Transport Types | 升级模块或手动创建 |
+| 0.3 | Warehouse A（source） | Inventory → Warehouses | 手动创建（如 "Rotterdam WH"） |
+| 0.4 | Warehouse B（destination，不可与 A 相同） | Inventory → Warehouses | 手动创建（如 "Den Haag WH"） |
+| 0.5 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
+
+---
+
+
+
 ---
 
 ## Step-by-Step Operation

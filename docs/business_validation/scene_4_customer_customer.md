@@ -2,6 +2,18 @@
 
 **Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: customer_to_customer
 
+## Prerequisites
+| # | 档案 | 检查方式 | 如果缺失 |
+|---|------|---------|---------|
+| 0.1 | Scene: **customer_to_customer** | Scenes 列表 | 升级模块或手动创建 |
+| 0.2 | Partner: 客户 A | Contacts | 手动创建 |
+| 0.3 | Partner: 客户 B | Contacts | 手动创建 |
+| 0.4 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
+
+---
+
+
+
 ---
 
 ## Step-by-Step Operation

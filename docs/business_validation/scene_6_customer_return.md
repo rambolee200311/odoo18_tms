@@ -2,6 +2,19 @@
 
 **Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: customer_return
 
+## Prerequisites
+| # | 档案 | 检查方式 | 如果缺失 |
+|---|------|---------|---------|
+| 0.1 | Scene: **customer_return** | Scenes 列表 | 升级模块或手动创建 |
+| 0.2 | Transport Type: **reverse_logistics** | Transport Types | 升级模块或手动创建 |
+| 0.3 | Partner: 客户 | Contacts | 手动创建 |
+| 0.4 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
+| 0.5 | Warehouse | Inventory → Warehouses | 手动创建 |
+
+---
+
+
+
 ---
 
 ## Step-by-Step Operation
