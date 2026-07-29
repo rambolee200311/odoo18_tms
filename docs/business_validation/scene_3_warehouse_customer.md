@@ -10,11 +10,9 @@
 | 0.3 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
 | 0.4 | Warehouse: 至少一个仓库 | Inventory → Warehouses | 手动创建 |
 
----
 
 
 
----
 
 ## Step-by-Step Operation
 
@@ -23,21 +21,18 @@
 | 3.1 | Create Request (commercial, warehouse) | Create request: commercial, destination=warehouse, partner=customer | Saved | [ ] |
 | 3.2 | Inquiry → Quote → Order | Same flow as S2 | Order created, scene_id=warehouse_to_customer | [ ] |
 
----
 
 ## Issues Found
 | Step | Issue Description | Severity | Reported | Fix Status |
 |------|------------------|----------|----------|------------|
 | | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
----
 
 ## Fix Record
 | Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
 |--------|-------|-----------|-----------|--------|-----------------|--------|
 | | | | | | | |
 
----
 
 ## Final Result
 - **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk

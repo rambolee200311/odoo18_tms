@@ -1,4 +1,3 @@
----
 
 ## Prerequisites
 在开始前，确保以下基础档案已存在。如果缺失，需要先创建或导入：
@@ -18,7 +17,6 @@
 
 **Flow**: plan_driven | **Entry**: Pickup Plan → Order | **Expected Scene**: terminal_to_warehouse
 
----
 
 ## Step-by-Step Operation
 
@@ -31,21 +29,18 @@
 | 1.5 | Create Transport Order | Click "Create Transport Order" in Pickup Plan | Order created, scene_id = request.scene_id, transport_type = port_to_warehouse | [ ] |
 | 1.6 | Verify Order Snapshot | Open Order → check scene_id field definition | scene_id readonly=True, copy=False (immutable snapshot) | [ ] |
 
----
 
 ## Issues Found
 | Step | Issue Description | Severity | Reported | Fix Status |
 |------|------------------|----------|----------|------------|
 | | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
 
----
 
 ## Fix Record
 | Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
 |--------|-------|-----------|-----------|--------|-----------------|--------|
 | | | | | | | |
 
----
 
 ## Final Result
 - **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
