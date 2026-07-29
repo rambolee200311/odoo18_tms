@@ -19,7 +19,7 @@ target_scope: >
   P0: 编制 8 场景详细人工验证操作指导（逐步骤、逐字段）
   P0: 执行 8 场景人工验证（在系统中逐项测试）
   P0: 记录验证结果到 result_summary.md（通过/失败/原因/处理状态）
-  P0: 对失败项进行缺陷修复（scope 限定：仅修复验证发现的 bug，不改架构）
+  P0: 仅修复验证中发现的阻塞缺陷（验证无法继续才修；体验问题/顺手改进延后 Sprint43）
   P1: BAT 回归——确认验证修复未破坏自动化测试
 
   不做：新功能 / 新场景 / 架构变更 / 运营优化（Sprint43）。
@@ -32,17 +32,20 @@ accept_criteria:
 
   # ======== P0: 执行验证 ========
   - "8 个场景全部运行一次（系统中逐项测试）"
+  - "执行顺序：(1) 升级/补齐验证指导 → (2) 执行 8 场景验证 → (3) 记录结果 → (4) 仅修阻塞缺陷 → (5) BAT 回归"
   - "S1/S5/S6/S8：通过自动化 BAT + 手工补充验证"
   - "S2/S3/S4/S7：纯手工验证（无自动化 BAT）"
   - "每个场景记录：预期 vs 实际 / 场景 ID 是否一致 / flow 是否正确 / scene 链是否完整"
 
   # ======== P0: 结果记录 ========
   - "result_summary.md 更新为实际执行结果"
-  - "失败项标记：失败原因 / 是否已修复 / 修复 commit / 待处理"
+  - "失败项标记：状态枚举 — pass / fail-fixed / fail-deferred / fail-accepted-risk，+ 处理说明"
   - "所有失败项的修复必须记录到 bugfix_records.yaml"
 
   # ======== P0: 缺陷修复（scope 受限） ========
-  - "仅修复验证中发现的 bug（不一致的字段/错误的默认值/wrong view）"
+  - "仅修三类问题：字段错误 / 默认值错误 / 视图错误"
+  - "修：流程说明错误（文档级别的修正）"
+  - "不修：业务规则、状态机、场景映射、接口行为"
   - "禁止修改：业务逻辑 / 状态机 / 模型字段定义 / 结算逻辑"
   - "每个修复需 bug_id + root_cause + regression_test（遵循 Sprint39 change_control）"
 
@@ -96,7 +99,7 @@ deliverables:
   # 验证结果
   - "docs/business_validation/result_summary.md（实际执行结果）"
   # 缺陷修复
-  - "docs/context/history/bugfix_records.yaml（验证发现的问题）"
+  - "docs/context/history/bugfix_records.yaml（字段：bug_id / scene_id / root_cause / fix_scope / commit / regression_test / status）"
   # 上下文
   - "docs/context/context_version.yaml（1.0.58 -> 1.0.59）"
   - "docs/context/history/decision_note.md（ADR-042）"
@@ -141,3 +144,4 @@ goal: >
 #   2. 缺陷修复仅限验证发现的问题，不改变业务规则
 #   3. 验证结果为 Sprint43 运营优化提供安全基线
 #   4. Sprint41 文档 + Sprint42 执行 + Sprint43 优化 = 完整的三步走
+#   5. Sprint43（Operational Hardening）已在 ADR-043 中预设——运营优化不做验证 sprint 前
