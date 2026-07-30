@@ -88,6 +88,20 @@
                              <field name="cargo_volume"/>
                          </group>
                      </group>
+                     <group string="Origin Address" invisible="not scene_id">
+                         <field name="origin_street" placeholder="Street"/>
+                         <field name="origin_zip" placeholder="Zip" class="col-2"/>
+                         <field name="origin_city" placeholder="City"/>
+                         <field name="origin_state_id" options="{'no_create': True}" placeholder="State"/>
+                         <field name="origin_country_id" options="{'no_create': True}" placeholder="Country"/>
+                     </group>
+                     <group string="Destination Address" invisible="not scene_id">
+                         <field name="destination_street" placeholder="Street"/>
+                         <field name="destination_zip" placeholder="Zip" class="col-2"/>
+                         <field name="destination_city" placeholder="City"/>
+                         <field name="destination_state_id" options="{'no_create': True}" placeholder="State"/>
+                         <field name="destination_country_id" options="{'no_create': True}" placeholder="Country"/>
+                     </group>
                      <notebook>
                          <page string="Scheduling" invisible="request_type != 'plan_driven'" name="scheduling_page">
                              <group>

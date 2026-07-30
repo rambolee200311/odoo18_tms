@@ -104,6 +104,17 @@ class TransportQuote(models.Model):
         self.ensure_one()
         order = self.env['tlmp.transport.order'].create({
             'scene_id': self.request_id.scene_id.id if self.request_id and self.request_id.scene_id else False,
+            # Sprint44: copy address from request
+            'origin_street': self.request_id.origin_street if self.request_id else False,
+            'origin_zip': self.request_id.origin_zip if self.request_id else False,
+            'origin_city': self.request_id.origin_city if self.request_id else False,
+            'origin_state_id': self.request_id.origin_state_id.id if self.request_id and self.request_id.origin_state_id else False,
+            'origin_country_id': self.request_id.origin_country_id.id if self.request_id and self.request_id.origin_country_id else False,
+            'destination_street': self.request_id.destination_street if self.request_id else False,
+            'destination_zip': self.request_id.destination_zip if self.request_id else False,
+            'destination_city': self.request_id.destination_city if self.request_id else False,
+            'destination_state_id': self.request_id.destination_state_id.id if self.request_id and self.request_id.destination_state_id else False,
+            'destination_country_id': self.request_id.destination_country_id.id if self.request_id and self.request_id.destination_country_id else False,
             'request_id': self.request_id.id,
             'quote_id': self.id,
             'inquiry_id': self.inquiry_id.id,
