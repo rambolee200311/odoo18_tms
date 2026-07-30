@@ -72,6 +72,19 @@ class TransportRequest(models.Model):
     delivery_address = fields.Text(string='Delivery Address')
     delivery_contact = fields.Char(string='Delivery Contact')
     delivery_phone = fields.Char(string='Delivery Phone')
+
+    # Sprint44: structured origin address fields
+    origin_street = fields.Char(string='Origin Street')
+    origin_zip = fields.Char(string='Origin Zip')
+    origin_city = fields.Char(string='Origin City')
+    origin_state_id = fields.Many2one('res.country.state', string='Origin State')
+    origin_country_id = fields.Many2one('res.country', string='Origin Country')
+    # Sprint44: structured destination address fields
+    destination_street = fields.Char(string='Destination Street')
+    destination_zip = fields.Char(string='Destination Zip')
+    destination_city = fields.Char(string='Destination City')
+    destination_state_id = fields.Many2one('res.country.state', string='Destination State')
+    destination_country_id = fields.Many2one('res.country', string='Destination Country')
     pickup_location_id = fields.Many2one('res.partner', string='Pickup Location')
     delivery_location_id = fields.Many2one('res.partner', string='Delivery Location')
 
@@ -257,6 +270,28 @@ class TransportRequest(models.Model):
 
     # Constraints
     # -----------------------------------------------------------
+    @api.onchange('terminal_id')
+    def _onchange_terminal_id(self):
+        for r in self:
+            if r.terminal_id and not r.origin_street:
+                r.origin_street = r.terminal_id.street
+                r.origin_zip = r.terminal_id.zip
+                r.origin_city = r.terminal_id.city
+                r.origin_state_id = r.terminal_id.state_id
+                r.origin_country_id = r.terminal_id.country_id
+
+    @api.onchange('warehouse_id')
+    def _onchange_warehouse_id(self):
+        for r in self:
+            if r.warehouse_id and not r.destination_street:
+                wh = r.warehouse_id
+                if wh.partner_id:
+                    r.destination_street = wh.partner_id.street
+                    r.destination_zip = wh.partner_id.zip
+                    r.destination_city = wh.partner_id.city
+                    r.destination_state_id = wh.partner_id.state_id
+                    r.destination_country_id = wh.partner_id.country_id
+
     @api.constrains('destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id')
     def _check_destination_fields(self):
        for rec in self:
