@@ -10,6 +10,8 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="scene_type"/>
+                <field name="origin_type"/>
+                <field name="destination_type"/>
                 <field name="creation_method"/>
                 <field name="active"/>
             </list>
@@ -26,6 +28,8 @@
                         <group>
                             <field name="code"/>
                             <field name="scene_type"/>
+                            <field name="origin_type"/>
+                            <field name="destination_type"/>
                             <field name="creation_method"/>
                             <field name="sequence"/>
                             <field name="active"/>

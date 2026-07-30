@@ -15,6 +15,18 @@ class TransportScene(models.Model):
         ('commercial', 'Commercial'),
         ('mixed', 'Mixed'),
     ], string='Scene Type', required=True, default='plan_driven')
+    origin_type = fields.Selection([
+        ('terminal', 'Terminal'),
+        ('warehouse', 'Warehouse'),
+        ('customer', 'Customer'),
+        ('depot', 'Depot / Container Yard'),
+    ], string='Origin Type', required=True, default='terminal',
+       help='What type of location is the origin of this transport scene')
+    destination_type = fields.Selection([
+        ('warehouse', 'Warehouse'),
+        ('customer', 'Customer'),
+    ], string='Destination Type', required=True, default='warehouse',
+       help='What type of location is the destination of this transport scene')
     creation_method = fields.Selection([
         ('manual', 'Manual'),
         ('quote_auto', 'Quote Auto'),

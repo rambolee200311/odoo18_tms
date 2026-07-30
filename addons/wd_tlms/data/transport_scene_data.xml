@@ -5,6 +5,10 @@
         <field name="name">Terminal → Warehouse</field>
         <field name="code">terminal_to_warehouse</field>
         <field name="scene_type">plan_driven</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">warehouse</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">warehouse</field>
         <field name="creation_method">manual</field>
         <field name="sequence">10</field>
     </record>
@@ -12,6 +16,8 @@
         <field name="name">Terminal → Customer</field>
         <field name="code">terminal_to_customer</field>
         <field name="scene_type">commercial</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">customer</field>
         <field name="creation_method">quote_auto</field>
         <field name="sequence">20</field>
     </record>
@@ -19,6 +25,8 @@
         <field name="name">Warehouse → Customer</field>
         <field name="code">warehouse_to_customer</field>
         <field name="scene_type">commercial</field>
+        <field name="origin_type">warehouse</field>
+        <field name="destination_type">customer</field>
         <field name="creation_method">quote_auto</field>
         <field name="sequence">30</field>
     </record>
@@ -26,6 +34,8 @@
         <field name="name">Customer A → Customer B</field>
         <field name="code">customer_to_customer</field>
         <field name="scene_type">commercial</field>
+        <field name="origin_type">customer</field>
+        <field name="destination_type">customer</field>
         <field name="creation_method">quote_auto</field>
         <field name="sequence">40</field>
     </record>
@@ -33,6 +43,10 @@
         <field name="name">Warehouse ↔ Warehouse</field>
         <field name="code">warehouse_transfer</field>
         <field name="scene_type">plan_driven</field>
+        <field name="origin_type">warehouse</field>
+        <field name="destination_type">warehouse</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">warehouse</field>
         <field name="creation_method">manual</field>
         <field name="sequence">50</field>
     </record>
@@ -40,6 +54,8 @@
         <field name="name">Customer → Warehouse (Return)</field>
         <field name="code">customer_to_warehouse</field>
         <field name="scene_type">commercial</field>
+        <field name="origin_type">customer</field>
+        <field name="destination_type">warehouse</field>
         <field name="creation_method">quote_auto</field>
         <field name="sequence">60</field>
     </record>
@@ -47,6 +63,8 @@
         <field name="name">Container Swap</field>
         <field name="code">container_swap</field>
         <field name="scene_type">mixed</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">warehouse</field>
         <field name="creation_method">manual</field>
         <field name="sequence">70</field>
     </record>
@@ -54,6 +72,10 @@
         <field name="name">Empty Depo ↔ Warehouse</field>
         <field name="code">empty_depot</field>
         <field name="scene_type">plan_driven</field>
+        <field name="origin_type">depot</field>
+        <field name="destination_type">warehouse</field>
+        <field name="origin_type">terminal</field>
+        <field name="destination_type">warehouse</field>
         <field name="creation_method">manual</field>
         <field name="sequence">80</field>
     </record>
