@@ -280,6 +280,16 @@ class TransportRequest(models.Model):
                 r.origin_state_id = r.terminal_id.state_id
                 r.origin_country_id = r.terminal_id.country_id
 
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        for r in self:
+            if r.partner_id and not r.destination_street and r.scene_id and r.scene_id.destination_type == 'customer':
+                r.destination_street = r.partner_id.street
+                r.destination_zip = r.partner_id.zip
+                r.destination_city = r.partner_id.city
+                r.destination_state_id = r.partner_id.state_id
+                r.destination_country_id = r.partner_id.country_id
+
     @api.onchange('warehouse_id')
     def _onchange_warehouse_id(self):
         for r in self:
