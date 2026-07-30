@@ -1,4 +1,5 @@
 /** @odoo-module **/
+
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -8,102 +9,78 @@ export class TransportPlan extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.notification = useService("notification");
         this.action = useService("action");
+
         this.state = useState({
-            containers: [],
+            plans: [],
             calendarDays: [],
             dailyPlans: {},
             currentMonth: new Date(),
-            selectedBlNo: '',
-            selectedWarehouseId: null,
-            blNoOptions: [],
-            warehouseOptions: [],
         });
 
         let dragged = null;
 
         this.changeMonth = (delta) => {
             const cur = this.state.currentMonth;
-            const newDate = new Date(cur.getFullYear(), cur.getMonth(), 1);
-            newDate.setMonth(newDate.getMonth() + delta);
-            this.state.currentMonth = newDate;
+            const d = new Date(cur.getFullYear(), cur.getMonth(), 1);
+            d.setMonth(d.getMonth() + delta);
+            this.state.currentMonth = d;
             this.initCalendar();
         };
 
         onWillStart(async () => {
-            await this.loadContainers();
+            await this.loadData();
             this.initCalendar();
-            await this.loadDailyPlans();
         });
 
-        this.openContainerForm = () => {
-            this.action.doAction("wd_tlms.action_bl_container");
+        this.openPlanForm = () => {
+            this.action.doAction({
+                type: 'ir.actions.act_window',
+                res_model: 'pickup.plan',
+                view_mode: 'tree,form',
+                target: 'current',
+            });
         };
 
-        this.onDragStart = (ev, containerId) => {
-            dragged = { from: "list", containerId: Number(containerId) };
+        this.onDragStart = (ev, planId) => {
+            dragged = { from: "list", planId: Number(planId) };
             ev.dataTransfer.effectAllowed = "move";
-            ev.dataTransfer.setData("text/plain", String(containerId));
+            ev.dataTransfer.setData("text/plain", String(planId));
         };
 
-        this.onDragOver = (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; };
+        this.onDragOver = (ev) => {
+            ev.preventDefault();
+            ev.dataTransfer.dropEffect = "move";
+        };
 
         this.onDrop = async (ev, dateStr) => {
             ev.preventDefault();
             if (!dateStr) { dragged = null; return; }
-            const idFromTransfer = Number(ev.dataTransfer.getData("text/plain"));
-            const containerId = Number.isFinite(idFromTransfer) && idFromTransfer > 0 ? idFromTransfer : dragged?.containerId;
-            if (containerId) {
-                // If moving from calendar to another date, delete the old plan first
-                if (dragged?.from === "calendar" && dragged?.planId) {
-                    await this.orm.call('container.transport.plan', 'delete_transport_plan', [false, dragged.planId]);
-                }
-                await this.orm.call('container.transport.plan', 'create_transport_plan', [false, containerId, dateStr]);
-                await this.loadContainers();
-                await this.loadDailyPlans();
+            const planId = Number(ev.dataTransfer.getData("text/plain")) || dragged?.planId;
+            if (dragged?.from === "calendar" && dragged?.planId) {
+                await this.movePlan(dragged.planId, dateStr, dragged?.planDate);
+            } else if (planId && Number.isFinite(planId) && planId > 0) {
+                await this.savePlan(planId, dateStr);
             }
             dragged = null;
         };
 
-        this.onPlanDragStart = (ev, planId, containerId, planDate) => {
+        this.onPlanDragStart = (ev, planId, planDate) => {
             ev.stopPropagation();
-            dragged = { from: "calendar", planId: Number(planId), containerId: Number(containerId), planDate };
+            dragged = { from: "calendar", planId: Number(planId), planDate };
             ev.dataTransfer.effectAllowed = "move";
-            ev.dataTransfer.setData("text/plain", String(containerId));
+            ev.dataTransfer.setData("text/plain", String(planId));
         };
 
-        this.onContainerListDrop = async (ev) => {
+        this.onPlanListDrop = async (ev) => {
             ev.preventDefault();
-            const idFromTransfer = Number(ev.dataTransfer.getData("text/plain"));
-            const containerId = Number.isFinite(idFromTransfer) && idFromTransfer > 0 ? idFromTransfer : dragged?.containerId;
-            if (containerId) {
-                const plans = await this.orm.searchRead('container.transport.plan', [['container_id', '=', containerId]], ['id']);
-                for (const p of plans) {
-                    await this.orm.call('container.transport.plan', 'delete_transport_plan', [false, p.id]);
-                }
-                await this.loadContainers();
-                await this.loadDailyPlans();
+            const planId = Number(ev.dataTransfer.getData("text/plain")) || dragged?.planId;
+            if (planId && Number.isFinite(planId) && planId > 0) {
+                await this.cancelPlan(planId, dragged?.planId);
             }
             dragged = null;
         };
-    }
-
-    async loadContainers() {
-        const containers = await this.orm.call("bl.container", "get_unplanned_containers", [false]);
-        this.state.containers = containers || [];
-        const blNos = [...new Set((containers || []).map(c => c.bl_no).filter(Boolean))].sort();
-        this.state.blNoOptions = blNos.map(v => ({ value: v, label: v }));
-        const warehouseIds = [...new Set(
-            (containers || [])
-                .map(c => c.destination_warehouse?.[0])
-                .filter(id => Number.isInteger(id) && id > 0)
-        )];
-        if (warehouseIds.length > 0) {
-            const warehouses = await this.orm.read("stock.warehouse", warehouseIds, ["id", "name"]);
-            this.state.warehouseOptions = (warehouses || []).map(w => ({ value: w.id, label: w.name }));
-        } else {
-            this.state.warehouseOptions = [];
-        }
     }
 
     initCalendar() {
@@ -112,40 +89,120 @@ export class TransportPlan extends Component {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const days = [];
-        for (let i = 0; i < firstDay.getDay(); i++) days.push({ isEmpty: true, key: `e${i}` });
+        for (let i = 0; i < firstDay.getDay(); i++) {
+            days.push({ isEmpty: true, key: `empty-${year}-${month}-${i}` });
+        }
         for (let d = 1; d <= lastDay.getDate(); d++) {
             const date = new Date(year, month, d);
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr = date.toISOString().split("T")[0];
             days.push({
-                isEmpty: false, date: d, dateStr: dateStr,
-                dayOfWeek: date.getDay(), key: `d${d}`,
+                isEmpty: false, date: d, dateStr, fullDate: date,
+                dayOfWeek: date.getDay(), key: dateStr,
             });
         }
         this.state.calendarDays = days;
+        this.loadDailyPlans();
+    }
+
+    async loadData() {
+        try {
+            const plans = await this.orm.searchRead('pickup.plan',
+                [['scheduled_date', '=', false]],
+                ['id', 'name']);
+            const result = [];
+            for (const p of (plans || [])) {
+                const item = { id: p.id, plan_id: p.id, name: p.name,
+                    container_no: p.name, bl_no: '', container_type: '' };
+                const lines = await this.orm.searchRead('pickup.plan.container.line',
+                    [['plan_id', '=', p.id]],
+                    ['container_number', 'bl_number', 'container_type']);
+                if (lines && lines.length) {
+                    item.container_no = lines[0].container_number || p.name;
+                    item.bl_no = lines[0].bl_number || '';
+                    item.container_type = lines[0].container_type || '';
+                }
+                result.push(item);
+            }
+            this.state.plans = result;
+        } catch (error) {
+            console.error("loadData error:", error);
+            this.state.plans = [];
+        }
     }
 
     async loadDailyPlans() {
-        const year = this.state.currentMonth.getFullYear();
-        const month = this.state.currentMonth.getMonth();
-        const start = new Date(year, month, 1).toISOString().split('T')[0];
-        const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
-        const summary = await this.orm.call('container.transport.plan', 'get_daily_plan_summary', [false, start, end]);
-        this.state.dailyPlans = (summary && typeof summary === "object") ? summary : {};
+        try {
+            const year = this.state.currentMonth.getFullYear();
+            const month = this.state.currentMonth.getMonth();
+            const start = new Date(year, month, 1).toISOString().split('T')[0];
+            const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+            const plans = await this.orm.searchRead('pickup.plan',
+                [['scheduled_date', '>=', start], ['scheduled_date', '<', end]],
+                ['id', 'name', 'scheduled_date']);
+
+            const summary = {};
+            for (const p of (plans || [])) {
+                if (!summary[p.scheduled_date]) summary[p.scheduled_date] = { count: 0, plans: [] };
+                summary[p.scheduled_date].count++;
+                summary[p.scheduled_date].plans.push({
+                    id: p.id, name: p.name,
+                    container_id: [p.id, p.name],
+                    container_no: p.name,
+                });
+            }
+            this.state.dailyPlans = summary;
+            await this.loadData();
+        } catch (error) {
+            console.error('loadDailyPlans error:', error);
+            this.state.dailyPlans = {};
+        }
     }
 
-    getFilteredContainers() {
-        let result = this.state.containers;
-        if (this.state.selectedBlNo) result = result.filter(c => c.bl_no === this.state.selectedBlNo);
-        if (this.state.selectedWarehouseId) result = result.filter(c => c.destination_warehouse?.[0] === this.state.selectedWarehouseId);
-        return result;
+    async savePlan(planId, planDate) {
+        try {
+            await this.orm.write('pickup.plan', [planId], { scheduled_date: planDate });
+            await this.loadDailyPlans();
+        } catch (error) {
+            console.error('savePlan error:', error);
+        }
     }
 
-    onBlNoChange(ev) { this.state.selectedBlNo = ev.target.value; }
-    onWarehouseChange(ev) { this.state.selectedWarehouseId = ev.target.value ? parseInt(ev.target.value) : null; }
-    clearFilters() { this.state.selectedBlNo = ''; this.state.selectedWarehouseId = null; }
+    async cancelPlan(containerId, planId) {
+        try {
+            const ids = planId && Number.isFinite(Number(planId)) ? [Number(planId)] : [];
+            if (ids.length) {
+                await this.orm.write('pickup.plan', ids, { scheduled_date: false });
+            }
+            await this.loadDailyPlans();
+        } catch (error) {
+            console.error('cancelPlan error:', error);
+        }
+    }
+
+    async movePlan(planId, newDate, fromDate) {
+        try {
+            if (fromDate && newDate === fromDate) return;
+            await this.orm.write('pickup.plan', [Number(planId)], { scheduled_date: newDate });
+            await this.loadDailyPlans();
+        } catch (error) {
+            console.error('movePlan error:', error);
+        }
+    }
 
     getDayPlans(dateStr) {
-        return this.state.dailyPlans[dateStr] || { count: 0, containers: [] };
+        const entry = this.state.dailyPlans[dateStr];
+        if (!entry) return { count: 0, plans: [] };
+        const containersRaw = Array.isArray(entry.plans) ? entry.plans : [];
+        const seen = new Set();
+        const plans = [];
+        for (const c of containersRaw) {
+            const id = c?.id;
+            if (!Number.isFinite(Number(id)) || seen.has(id)) continue;
+            seen.add(id);
+            plans.push(c);
+        }
+        return { count: entry.count, plans };
     }
 
     formatMonthYear() {

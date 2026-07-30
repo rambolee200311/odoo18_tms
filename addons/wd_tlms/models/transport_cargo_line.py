@@ -23,6 +23,11 @@ class TransportCargoLine(models.Model):
     volume_m3 = fields.Float(string='Volume (m3)')
     container_no = fields.Char(string='Container No.',
                                help='Transport document snapshot only — does not replace container tracking master data')
+
+    bl_number = fields.Char(string='BL Number',
+                            help='Bill of Lading number for this container')
+    container_type = fields.Char(string='Container Type', default='20GP',
+                                 help='ISO container type code, e.g. 20GP, 40HC')
     source_type = fields.Selection([
         ('manual', 'Manual Entry'),
         ('outbound_order', 'Outbound Reference'),

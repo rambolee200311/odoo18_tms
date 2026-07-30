@@ -387,3 +387,14 @@ bind_asset_folder:
       - 不修改任何业务模型
     update_type: 质量硬化
     effect_scope: transport_scenario_validation
+  1.0.59:
+    update_content: |
+      Sprint42 Debugging Pass — 清理 Sprint38 残留 + 修复 5 类代码缺陷
+      - 清理 11 处 Sprint38 Rule Engine 残留引用（views/menus/ACL/tests/services/manifest）
+      - 修复 security_settlement_groups.xml XML 结构损坏（孤儿行）
+      - 修复 XML ID 引用错误 module_category_transport_management（缺 base. 前缀）
+      - 重写 3 个 portal JS 文件适配 Odoo 18 ES module 系统
+      - 补全 transport_request.py 缺失的 scene_id 字段
+      - 沉淀 6 条教训至 context/history/decision_note.md
+    update_type: Bug修复 + 质量硬化
+    effect_scope: sprint38_cleanup + xml_validity + js_compatibility + model_field

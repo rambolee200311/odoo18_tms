@@ -81,7 +81,6 @@ class PickupPlan(models.Model):
     # ---- Scheduling (filled during calendar scheduling) ----
     carrier_id = fields.Many2one(
         'res.partner', string='Trucking Company',
-        domain=[('is_carrier', '=', True)],
         help='Default carrier from system parameter tlmp.default_pickup_carrier_id')
     planned_pickup_date = fields.Datetime(string='Planned Pickup')
 

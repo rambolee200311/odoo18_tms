@@ -1,0 +1,27 @@
+intent_id: INT-TMS-SPRINT45-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: Pickup Plan / Inquiry / Quote 起终点地址适配
+
+target_scope: >
+  Sprint44 完成 Transport Request / Order 的起终点地址架构后，
+  本 Sprint 将同一套地址模型推广到 Pickup Plan / Inquiry / Quote：
+  - Pickup Plan：从 Request 复制起终点地址快照
+  - Inquiry：继承 Request 的起终点地址
+  - Quote：继承 Inquiry 的起终点地址
+  - 对应视图更新
+
+dependencies:
+- Sprint44 (INT-TMS-SPRINT44-001) — Request / Order 地址架构
+
+deliverables:
+- pickup.plan: 起终点地址字段 + action_go_schedule 复制地址快照
+- transport.inquiry: 起终点地址字段 + 继承逻辑
+- transport.quote: 起终点地址字段 + 继承逻辑
+- 对应表单 / 列表视图更新
+- 测试覆盖
+
+limit_constraints: |
+  1. 依赖 Sprint44 完成，否则无基座可对接
+  2. 不做 Google Maps API
+  3. 自动填充地址用户可编辑

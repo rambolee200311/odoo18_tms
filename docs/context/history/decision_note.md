@@ -1242,3 +1242,234 @@ Validate business scenarios without modifying any models. Three-layer coverage:
 - Sprint42 can start from a validated scenario baseline
 - Future functional changes must update the scenario catalog
 - Golden datasets become the long-term regression baseline
+
+---
+
+## Sprint42 Debugging Lessons — 2026-07-29
+
+**背景**: Sprint42 手工验证执行中发现首页 500 错误，经过 4+ 小时多轮排查，
+发现一批互不关联的代码缺陷。以下为教训沉淀。
+
+***
+
+### 教训1：删除模型时必须全链路清理引用
+
+**错误**: Sprint38 Exception Rule Engine 被废弃后，只删除了 `transport_settlement_exception_rule.py` 模型文件，
+但 6 类引用文件全部残留：views/ACL/tests/menus/services/manifest。
+
+**修正**: `grep -rn "model_name" --include="*.py" --include="*.xml" --include="*.csv"` 找到全部残留。
+
+**规则**: 删除模型必须执行全量 grep 检查，确保 6 类引用文件（views/menus/ACL/tests/services/manifest）都清理干净。
+
+***
+
+### 教训2：XML 文件修改后必须验证结构完整性
+
+**错误**: `security_settlement_groups.xml` 因 sed 编辑产生孤儿行，`<field name="...">` 字段无 `<record>` 包裹。
+
+**修正**: `python -c "from lxml import etree; etree.parse('file.xml')"` 验证 XML。
+
+**规则**: 所有 XML 修改后必须执行 lxml 解析验证，禁止纯肉眼检查。
+
+***
+
+### 教训3：XML ID 引用必须确认存在
+
+**错误**: `security_settlement_groups.xml` 引用了不存在的 category ID `module_category_transport_management`（缺少 `base.` 前缀）。
+
+**修正**: 改为 `base.module_category_transport`，与同文件其他记录一致。
+
+**规则**: XML ID 引用必须 `grep -rn "xml_id" --include="*.xml"` 确认目标存在。
+
+***
+
+### 教训4：Odoo 18 已移除 `web.rpc` / `web.core` JS 模块
+
+**错误**: 三个 portal JS 文件使用 `odoo.define + require('web.rpc')`，
+但 Odoo 18 前端 bundle 已移除旧版 AMD 模块。
+
+**修正**: 改用 `@odoo-module` + `@web/core/network/rpc`，从 `odoo.session_info` 获取 partner_id。
+
+**规则**: Odoo 18 项目使用 `@odoo-module` ES module 语法，禁止 `odoo.define` 旧写法。
+
+***
+
+### 教训5：视图引用的字段必须在模型层存在
+
+**错误**: `transport_request_views.xml` 引用 `<field name="scene_id"/>`，但模型从未定义该字段。
+
+**修正**: 在 `transport_request.py` 新增 `scene_id` Many2one 字段。
+
+**规则**: XML 视图引用字段前，必须 `grep "field_name" models/` 确认模型定义存在。
+
+***
+
+### 教训6：调试顺序
+
+**正确顺序**:
+1. 读自定义模块代码（`addons/wd_tlms/`），不动官方代码
+2. 读模块日志（`debug_logs/odoo_181.log`）定位真实错误
+3. 不查缓存（`.pyc`），不重复编译
+4. 一次修复一个错误，验证后再继续
+5. XML 修改后必须 lxml 验证
+
+***
+
+### 教训7：代码修改后必须自行 -u 验证
+
+**错误**: 多次修改代码后未运行 `-u wd_tlms --stop-after-init` 验证，直接让用户人工测试。
+用户反复提醒"你自己不会跑 -u 吗"，但连续多次仍然忘记。
+
+**修正**: 每次修改 Python/XML/CSV 代码后，必须自行运行升级验证，确认零 ERROR 后再告知用户。
+
+**规则**:
+1. 改完代码 → 立刻 `-u wd_tlms --stop-after-init` 验证
+2. 零 ERROR → 查数据库确认数据/模板已加载（template/action/menu 等）
+3. 全部通过 → 再告知用户重启服务器
+4. 如果版本号未变、Odoo 跳过数据加载 → 必须 bump `__manifest__.py` 小版本号
+
+**后果**: 不执行此规则导致用户反复试错，每次浪费 5-15 分钟。
+
+***
+
+### 教训8：Python 文件替换后必须确认修改已落地
+
+**错误**: 用 `content.replace(old, new)` 给 `transport_cargo_line.py` 加 `bl_number` 和 `container_type` 字段。old 字符串里的 `--`（ASCII 连字符）与实际文件里的 `—`（Unicode em dash）不匹配，替换静默失败。结果视图引用了不存在的字段，`-u` 报 ParseError。
+
+**修正**: 检查字段是否真的在文件里（`grep "field_name"`），而不是假设替换成功了。
+
+**规则**:
+1. Python 文件编辑后 → 必须 `grep -c "new_field" file.py` 确认修改已落地
+2. 字符串匹配注意 Unicode/特殊字符差异（`--` vs `—` vs `-`）
+3. 视图报 "field does not exist" → 先检查模型文件里字段是否存在，不要浪费时间去猜其他原因
+4. 代码修改后 → 必须 `-u` 验证 → 确认零 ERROR → 再告知用户
+
+**后果**: 花了 4+ 小时追踪一个从不存在的错误原因，只因为替换没匹配上。
+
+***
+
+### 教训9：验证方式必须与用户实际操作一致
+
+**错误**: 长期使用 `-u wd_tlms --stop-after-init` 验证代码修改。
+这种 CLI 一次性命令启动新进程加载最新代码，与用户实际流程完全割裂。
+用户流程是：启动常驻服务器 → 在 UI 中点 Upgrade 按钮 → 服务器在已有 Python 代码基础上加载数据文件。
+
+**后果**: 多次出现"我验证通过、用户 UI 升级报错"的拉扯，每次浪费大量时间。
+
+**修正**: 验证流程必须复制用户实际操作路径。
+
+**正确验证流程**:
+1. 杀旧进程、清日志
+2. `nohup` 启动常驻服务器
+3. 等待服务器就绪（通过 XML-RPC `version()` 确认）
+4. 通过 XML-RPC 调用 `button_immediate_upgrade`（等价 UI 点升级按钮）
+5. 等待升级完成（10 秒）
+6. 检查日志：`grep -i "ERROR\|CRITICAL\|TRACEBACK"`，过滤 worlddepot
+7. 确认零 ERROR 后再告知用户
+
+**方式对比**:
+
+| 方式 | 是否符合用户操作 | 能否发现全部错误 |
+|------|------------------|-----------------|
+| `-u --stop-after-init` | ❌ 启动新进程加载最新代码 | ❌ 漏报 XML 解析错误 |
+| `-u`（常驻） | ❌ 仍是命令行升级 | ❌ 路径不同 |
+| **XML-RPC button_immediate_upgrade** | ✅ 完全等价 UI 点击 | ✅ 完整复现用户错误 |
+
+***
+
+### 教训10：Odoo Shell 写操作必须 commit
+
+**错误**: 用 `env['model'].search([]).unlink()` 删除数据后未调用 `env.cr.commit()`，
+shell 会话结束时事务回滚，数据未被删除。用户反复看到旧数据，导致信任崩塌。
+
+**修正**: 每次写操作后必须 `env.cr.commit()`。
+
+**相关规则**:
+1. shell 写操作 → `env.cr.commit()`（事务自动回滚，需手动提交）
+2. 验证写操作 → 在新会话中 `search_count` 确认
+3. JS/OWL 组件实现 → 先读 `addons/transport` 等参考实现，再动手，不猜
+4. manifest assets → `@odoo-module` 文件用精确路径，不用 glob 模式
+5. XML 模版 → 不用 `&larr;`/`&rarr;`，用 Unicode 字符（←→）
+6. 方法对齐 → 模版用 inline arrow function `(ev) => method(ev, arg)`
+
+**后果**: 数小时无法定位原因，用户反复测试失败，完全失去耐心。
+
+---
+
+### 教训11：用户说"参考XX"时必须立即停下来阅读
+
+**错误**: 用户多次说"参考 `action_container_transport_plan`"、"参考 `addons/transport`"，但我一直没去读，
+而是自己猜测 JS 结构和注册方式，浪费了 4+ 小时。
+
+**修正**: 用户给出参考路径后，立即停止当前工作，先完整阅读参考实现，再动手。
+
+---
+
+### 教训12：不要同时修改多个无关问题
+
+**错误**: 一次 session 中同时改了：manifest 遗漏、XML 实体、JS 注册、模板对齐、Python 模型字段、ACL 权限等。
+每改一个就引入新的错误，导致"修一个漏三个"的恶性循环。
+
+**修正**: 每次只改一个独立问题，验证通过后再改下一个。多问题并行 = 无法定位错误源头。
+
+---
+
+### 教训13：读日志要从头读到尾，不要只读尾巴
+
+**错误**: 多次只看 `tail -30` 或 `grep ERROR`，错过了关键上下文信息。
+例如 `&larr;` 的错误一开始就有，但被其他 ERROR 淹没了。
+
+**修正**: 升级后阅读完整日志，从上到下看所有 WARNING / ERROR / Traceback，不要提前过滤。
+
+---
+
+### 教训14：文件修改后必须验证"修改确实落盘了"
+
+**错误**: Python replace 因为 em dash 不匹配静默失败、JS 文件写入但内容被截断、shell 操作未 commit。
+每次都是事后才发现修改没生效。
+
+**修正**:
+- Python replace → `grep "new_field" file.py` 确认
+- 文件写入 → `head/wc -c` 确认大小
+- Shell 写操作 → `env.cr.commit()` + 新会话 `search_count` 确认
+
+---
+
+### 教训15：测试方式必须"等价用户操作"，不能"走捷径"
+
+**错误**: 
+- 用 `--stop-after-init` 代替常驻服务升级 → 漏报错误
+- 用 `-u` 代替 UI 点 Upgrade → 路径不同
+- 用 shell 查数据但不 commit → 数据没变
+
+**修正**: 每次验证前问自己："用户实际怎么操作的？我的验证方式等价吗？"
+
+| 用户操作 | 等价验证 |
+|---------|---------|
+| 点 Upgrade | XML-RPC `button_immediate_upgrade` |
+| 常驻服务 | `-u` 常驻模式，非 `--stop-after-init` |
+| 看界面 | 查数据库确认数据 |
+| 硬刷新 | 清除缓存后测试 |
+
+---
+
+### 教训16：写 JS 组件前先读一个可工作的参考实现
+
+**错误**: 尝试用 `@odoo-module` 写 OWL 组件时，没有先读 `addons/worlddepot/static/src/js/pallet_scan.js` 或
+`addons/transport/static/src/js/transport_plan/transport_plan.js`，而是凭记忆猜测语法。
+
+**修正顺序**: 
+1. 找到参考实现（`transport_plan.js` / `pallet_scan.js`）
+2. 完整阅读理解结构
+3. 复制框架，只改数据层
+4. 保持 `@odoo-module` + blank line + `export class` + `export { }` 不变
+
+**关键检查清单**:
+- [ ] `@odoo-module` 后有空行
+- [ ] `export class Xxx extends Component`
+- [ ] `export { Xxx }` 在文件末尾
+- [ ] `registry.category('actions').add('key', Xxx)`
+- [ ] manifest 用精确路径
+- [ ] 模版用 inline arrow function
+- [ ] 无 `&larr;`/`&rarr;` 等 HTML 实体
+- [ ] shell 写操作有 `env.cr.commit()`

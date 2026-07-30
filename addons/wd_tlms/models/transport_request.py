@@ -14,6 +14,9 @@ class TransportRequest(models.Model):
         # ---- Identity ----
     name = fields.Char(string='Request No.', required=True, copy=False,
                       default=lambda self: _('New'))
+    scene_code = fields.Char(related='scene_id.code', string='Scene Code', store=True, readonly=True)
+    scene_id = fields.Many2one('tlmp.transport.scene', string='Transport Scene',
+                               help='Sprint40: scene becomes the primary business dimension. Replaces old request_type+destination_type two-dimensional flow model.')
 
     # ---- Flow Control (determines downstream path) ----
     request_type = fields.Selection([
@@ -137,9 +140,45 @@ class TransportRequest(models.Model):
        self.ensure_one()
        if self.request_type != 'plan_driven':
            raise UserError(_('Schedule is only available for plan-driven requests.'))
+       # Reuse existing Pickup Plan if already created
+       # Reuse existing Pickup Plan (search by request_id or name)
+       plan_name = self.name.replace('REQ', 'PUP-')
+       existing_plan = self.env['pickup.plan'].search([
+           '|',
+           ('transport_request_id', '=', self.id),
+           ('name', '=', plan_name),
+       ], limit=1)
+       
+       if existing_plan:
+           plan = existing_plan
+           # Update transport_request_id if not set (first-time fix)
+           if not plan.transport_request_id:
+               plan.transport_request_id = self.id
+       else:
+           # Create a new Pickup Plan
+           plan = self.env['pickup.plan'].create({
+               'name': plan_name,
+               'transport_request_id': self.id,
+               'scene_id': self.scene_id.id,
+               'cargo_type': self.cargo_type,
+               'destination_type': self.destination_type,
+               'terminal_id': self.terminal_id.id,
+               'warehouse_id': self.warehouse_id.id,
+               'source_type': 'manual',
+           })
+           # Copy cargo lines to pickup plan container lines
+           for cl in self.cargo_line_ids:
+               self.env['pickup.plan.container.line'].create({
+                   'plan_id': plan.id,
+                   'container_number': cl.container_no or '',
+                   'container_type': cl.container_type or '20GP',
+                   'bl_number': cl.bl_number or '',
+                   'weight': cl.gross_weight,
+               })
+       
        return {
-           'type': 'ir.actions.act_url',
-           'url': '/pickup_schedule',
+           'type': 'ir.actions.client',
+           'tag': 'tlmp_schedule.action',
            'target': 'self',
        }
 

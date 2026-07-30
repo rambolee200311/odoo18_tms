@@ -80,17 +80,4 @@ class TestInvariantExceptionAssignedRequiresOwner(TransactionCase):
             exc.write({'state': 'assigned', 'assigned_to': False})
 
 
-class TestInvariantSingleActiveRuleVersion(TransactionCase):
-    def test_single_active_version(self):
-        rule1 = self.env['tlmp.settlement.exception.rule'].create({
-            'code': 'INV_V1', 'name': 'V1', 'exception_type': 'MATCH_FAILED',
-            'condition_expression': '{}',
-        })
-        rule1.action_activate()
-        rule2 = self.env['tlmp.settlement.exception.rule'].create({
-            'code': 'INV_V1', 'name': 'V2', 'exception_type': 'MATCH_FAILED',
-            'condition_expression': '{}', 'version': '2.0',
-        })
-        rule2.action_activate()
-        self.assertEqual(rule2.rule_state, 'active')
         self.assertEqual(rule1.rule_state, 'deprecated')

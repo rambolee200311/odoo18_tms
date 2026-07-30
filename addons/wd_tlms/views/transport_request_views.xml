@@ -55,7 +55,7 @@
                          </group>
                          <group string="Partner &amp; Cargo">
                              <field name="partner_id"
-                                    invisible="destination_type == 'warehouse'"
+                                    invisible="scene_code not in ('terminal_to_customer', 'warehouse_to_customer', 'customer_to_customer', 'customer_to_warehouse', 'container_swap')"
                                     options="{'no_create': True}"/>
                              <field name="customer_ref"/>
                              <field name="contact_person"/>
@@ -66,20 +66,20 @@
                      <group string="Scene Details">
                          <group>
                              <field name="terminal_id"
-                                    invisible="destination_type not in ('warehouse', 'customer')"
+                                    invisible="scene_code not in ('terminal_to_warehouse', 'terminal_to_customer')"
                                     options="{'no_create': True}"/>
                              <field name="warehouse_id"
-                                    invisible="destination_type not in ('warehouse', 'warehouse_transfer')"
+                                    invisible="scene_code not in ('terminal_to_warehouse', 'warehouse_transfer', 'customer_to_warehouse', 'empty_depot')"
                                     options="{'no_create': True}"/>
                              <field name="source_warehouse_id"
-                                    invisible="destination_type != 'warehouse_transfer'"
+                                    invisible="scene_code != 'warehouse_transfer'"
                                     options="{'no_create': True}"/>
                              <field name="delivery_address"
-                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                                    invisible="scene_code not in ('terminal_to_customer', 'warehouse_to_customer', 'customer_to_customer', 'customer_to_warehouse')"/>
                              <field name="delivery_contact"
-                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                                    invisible="scene_code not in ('terminal_to_customer', 'warehouse_to_customer', 'customer_to_customer', 'customer_to_warehouse')"/>
                              <field name="delivery_phone"
-                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                                    invisible="scene_code not in ('terminal_to_customer', 'warehouse_to_customer', 'customer_to_customer', 'customer_to_warehouse')"/>
                          </group>
                          <group>
                              <field name="pallet_count" invisible="cargo_type != 'pallet'"/>
@@ -103,6 +103,21 @@
                                          <field name="name"/>
                                          <field name="cargo_type"/>
                                          <field name="scheduled_date"/>
+                                     </list>
+                                 </field>
+                             </group>
+                         </page>
+                         <page string="Cargo Lines" name="cargo_page">
+                             <group>
+                                 <field name="cargo_line_ids" nolabel="1">
+                                     <list editable="bottom">
+                                         <field name="sequence" optional="show"/>
+                                         <field name="description" required="1"/>
+                                         <field name="container_no"/>
+                                         <field name="container_type"/>
+                                         <field name="bl_number"/>
+                                         <field name="gross_weight"/>
+                                         <field name="volume_m3"/>
                                      </list>
                                  </field>
                              </group>

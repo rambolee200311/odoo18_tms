@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.53',
+    'version': '1.0.61',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -22,6 +22,7 @@
         'security/ir.model.access.csv',
         'data/sequences.xml',
         'data/surcharge_data.xml',
+        'data/transport_scene_data.xml',
         'views/pickup_plan_views.xml',
         'views/transport_request_views.xml',
         'views/transport_inquiry_views.xml',
@@ -68,16 +69,21 @@
         'views/transport_carrier_invoice_template_views.xml',
         'views/transport_carrier_invoice_import_views.xml',
         'views/transport_settlement_exception_views.xml',
-        'views/transport_settlement_exception_rule_views.xml',
         'views/settlement_export_wizard.xml',
         'views/transport_match_rule_views.xml',
+        'views/transport_scene_views.xml',
+        'views/pickup_schedule_templates.xml',
+        'views/product_adr_views.xml',
         'views/tlmp_menus.xml',
     ],
     'assets': {
         'web.assets_backend': [
-                'wd_tlms/static/src/js/*.js',
-                'wd_tlms/static/src/css/*.css',
-                'wd_tlms/static/src/xml/*.xml'
+                'wd_tlms/static/src/js/pickup_schedule.js',
+                'wd_tlms/static/src/js/tlmp_portal_carrier.js',
+                'wd_tlms/static/src/js/tlmp_portal_customer.js',
+                'wd_tlms/static/src/js/tlmp_portal_helper.js',
+                'wd_tlms/static/src/css/pickup_schedule.css',
+                'wd_tlms/static/src/xml/transport_plan.xml',
             ]
     },
     'installable': True,

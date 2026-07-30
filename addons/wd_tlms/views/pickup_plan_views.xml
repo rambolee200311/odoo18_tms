@@ -5,8 +5,9 @@
         <field name="name">pickup.plan.list</field>
         <field name="model">pickup.plan</field>
         <field name="arch" type="xml">
-            <list string="Pickup Requirements" default_order="id desc">
+            <list string="Pickup Plans" default_order="id desc">
                 <field name="name"/>
+                <field name="scene_id" optional="show"/>
                 <field name="cargo_type"/>
                 <field name="source_type"/>
                 <field name="destination_type"/>
@@ -26,7 +27,7 @@
         <field name="name">pickup.plan.form</field>
         <field name="model">pickup.plan</field>
         <field name="arch" type="xml">
-            <form string="Pickup Requirement">
+            <form string="Pickup Plan">
                 <header>
                     <button name="action_open_schedule" type="object" string="Go to Schedule"
                             class="btn-primary"
@@ -42,6 +43,7 @@
                     <group>
                         <group string="Base Info">
                             <field name="name" readonly="1"/>
+                            <field name="scene_id" options="{'no_create': True}"/>
                             <field name="cargo_type"/>
                             <field name="source_type"/>
                             <field name="iff_requirement_ref"
@@ -140,7 +142,7 @@
         <field name="name">pickup.plan.search</field>
         <field name="model">pickup.plan</field>
         <field name="arch" type="xml">
-            <search string="Pickup Requirements">
+            <search string="Pickup Plans">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="carrier_id"/>
@@ -184,8 +186,20 @@
         </field>
     </record>
 
+    <!-- Calendar view for scheduling -->
+    <record id="view_pickup_plan_calendar" model="ir.ui.view">
+        <field name="name">pickup.plan.calendar</field>
+        <field name="model">pickup.plan</field>
+        <field name="arch" type="xml">
+            <calendar date_start="scheduled_date" string="Pickup Schedule" color="cargo_type">
+                <field name="name"/>
+                <field name="cargo_type"/>
+            </calendar>
+        </field>
+    </record>
+
     <record id="action_pickup_plan" model="ir.actions.act_window">
-        <field name="name">Pickup Requirements</field>
+        <field name="name">Pickup Plans</field>
         <field name="res_model">pickup.plan</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_pickup_plan_search"/>

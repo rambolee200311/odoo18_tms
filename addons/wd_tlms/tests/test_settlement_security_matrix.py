@@ -9,17 +9,6 @@ class TestSecuritySettlementMatrix(TransactionCase):
         super().setUp()
         self.partner = self.env['res.partner'].create({'name': 'T', 'is_company': True})
 
-    def test_01_operator_cannot_create_rule(self):
-        user = self.env['res.users'].create({
-            'name': 'Op', 'login': 'op_s39_%s' % self.id,
-            'groups_id': [(6, 0, [self.env.ref('wd_tlms.group_tlm_invoice_operator').id])],
-        })
-        with self.assertRaises(Exception):
-            self.env['tlmp.settlement.exception.rule'].sudo(user=user).create({
-                'code': 'X', 'name': 'X', 'exception_type': 'MATCH_FAILED',
-                'condition_expression': '{}',
-            })
-
     def test_02_financier_can_read_only(self):
         user = self.env['res.users'].create({
             'name': 'Fin', 'login': 'fin_s39_%s' % self.id,

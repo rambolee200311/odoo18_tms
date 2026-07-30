@@ -68,26 +68,6 @@ class TestSettlementE2EExceptionChain(TransactionCase):
         self.assertEqual(exc.case_id.id, case.id)
 
 
-class TestSettlementE2ERuleChain(TransactionCase):
-    """Case 3: rule → execution → exception → trace"""
-
-    def test_01_rule_execution_trace(self):
-        rule = self.env['tlmp.settlement.exception.rule'].create({
-            'code': 'E2E_RULE', 'name': 'E2E Rule', 'exception_type': 'MATCH_FAILED',
-            'condition_expression': '{"operator":"lt","field":"matching_confidence","value":0.5}',
-            'rule_state': 'active',
-        })
-        executor = self.env['tlmp.rule.action.executor']
-        ctx = {'source_model': 'test', 'source_res_id': 1,
-               'source_display_name': 'E2E', 'snapshot': {}}
-        result = executor.execute(rule, ctx)
-        self.assertEqual(result['status'], 'ok')
-        self.assertTrue(result.get('exception_id'))
-        exc = self.env['tlmp.settlement.exception'].browse(result['exception_id'])
-        self.assertEqual(exc.creation_method, 'rule_engine')
-        self.assertTrue(exc.rule_execution_id)
-
-
 class TestSettlementE2ECorrectionChain(TransactionCase):
     """Case 4: allocation → reversal → replacement → reconciliation"""
 

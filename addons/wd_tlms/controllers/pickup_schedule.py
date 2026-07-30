@@ -147,8 +147,7 @@ class PickupScheduleController(http.Controller):
 
         return {'ok': True, 'day_count': day_count, 'removed_date': str(removed_date) if removed_date else None}
 
-    @http.route('/pickup_schedule/api/unplanned', type='json', auth='user',
-                methods=['GET'], csrf=False)
+    @http.route('/pickup_schedule/api/unplanned', type='http', auth='user', csrf=False)
     def api_get_unplanned(self, destination_id=None, warehouse_id=None, **kwargs):
         """Return all unscheduled plans for the left-side panel.
 
@@ -196,7 +195,8 @@ class PickupScheduleController(http.Controller):
 
             result.append(item)
 
-        return result
+        data = json.dumps(result)
+        return request.make_response(data, headers=[('Content-Type', 'application/json')])
 
 
     # ================================================================

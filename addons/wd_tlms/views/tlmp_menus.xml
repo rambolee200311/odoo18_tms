@@ -1,4 +1,5 @@
 <odoo>
+    <data>
     <!-- Top Menu -->
     <menuitem id="menu_tlmp_root" name="Transport" sequence="10"
               web_icon="wd_tlms,static/description/icon.png"/>
@@ -10,10 +11,10 @@
               action="action_tlmp_request" sequence="5"/>
     <!-- Group 1: Pickup &amp; Service -->
     <menuitem id="menu_tlmp_pickup_group" name="Pickup &amp; Service" parent="menu_tlmp_operations" sequence="25"/>
-    <menuitem id="menu_tlmp_pickup_plans" name="Pickup Requirements" parent="menu_tlmp_pickup_group"
+    <menuitem id="menu_tlmp_pickup_plans" name="Pickup Plans" parent="menu_tlmp_pickup_group"
               action="action_pickup_plan" sequence="25"/>
-    <menuitem id="menu_tlmp_schedule_plans" name="Schedule Plans" parent="menu_tlmp_pickup_group"
-              action="action_schedule_plan_schedule" sequence="15"/>
+<!--     <menuitem id="menu_tlmp_schedule_plans" name="Schedule Plans" parent="menu_tlmp_pickup_group"
+              action="action_schedule_plan_schedule" sequence="15"/> -->
     <menuitem id="menu_tlmp_container_service" name="Container Service"
               parent="menu_tlmp_pickup_group"
               action="action_container_service_request" sequence="20"/>
@@ -53,9 +54,6 @@
               action="action_tlmp_settlement" sequence="20"/>
     <menuitem id="menu_tlmp_exception" name="Settlement Exceptions" parent="menu_tlmp_finance"
               action="action_tlmp_exception_review_queue" sequence="25"/>
-    <menuitem id="menu_tlmp_exception_rule" name="Exception Rules" parent="menu_tlmp_finance"
-              action="action_tlmp_rule" sequence="26"
-              groups="wd_tlms.group_tlm_settlement_rule_manager"/>
     <menuitem id="menu_tlmp_surcharges" name="Surcharges" parent="menu_tlmp_finance"
               action="action_tlmp_surcharge" sequence="30"/>
     <menuitem id="menu_tlmp_billing_documents" name="Billing Documents" parent="menu_tlmp_finance"
@@ -93,6 +91,12 @@
               action="action_tlmp_dangerous_goods_profile" sequence="47"/>
     <menuitem id="menu_tlmp_transport_type" name="Transport Types" parent="menu_tlmp_config"
               action="action_tlmp_transport_type" sequence="48"/>
+    <menuitem id="menu_tlmp_transport_scene" name="Transport Scenes" parent="menu_tlmp_config"
+              action="action_tlmp_transport_scene" sequence="48"/>
+    <menuitem id="menu_tlmp_event_type" name="Event Types" parent="menu_tlmp_config"
+              action="action_tlmp_event_type" sequence="49"/>
+    <menuitem id="menu_tlmp_scene_event" name="Scene Events" parent="menu_tlmp_config"
+              action="action_tlmp_scene_event" sequence="50"/>
     <menuitem id="menu_tlmp_carrier_service" name="Carrier Services" parent="menu_tlmp_config"
               action="action_tlmp_carrier_service" sequence="49"/>
     <menuitem id="menu_tlmp_charge_types" name="Charge Types" parent="menu_tlmp_config"
@@ -132,4 +136,5 @@
               parent="menu_transportation_root"
               action="action_bl_container"
               sequence="30"/>
+    </data>
 </odoo>

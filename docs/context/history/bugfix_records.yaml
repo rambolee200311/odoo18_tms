@@ -2,3 +2,44 @@
 # Fields: bug_id / scene_id / root_cause / fix_scope / commit / regression_test / status
 version: 1.0
 records: []
+
+records:
+  - bug_id: SD42-001
+    scene_id: global
+    root_cause: Sprint38 删除 rule model 后未清理 views/menus/ACL/tests/services 引用
+    fix_scope: 11 处文件清理：manifest/view/menu/ACL/test*4/service 目录
+    commit: pending
+    regression_test: verify.py
+    status: fixed
+
+  - bug_id: SD42-002
+    scene_id: global
+    root_cause: security_settlement_groups.xml 孤儿行 — 上一次 sed 编辑产生游离 <field> 无 <record> 包裹
+    fix_scope: 删除 19-22 行孤儿内容
+    commit: pending
+    regression_test: lxml verify
+    status: fixed
+
+  - bug_id: SD42-003
+    scene_id: global
+    root_cause: security_settlement_groups.xml 引用不存在的 category_id `module_category_transport_management`（缺 base. 前缀）
+    fix_scope: 改为 `base.module_category_transport`
+    commit: pending
+    regression_test: odoo_check.py
+    status: fixed
+
+  - bug_id: SD42-004
+    scene_id: all
+    root_cause: 三个 portal JS 文件使用 Odoo 16/17 旧版 `web.rpc` / `web.core`，Odoo 18 已移除
+    fix_scope: 重写为 @odoo-module ES module，使用 @web/core/network/rpc
+    commit: pending
+    regression_test: manual browser console
+    status: fixed
+
+  - bug_id: SD42-005
+    scene_id: S1-S8
+    root_cause: transport_request.py 缺少 scene_id 字段，但 transport_request_views.xml 引用了它
+    fix_scope: 在 transport_request.py 新增 scene_id Many2one('tlmp.transport.scene')
+    commit: pending
+    regression_test: odoo_check.py
+    status: fixed

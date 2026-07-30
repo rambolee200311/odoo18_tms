@@ -1,0 +1,83 @@
+# ==============================================================
+# Sprint44 Intent 契约 — Scene-Driven Address Architecture
+# ==============================================================
+intent_id: INT-TMS-SPRINT44-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: 场景驱动起终点地址架构
+
+target_scope: >
+  当前 Transport Request / Transport Order 的起终点地址依赖 destination_type
+  和零散的 terminal_id/warehouse_id/delivery_address 字段，无法根据
+  8 个运输场景自动匹配起终点类型和地址。
+
+  本期要求：
+  1. tlmp.transport.scene 新增 origin_type / destination_type
+  2. Request 和 Order 新增内联结构化起终点地址（各一组 street/zip/city/state_id/country_id）
+  3. 根据场景的起终点类型，自动填充或允许用户录入地址
+
+accept_criteria:
+- "8 个场景的 origin_type / destination_type 映射已定义并写入预设数据（见下方映射表）"
+- "Request 表单根据场景自动显示正确的起终点字段组合"
+- "Order 从 Request 继承起终点地址快照，确认后地址只读"
+- "起终点地址采用内联字段：origin_street / origin_zip / origin_city / origin_state_id / origin_country_id"
+- "目的地同理：destination_street / destination_zip / destination_city / destination_state_id / destination_country_id"
+- "从 partner/warehouse/terminal 自动填充地址（一次性复制，非关联引用）"
+- "支持手动录入（作为自动填充的 fallback）"
+- "旧 destination_type 标记 deprecated，逻辑逐步迁移至 scene"
+
+# 8 场景起终点类型映射
+# ──────────────────────────────
+# scene                  | origin_type    | destination_type
+# ───────────────────────|────────────────|──────────────────
+# terminal_to_warehouse  | terminal       | warehouse
+# terminal_to_customer   | terminal       | customer
+# warehouse_to_customer  | warehouse      | customer
+# customer_to_customer   | customer       | customer
+# warehouse_transfer     | warehouse      | warehouse
+# customer_to_warehouse  | customer       | warehouse
+# container_swap         | terminal       | warehouse
+# empty_depot            | depot          | warehouse
+
+affected_assets:
+  business:
+  - addons/wd_tlms/models/transport_scene.py
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/views/transport_request_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  architecture:
+  - docs/context/architecture/module_map.md
+  governance:
+  - docs/context/history/architecture_debt.md (AD-001, AD-006, AD-007, AD-008)
+
+deliverables:
+- "tlmp.transport.scene: origin_type / destination_type 字段 + 8 场景预设数据更新（含映射表）"
+- "tlmp.transport.request: 内联地址字段（origin_*/destination_*）"
+- "tlmp.transport.order: 起终点地址快照（从 Request 复制，确认后只读）"
+- "表单视图: scene 驱动字段显隐 + 自动填充逻辑"
+- "兼容性: 旧 destination_type 标记 deprecated，历史数据不回填"
+- "测试: scene→字段显隐 / 自动填充 / 手动覆盖 / order snapshot 只读"
+
+limit_constraints: |
+  1. 不要影响现有结算/运费/CMR 链路
+  2. 旧字段 destination_type 标记 deprecated，逻辑逐步迁移至 scene
+  3. 兼容期间新旧字段并存，规则：
+     - 写入：以 scene 推导为主，destination_type 不主动写入（仅兼容读取）
+     - 读取：流程分流逻辑优先使用 scene_code，destination_type 仅作展示
+     - 禁止在新代码中引用 destination_type 做分流判断
+  4. 历史数据不做回填（旧 destination_type 保持不变）
+  5. Order 确认后（state in ('confirmed', 'done', 'cancelled')）地址快照只读
+  6. Google Maps API 不在本轮范围
+  7. 自动填充的地址用户可编辑 — 填充是一次性复制，不是关联引用
+  8. 覆盖规则：仅在目标字段为空时自动填充；若用户已手改则该字段不重新填充
+  8. 地址用内联字段（not Many2one），参考 Odoo res.partner 命名风格
+  9. origin_type 合法值：terminal / warehouse / customer / depot（depot = 空柜堆场，非仓库/客户）
+  9. 自动填充逻辑在 model 层实现（onchange），不在前端硬编码
+  11. 8 个场景的 origin_type / destination_type 映射需经过业务确认
+
+goal: >
+  让 Transport Request 表单根据场景自动适配起终点字段：
+  选 Terminal → Warehouse → 显示 terminal（自动填充）+ warehouse（自动填充）
+  选 Terminal → Customer → 显示 terminal（自动填充）+ 地址录入
+  选 Warehouse Transfer → 显示 source warehouse（自动填充）+ destination warehouse（自动填充）
