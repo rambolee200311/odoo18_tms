@@ -3,8 +3,7 @@
 ### Required Data
 | Item | Status | How to Verify |
 |------|--------|--------------|
-| Scene: warehouse_transfer | [ ] | Settings -> Scenes |
-| Transport Type: warehouse_transfer | [ ] | Settings -> Transport Types |
+| Scene: warehouse_transfer | [ ] | Transport → Configuration → Transport Scenes |
 | Warehouse A (source) | [ ] | Inventory -> Warehouses |
 | Warehouse B (dest, diff from A) | [ ] | Inventory -> Warehouses |
 | Carrier Partner | [ ] | Contacts |

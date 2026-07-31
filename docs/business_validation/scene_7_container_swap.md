@@ -5,7 +5,8 @@
 ## Prerequisites
 | # | 档案 | 检查方式 | 如果缺失 |
 |---|------|---------|---------|
-| 0.1 | Transport Order：已有容器明细（container_line_ids） | 打开一个已有 Order | 创建一个 FTL 类型的 Order |
+| 0.1 | Scene: **container_swap** | Transport → Configuration → Transport Scenes | 升级模块或手动创建 |
+| 0.2 | Transport Order：已有容器明细（container_line_ids） | 打开一个已有 Order | 创建一个 FTL 类型的 Order |
 | 0.2 | container_line 表单可见 needs_swap / swap_location | 确认视图中有这两个字段 | 升级模块 |
 
 

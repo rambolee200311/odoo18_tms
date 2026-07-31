@@ -3,7 +3,7 @@
 ### Required Data
 | Item | Status | How to Verify |
 |------|--------|--------------|
-| Scene: empty_depot | [ ] | Settings -> Scenes |
+| Scene: empty_depot | [ ] | Transport → Configuration → Transport Scenes |
 | Container Master record | [ ] | Container -> Masters |
 | Depot Partner | [ ] | Contacts |
 | Warehouse | [ ] | Inventory -> Warehouses |

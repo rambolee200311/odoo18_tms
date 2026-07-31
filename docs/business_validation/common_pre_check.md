@@ -135,3 +135,8 @@ OWL 日历拖拽排期组件请参考 `addons/transport/static/src/js/transport_
 | S6 Customer Return | customer_to_warehouse | customer | warehouse |
 | S7 Container Swap | container_swap | terminal | warehouse |
 | S8 Empty Depot | empty_depot | depot | warehouse |
+
+## 9. Transport Type 自动推导说明
+
+Transport Type（port_to_warehouse / warehouse_transfer 等）由场景自动推导，
+不需要用户单独设置。Prerequisites 中不再列出 Transport Type。

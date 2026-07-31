@@ -5,7 +5,7 @@
 ## Prerequisites
 | # | 档案 | 检查方式 | 如果缺失 |
 |---|------|---------|---------|
-| 0.1 | Scene: **warehouse_to_customer** | Scenes 列表 | 升级模块或手动创建 |
+| 0.1 | Scene: **warehouse_to_customer** | Transport → Configuration → Transport Scenes | 升级模块或手动创建 |
 | 0.2 | Partner: 客户 | Contacts | 手动创建 |
 | 0.3 | Partner: 承运商（is_carrier=True） | Contacts | 手动创建 |
 | 0.4 | Warehouse: 至少一个仓库 | Inventory → Warehouses | 手动创建 |

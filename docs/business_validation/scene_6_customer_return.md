@@ -3,8 +3,7 @@
 ### Required Data
 | Item | Status | How to Verify |
 |------|--------|--------------|
-| Scene: customer_return | [ ] | Settings -> Scenes |
-| Transport Type: reverse_logistics | [ ] | Settings -> Transport Types |
+| Scene: customer_return | [ ] | Transport → Configuration → Transport Scenes |
 | Company Partner (customer) | [ ] | Contacts |
 | Carrier Partner | [ ] | Contacts |
 | Warehouse (return destination) | [ ] | Inventory -> Warehouses |

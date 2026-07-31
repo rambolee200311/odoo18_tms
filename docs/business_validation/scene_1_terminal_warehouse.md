@@ -3,8 +3,7 @@
 ### Required Data
 | Item | Status | How to Verify |
 |------|--------|--------------|
-| Scene: terminal_to_warehouse | [ ] | Settings -> Scenes |
-| Transport Type: port_to_warehouse | [ ] | Settings -> Transport Types |
+| Scene: terminal_to_warehouse | [ ] | Transport → Configuration → Transport Scenes |
 | Company Partner (customer/carrier) | [ ] | Contacts |
 | Warehouse (destination) | [ ] | Inventory -> Warehouses |
 | Terminal Partner (origin) | [ ] | Contacts |
