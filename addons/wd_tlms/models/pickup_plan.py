@@ -103,6 +103,18 @@ class PickupPlan(models.Model):
     transport_order_id = fields.Many2one(
         'tlmp.transport.order', string='Transport Order', readonly=True, copy=False)
 
+    # Sprint45: address snapshot from request
+    origin_street = fields.Char(string='Origin Street', copy=False)
+    origin_zip = fields.Char(string='Origin Zip', copy=False)
+    origin_city = fields.Char(string='Origin City', copy=False)
+    origin_state_id = fields.Many2one('res.country.state', string='Origin State', copy=False)
+    origin_country_id = fields.Many2one('res.country', string='Origin Country', copy=False)
+    destination_street = fields.Char(string='Destination Street', copy=False)
+    destination_zip = fields.Char(string='Destination Zip', copy=False)
+    destination_city = fields.Char(string='Destination City', copy=False)
+    destination_state_id = fields.Many2one('res.country.state', string='Destination State', copy=False)
+    destination_country_id = fields.Many2one('res.country', string='Destination Country', copy=False)
+
     notes = fields.Text(string='Notes')
     scheduled_date = fields.Date(string='Scheduled Date', index=True,
         help='Date assigned via Schedule calendar. Used for warehouse / warehouse_transfer destinations.')

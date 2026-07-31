@@ -42,6 +42,16 @@
                         <group string="Route &amp; Cargo">
                             <field name="from_location_text"/>
                             <field name="to_location_text"/>
+                    <group string="Origin Address" invisible="not request_id">
+                        <field name="origin_street"/>
+                        <field name="origin_city"/>
+                        <field name="origin_country_id"/>
+                    </group>
+                    <group string="Destination Address" invisible="not request_id">
+                        <field name="destination_street"/>
+                        <field name="destination_city"/>
+                        <field name="destination_country_id"/>
+                    </group>
                             <field name="cargo_summary"/>
                             <field name="weight_kg"/>
                             <field name="volume_m3"/>

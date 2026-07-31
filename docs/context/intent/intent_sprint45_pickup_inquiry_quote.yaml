@@ -1,27 +1,102 @@
+# ==============================================================
+# Sprint45 Intent 契约 — Pickup Plan / Inquiry / Quote 地址适配
+# ==============================================================
 intent_id: INT-TMS-SPRINT45-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
 title: Pickup Plan / Inquiry / Quote 起终点地址适配
 
-target_scope: >
-  Sprint44 完成 Transport Request / Order 的起终点地址架构后，
-  本 Sprint 将同一套地址模型推广到 Pickup Plan / Inquiry / Quote：
-  - Pickup Plan：从 Request 复制起终点地址快照
-  - Inquiry：继承 Request 的起终点地址
-  - Quote：继承 Inquiry 的起终点地址
-  - 对应视图更新
+source:
+  type: architecture_upgrade
+  origin_team: 产品/研发联合评审
+  based_on: INT-TMS-SPRINT44-001
 
-dependencies:
-- Sprint44 (INT-TMS-SPRINT44-001) — Request / Order 地址架构
+target_scope: >
+  Sprint44 已完成 Transport Request / Order 的起终点地址架构。
+  本 Sprint 将同一套地址模型推广到 Pickup Plan / Inquiry / Quote，
+  确保整条运输链路地址一致。
+
+  核心原则：**Request 是地址的唯一源头**，下游单据（Pickup Plan /
+  Inquiry / Quote / Order）只做快照或派生，不产生第二套地址来源。
+
+accept_criteria:
+- "Pickup Plan 创建时（action_go_schedule / pickup.plan.create）从 Request 复制地址快照"
+- "Inquiry 采用 related 投影方案（见 scope_decision），从 Request 实时读取地址"
+- "Quote 以 Request 为唯一地址来源，不从 Inquiry 二次继承"
+- "Order 地址链路：Request → Pickup Plan → Order 或 Request → Quote → Order 均不丢失"
+- "用户手改地址后，下游单据创建时不覆盖手改值"
+- "from_location_text / to_location_text 保留兼容展示，不作为新流程地址源"
+
+scope_decision:
+  范围仅包含地址字段（street/zip/city/state_id/country_id）
+  不包含：contact / phone / remark / timeslot（后续 Sprint 另行评估）
+  
+  Inquiry 地址实现方式：**related 投影**（不存副本，实时读取 Request 地址）
+  理由：Inquiry 是业务沟通单，不是业务事实载体，不应产生第二套地址
+
+chain_model:
+  # 计划驱动链路
+  plan_driven: "Request → Pickup Plan → Order"
+  # 商务报价链路
+  commercial: "Request → Inquiry → Quote → Order"
+  # 地址来源
+  source_of_truth: "Request"
 
 deliverables:
-- pickup.plan: 起终点地址字段 + action_go_schedule 复制地址快照
-- transport.inquiry: 起终点地址字段 + 继承逻辑
-- transport.quote: 起终点地址字段 + 继承逻辑
-- 对应表单 / 列表视图更新
-- 测试覆盖
+- "pickup.plan: 新增 origin_*/destination_* 地址字段"
+- "pickup.plan: action_go_schedule 创建 Plan 时从 Request 复制地址快照"
+- "transport.inquiry: 新增 related 地址字段（related='request_id.origin_street' 等）"
+- "transport.quote: _auto_create_order 从 Request 复制地址（保持现状）"
+- "对应表单/列表视图更新（pickup_plan_views.xml / inquiry_views.xml / quote_views.xml）"
+- "from_location_text / to_location_text 标记 deprecated"
 
 limit_constraints: |
-  1. 依赖 Sprint44 完成，否则无基座可对接
-  2. 不做 Google Maps API
-  3. 自动填充地址用户可编辑
+  1. Request 是唯一地址源，Pickup Plan / Inquiry / Quote 只做快照或派生
+  2. 方案 B（见下）：Inquiry 仅保留文本展示，Quote 仍以 Request 为源头
+  3. 自动填充地址用户可编辑，下游创建时不覆盖手改值
+  4. from_location_text / to_location_text 保留兼容展示，不迁移旧数据
+  5. 不新增 contact / phone / remark / timeslot 字段
+
+validation_strategy:
+  verify:
+  - "verify.py PASS"
+  - "odoo_check.py PASS"
+  functional_tests:
+  - "Pickup Plan 创建时地址快照已复制"
+  - "Inquiry 地址字段按场景可见/可编辑（related 投影）"
+  - "Quote→Order 创建时地址一致"
+  - "用户手改地址后不被二次自动覆盖"
+  - "from_location_text / to_location_text 仅作兼容展示"
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+affected_assets:
+  business:
+  - addons/wd_tlms/models/pickup_plan.py
+  - addons/wd_tlms/models/transport_inquiry.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/views/pickup_plan_views.xml
+  - addons/wd_tlms/views/inquiry_views.xml
+  - addons/wd_tlms/views/quote_views.xml
+  architecture:
+  - docs/context/architecture/module_map.md
+  governance:
+  - docs/context/history/architecture_debt.md (AD-008)
+
+goal: >
+  让整条运输链路的地址保持单源一致：
+  Request 是地址源头，Pickup Plan / Inquiry / Quote 自动承接，
+  Order 创建时地址不丢失、不覆盖用户手改值。
