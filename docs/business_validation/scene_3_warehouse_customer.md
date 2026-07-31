@@ -18,7 +18,7 @@
 
 | # | Action | Instructions | Expected Result | Pass? |
 |---|--------|-------------|-----------------|-------|
-| 3.1 | Create Request (commercial, warehouse) | Create request: commercial, destination=warehouse, partner=customer | Saved | [ ] |
+| 3.1 | Create Request（场景驱动） | Transport Scene=warehouse_to_customer → 自动匹配 origin=warehouse, dest=customer；选 source warehouse 自动填充 origin 地址、选 customer 自动填充 destination 地址 | Saved, 地址已填充 | [ ] |
 | 3.2 | Inquiry → Quote → Order | Same flow as S2 | Order created, scene_id=warehouse_to_customer | [ ] |
 
 

@@ -27,8 +27,13 @@
 
 ## Step-by-Step Operation
 
-### Step 6.1: Create Transport Request
-1. Transport Requests -> Create -> Request Type = **Commercial**, Destination = **Customer Address to Our Warehouse**
+### Step 6.1: Create Transport Request（场景驱动）
+1. Transport Requests -> Create
+2. **Transport Scene** = Customer → Warehouse (Return)（自动匹配 origin=customer, dest=warehouse）
+3. **Customer** = select customer partner → origin 地址自动填充
+4. **Destination Warehouse** = select warehouse → destination 地址自动填充
+5. Save.
+6. Expected: scene_id=customer_to_warehouse, origin/destination 地址已填充
 2. Customer = select partner, Source Warehouse = select WH. Save.
 
 ### Step 6.2: Inquiry -> Quote

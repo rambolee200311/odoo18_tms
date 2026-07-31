@@ -17,19 +17,19 @@
 
 ## Step-by-Step Operation
 
-### Step 2.1: Create Transport Request
+### Step 2.1: Create Transport Request（场景驱动）
 
 1. Transport Requests → Create
-2. Fill fields:
-   - **Request Type** = Commercial
-   - **Transport Scene** = Terminal → Customer
-   - **Destination** = Terminal / Depot to Customer（由 scene 推导，但当前仍需手动选）
-   - **Cargo Type** = Container
-3. **Customer** = select a customer partner
+2. **Transport Scene** = Terminal → Customer
+   （场景第一驱动，自动匹配 origin_type=terminal, destination_type=customer）
+3. 表单自动显示 **Origin Address** / **Destination Address** 两个组
 4. **Origin Terminal** = select a terminal partner
-5. **Delivery Address** = fill delivery address
+   → origin_street / origin_zip / origin_city 自动填充
+5. **Customer** = select a customer partner
+   → destination_street / destination_zip / destination_city 自动填充
 6. Save
-7. Expected: state=Draft, request_type=commercial, scene_id is NOT set yet (set by Inquiry)
+7. Expected: state=Draft, scene_id=terminal_to_customer,
+   origin/destination 地址已自动填充（用户可编辑）
 
 ### Step 2.2: Start Inquiry
 

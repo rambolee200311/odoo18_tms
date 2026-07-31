@@ -26,9 +26,13 @@
 
 ## Step-by-Step Operation
 
-### Step 5.1: Create Transport Request
-1. Transport Requests -> Create -> Request Type = **Plan-Driven**, Destination = **Our Warehouse Transfer**
-2. Source Warehouse = select WH A, Destination Warehouse = select WH B (must differ from A). Save.
+### Step 5.1: Create Transport Request（场景驱动）
+1. Transport Requests -> Create
+2. **Transport Scene** = Warehouse ↔ Warehouse（自动匹配 origin=warehouse, dest=warehouse）
+3. **Source Warehouse** = select WH A → origin 地址自动填充
+4. **Destination Warehouse** = select WH B（must differ from A）→ destination 地址自动填充
+5. Save.
+6. Expected: scene_id=warehouse_transfer, origin/destination 地址已填充
 
 ### Step 5.2: Check Bonded Transfer
 1. If source/dest WH is bonded -> is_bonded_transfer must be True

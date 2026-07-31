@@ -27,8 +27,13 @@
 
 ## Step-by-Step Operation
 
-### Step 8.1: Create Container Service Request
-1. Container Service -> Create. Direction = Depot -> Warehouse (or reverse)
+### Step 8.1: Create Transport Request（场景驱动）
+1. Transport Requests -> Create
+2. **Transport Scene** = Empty Depot ↔ Warehouse（自动匹配 origin=depot, dest=warehouse）
+3. **Origin Depot** = select depot/terminal partner → origin 地址自动填充
+4. **Destination Warehouse** = select warehouse → destination 地址自动填充
+5. Save.
+6. Expected: scene_id=empty_depot, origin/destination 地址已填充
 2. Fill Container, Depot, Warehouse, Carrier, Planned Date. Save.
 
 ### Step 8.2: Confirm -> Create Transport Order

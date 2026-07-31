@@ -27,16 +27,18 @@
 
 ## Step-by-Step Operation
 
-### Step 1.1: Create Transport Request
+### Step 1.1: Create Transport Request（场景驱动）
 1. Transport Requests -> Create
-2. Fill fields:
-   - **Request Type** = Plan-Driven
-   - **Destination** = Terminal / Depot to Our Warehouse
-   - **Cargo Type** = Container
-3. **Origin Terminal** = select a terminal partner
-4. **Destination Warehouse** = select a warehouse
-5. Save
-6. Expected: state=Draft, terminal_id and warehouse_id filled
+2. **Transport Scene** = Terminal → Warehouse
+   （场景第一驱动，自动匹配 origin_type=terminal, destination_type=warehouse）
+3. 表单自动显示 **Origin Address** / **Destination Address** 两个组
+4. **Origin Terminal** = select a terminal partner
+   → origin_street / origin_zip / origin_city 自动填充
+5. **Destination Warehouse** = select a warehouse
+   → destination_street / destination_zip / destination_city 自动填充
+6. Save
+7. Expected: state=Draft, scene_id=terminal_to_warehouse,
+   origin/destination 地址已自动填充（用户可编辑）
 
 ### Step 1.2: Open Schedule Calendar
 1. Click **Go to Schedule** header button

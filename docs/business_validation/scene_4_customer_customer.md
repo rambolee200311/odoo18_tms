@@ -18,7 +18,7 @@
 
 | # | Action | Instructions | Expected Result | Pass? |
 |---|--------|-------------|-----------------|-------|
-| 4.1 | Create Request (commercial, customer) | Create request: commercial, destination=customer, no warehouse_id | Saved, partner_id required validated | [ ] |
+| 4.1 | Create Request (commercial, customer) |Saved, 地址已填充| Saved, partner_id required validated | [ ] |
 | 4.2 | Inquiry → Quote → Order | Same flow as S2 | Order created, scene_id=customer_to_customer | [ ] |
 
 
