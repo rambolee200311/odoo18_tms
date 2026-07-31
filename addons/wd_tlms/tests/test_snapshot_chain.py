@@ -14,11 +14,14 @@ class TestSnapshotChain(TransactionCase):
         self.customer = self.env['res.partner'].create({
             'name': 'Test Customer', 'street': 'Main St 1', 'city': 'Amsterdam',
         })
+        self.carrier = self.env['res.partner'].create({
+            'name': 'Test Carrier', 'is_carrier': True,
+        })
         self.scene_tw = self.env['tlmp.transport.scene'].search(
             [('code', '=', 'terminal_to_warehouse')], limit=1)
 
     def _mk_request(self):
-        return self.env['tlmp.transport.request'].create({
+        req = self.env['tlmp.transport.request'].create({
             'request_type': 'plan_driven',
             'destination_type': 'warehouse',
             'cargo_type': 'container',
@@ -30,6 +33,14 @@ class TestSnapshotChain(TransactionCase):
             'destination_street': 'Warehouse St 1',
             'destination_city': 'Rotterdam',
         })
+        # Container line required for plan -> order creation
+        self.env['tlmp.transport.cargo.line'].create({
+            'request_id': req.id,
+            'description': 'Test Container',
+            'container_no': 'TEST1234567',
+            'container_type': '20GP',
+        })
+        return req
 
     def test_go_schedule_plan_snapshot_matches_request(self):
         """transport_request.action_go_schedule() 后 plan 地址快照与 request 一致"""
@@ -49,6 +60,7 @@ class TestSnapshotChain(TransactionCase):
         req.action_go_schedule()
         plan = self.env['pickup.plan'].search(
             [('transport_request_id', '=', req.id)], limit=1)
+        plan.carrier_id = self.carrier.id
         plan.action_create_transport_order()
         order = self.env['tlmp.transport.order'].search(
             [('pickup_plan_id', '=', plan.id)], limit=1)
@@ -64,6 +76,7 @@ class TestSnapshotChain(TransactionCase):
         req.action_go_schedule()
         plan = self.env['pickup.plan'].search(
             [('transport_request_id', '=', req.id)], limit=1)
+        plan.carrier_id = self.carrier.id
         plan.action_create_transport_order()
         order = self.env['tlmp.transport.order'].search(
             [('pickup_plan_id', '=', plan.id)], limit=1)

@@ -5,6 +5,17 @@ from odoo.exceptions import UserError
 
 class TransportOrder(models.Model):
     _name = 'tlmp.transport.order'
+
+    ADDRESS_FIELDS = ('origin_street', 'origin_zip', 'origin_city', 'origin_state_id',
+                      'origin_country_id', 'destination_street', 'destination_zip',
+                      'destination_city', 'destination_state_id', 'destination_country_id')
+
+    def write(self, vals):
+        if any(k in vals for k in self.ADDRESS_FIELDS):
+            for rec in self:
+                if rec.state in ('confirmed', 'done', 'cancelled'):
+                    raise UserError(_('Address is readonly after order confirmation.'))
+        return super().write(vals)
     _description = 'Transport Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'name'

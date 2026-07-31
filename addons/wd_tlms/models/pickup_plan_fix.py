@@ -109,6 +109,19 @@ class PickupPlan(models.Model):
         }
         if self.transport_request_id:
             order_vals['request_id'] = self.transport_request_id.id
+        # Sprint44/45: copy address snapshot from plan
+        order_vals.update({
+            'origin_street': self.origin_street,
+            'origin_zip': self.origin_zip,
+            'origin_city': self.origin_city,
+            'origin_state_id': self.origin_state_id.id if self.origin_state_id else False,
+            'origin_country_id': self.origin_country_id.id if self.origin_country_id else False,
+            'destination_street': self.destination_street,
+            'destination_zip': self.destination_zip,
+            'destination_city': self.destination_city,
+            'destination_state_id': self.destination_state_id.id if self.destination_state_id else False,
+            'destination_country_id': self.destination_country_id.id if self.destination_country_id else False,
+        })
         if self.destination_type == 'warehouse_transfer':
             order_vals['pickup_location_id'] = (
                 self.source_warehouse_id.partner_id.id if self.source_warehouse_id else False)
