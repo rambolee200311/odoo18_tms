@@ -58,21 +58,6 @@
                             <field name="warehouse_id"
                                    invisible="destination_type not in ('warehouse', 'warehouse_transfer')"
                                    options="{'no_create': True}"/>
-                        </group>
-                        <group string="Origin Address" invisible="not scene_id">
-                            <field name="origin_street"/>
-                            <field name="origin_zip"/>
-                            <field name="origin_city"/>
-                            <field name="origin_state_id" options="{'no_create': True}"/>
-                            <field name="origin_country_id" options="{'no_create': True}"/>
-                        </group>
-                        <group string="Destination Address" invisible="not scene_id">
-                            <field name="destination_street"/>
-                            <field name="destination_zip"/>
-                            <field name="destination_city"/>
-                            <field name="destination_state_id" options="{'no_create': True}"/>
-                            <field name="destination_country_id" options="{'no_create': True}"/>
-                        </group>
                             <field name="source_warehouse_id"
                                    invisible="destination_type != 'warehouse_transfer'"
                                    options="{'no_create': True}"/>
@@ -87,6 +72,20 @@
                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
                             <field name="delivery_phone"
                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
+                        </group>
+                        <group string="Origin Address" invisible="not scene_id">
+                            <field name="origin_street"/>
+                            <field name="origin_zip"/>
+                            <field name="origin_city"/>
+                            <field name="origin_state_id" options="{'no_create': True}"/>
+                            <field name="origin_country_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Destination Address" invisible="not scene_id">
+                            <field name="destination_street"/>
+                            <field name="destination_zip"/>
+                            <field name="destination_city"/>
+                            <field name="destination_state_id" options="{'no_create': True}"/>
+                            <field name="destination_country_id" options="{'no_create': True}"/>
                         </group>
                     </group>
 

@@ -14,8 +14,8 @@ class TransportInquiry(models.Model):
                        default=lambda self: _('New'))
     request_id = fields.Many2one('tlmp.transport.request', string='Request')
     partner_id = fields.Many2one('res.partner', string='Carrier', required=True)
-    from_location_text = fields.Text(string='From')
-    to_location_text = fields.Text(string='To')
+    from_location_text = fields.Text(string='From (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
+    to_location_text = fields.Text(string='To (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
 
     # Sprint45: related address projection from request (single source of truth)
     origin_street = fields.Char(related='request_id.origin_street', string='Origin Street', readonly=True)

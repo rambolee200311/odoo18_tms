@@ -49,3 +49,4 @@ from . import test_settlement_upgrade
 from . import test_settlement_performance_baseline
 from . import test_scene_flow
 from . import test_business_scenarios
+from . import test_scene_address
