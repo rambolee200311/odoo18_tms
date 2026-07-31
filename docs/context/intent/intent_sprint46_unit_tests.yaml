@@ -1,0 +1,103 @@
+# ==============================================================
+# Sprint46 Intent 契约 — Sprint44/45 地址架构单元测试
+# ==============================================================
+intent_id: INT-TMS-SPRINT46-001
+intent_work_type: Testing
+intent_change_type: Test Coverage
+title: Sprint44/45 场景驱动地址架构单元测试补全
+
+source:
+  type: quality_gate
+  origin_team: 研发
+  based_on: INT-TMS-SPRINT44-001 / INT-TMS-SPRINT45-001
+
+target_scope: >
+  Sprint44 完成了 Request/Order 地址字段与 scene 起终点类型；
+  Sprint45 完成了 Pickup Plan 地址快照与 Inquiry related 投影。
+  本 Sprint 不新增业务功能，只为上述两个 Sprint 补全单元测试，
+  确保地址架构的每一条链路都有自动化回归保护。
+
+accept_criteria:
+- "Scene 8 场景 origin_type/destination_type 映射测试通过"
+- "Request 创建/编辑时 auto-fill 测试通过（terminal/warehouse/partner）"
+- "Request → Pickup Plan 地址快照复制测试通过"
+- "Inquiry related 地址投影测试通过"
+- "Quote → Order 地址复制测试通过"
+- "手改地址不被二次覆盖测试通过"
+- "Order 确认后地址只读测试通过"
+- "test_scene_address.py 全部测试用例通过"
+- "Sprint44/45 相关测试失败数 = 0"
+
+deliverables:
+- "tests/test_scene_address.py: 扩展 Sprint44/45 完整覆盖"
+- "tests/test_scene_mapping.py: 8 场景起终点类型映射"
+- "tests/test_auto_fill.py: Request 地址自动填充"
+- "tests/test_snapshot_chain.py: Request→Plan→Order 快照链路"
+- "tests/__init__.py: 注册新测试文件"
+
+test_matrix:
+  scene_mapping:
+  - "8 场景 origin_type / destination_type 与数据文件一致"
+  - "container_swap 特殊映射验证"
+  - "empty_depot depot 类型验证"
+  auto_fill:
+  - "terminal_id → origin_street/zip/city/state/country"
+  - "warehouse_id → destination_street/zip/city/state/country"
+  - "partner_id (customer scene) → destination 地址"
+  - "手改后不覆盖"
+  snapshot_chain:
+  - "action_go_schedule 创建 Plan 时地址快照正确"
+  - "Order 创建时从 Request/Plan 复制地址"
+  - "Quote → Order 地址一致"
+  - "Order 确认后地址只读"
+  inquiry_projection:
+  - "Inquiry related 字段实时读取 Request 地址"
+  - "Inquiry 修改 Request 地址后投影同步"
+  - "from_location_text/to_location_text 不参与新流程"
+
+limit_constraints: |
+  1. 不修改 Sprint44/45 已实现的业务逻辑（仅补测试）
+  2. 测试失败若暴露业务缺陷，记录缺陷但不在本 Sprint 修业务
+  3. 不新增字段、不新增视图、不修改状态机
+  4. 历史测试失败（148 errors / 7 failures）只统计 Sprint44/45 相关项
+  5. 测试数据使用独立 recordset，不污染生产数据
+
+validation_strategy:
+  verify:
+  - "verify.py PASS"
+  - "odoo_check.py PASS"
+  test_run:
+  - "--test-tags wd_tlms.test_scene_address PASS"
+  - "--test-tags wd_tlms.test_scene_mapping PASS"
+  - "--test-tags wd_tlms.test_auto_fill PASS"
+  - "--test-tags wd_tlms.test_snapshot_chain PASS"
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+affected_assets:
+  business:
+  - addons/wd_tlms/tests/test_scene_address.py
+  - addons/wd_tlms/tests/test_scene_mapping.py
+  - addons/wd_tlms/tests/test_auto_fill.py
+  - addons/wd_tlms/tests/test_snapshot_chain.py
+  - addons/wd_tlms/tests/__init__.py
+  governance:
+  - docs/context/history/architecture_debt.md (AD-008)
+
+goal: >
+  为 Sprint44/45 的地址架构建立自动化回归保护：
+  8 场景映射、auto-fill、快照链路、related 投影、手改不覆盖、
+  确认后只读全部有测试覆盖，任何后续改动都能被测试发现。
