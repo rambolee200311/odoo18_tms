@@ -50,3 +50,6 @@ from . import test_settlement_performance_baseline
 from . import test_scene_flow
 from . import test_business_scenarios
 from . import test_scene_address
+
+from . import test_snapshot_chain
+from . import test_inquiry_projection

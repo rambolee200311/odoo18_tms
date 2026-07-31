@@ -2,12 +2,12 @@
 # Sprint46 Intent 契约 — Sprint44/45 地址架构单元测试
 # ==============================================================
 intent_id: INT-TMS-SPRINT46-001
-intent_work_type: Testing
+intent_work_type: Maintenance
 intent_change_type: Test Coverage
 title: Sprint44/45 场景驱动地址架构单元测试补全
 
 source:
-  type: quality_gate
+  type: regular_audit
   origin_team: 研发
   based_on: INT-TMS-SPRINT44-001 / INT-TMS-SPRINT45-001
 
@@ -17,22 +17,25 @@ target_scope: >
   本 Sprint 不新增业务功能，只为上述两个 Sprint 补全单元测试，
   确保地址架构的每一条链路都有自动化回归保护。
 
+  依赖约束：Sprint45 未验收通过前，本 Sprint 进入 blocked 状态，
+  不提前编写依赖 Sprint45 字段的测试。
+
 accept_criteria:
-- "Scene 8 场景 origin_type/destination_type 映射测试通过"
-- "Request 创建/编辑时 auto-fill 测试通过（terminal/warehouse/partner）"
-- "Request → Pickup Plan 地址快照复制测试通过"
-- "Inquiry related 地址投影测试通过"
+- "新增 Sprint44/45 相关测试失败数 = 0（不含历史基线失败）"
+- "8 场景 origin_type / destination_type 映射测试通过"
+- "Request auto-fill（terminal/warehouse/partner）测试通过"
+- "transport_request.action_go_schedule() 生成 plan 后，plan 的 origin_*/destination_* 地址快照与 request 一致"
+- "pickup.plan.action_create_transport_order() 生成 order 后，order 地址与 plan/request 一致"
 - "Quote → Order 地址复制测试通过"
+- "Inquiry related 只读投影测试通过"
 - "手改地址不被二次覆盖测试通过"
 - "Order 确认后地址只读测试通过"
-- "test_scene_address.py 全部测试用例通过"
-- "Sprint44/45 相关测试失败数 = 0"
+- "from_location_text / to_location_text 仅验证兼容展示，不参与新链路断言"
 
 deliverables:
-- "tests/test_scene_address.py: 扩展 Sprint44/45 完整覆盖"
-- "tests/test_scene_mapping.py: 8 场景起终点类型映射"
-- "tests/test_auto_fill.py: Request 地址自动填充"
-- "tests/test_snapshot_chain.py: Request→Plan→Order 快照链路"
+- "tests/test_scene_address.py: Scene 映射 + Request auto-fill + 手改不覆盖"
+- "tests/test_snapshot_chain.py: Request→Plan→Order 快照链路 + Quote→Order + 确认后只读"
+- "tests/test_inquiry_projection.py: Inquiry related 只读投影"
 - "tests/__init__.py: 注册新测试文件"
 
 test_matrix:
@@ -46,31 +49,38 @@ test_matrix:
   - "partner_id (customer scene) → destination 地址"
   - "手改后不覆盖"
   snapshot_chain:
-  - "action_go_schedule 创建 Plan 时地址快照正确"
-  - "Order 创建时从 Request/Plan 复制地址"
+  - "transport_request.action_go_schedule() 后：plan.origin_street == request.origin_street，plan.destination_city == request.destination_city"
+  - "pickup.plan.action_create_transport_order() 后：order.origin_street == plan.origin_street，order.destination_city == plan.destination_city"
   - "Quote → Order 地址一致"
   - "Order 确认后地址只读"
   inquiry_projection:
-  - "Inquiry related 字段实时读取 Request 地址"
-  - "Inquiry 修改 Request 地址后投影同步"
-  - "from_location_text/to_location_text 不参与新流程"
+  - "Inquiry related 字段为只读投影，实时读取 Request 地址"
+  - "Request 地址变更后 Inquiry 投影同步"
+  - "from_location_text / to_location_text 仅作兼容展示，不参与新链路"
 
 limit_constraints: |
   1. 不修改 Sprint44/45 已实现的业务逻辑（仅补测试）
-  2. 测试失败若暴露业务缺陷，记录缺陷但不在本 Sprint 修业务
-  3. 不新增字段、不新增视图、不修改状态机
-  4. 历史测试失败（148 errors / 7 failures）只统计 Sprint44/45 相关项
-  5. 测试数据使用独立 recordset，不污染生产数据
+  2. Sprint45 未验收前本 Sprint 进入 blocked；只验证已验收的 Sprint45 行为，不对未落地字段做假设
+  3. Inquiry 地址为 related 只读投影，不做可编辑设计
+  4. 测试失败若暴露业务缺陷，记录缺陷但不在本 Sprint 修业务
+  5. 不新增字段、不新增视图、不修改状态机
+  6. 历史基线失败不计入本 Sprint 验收
+  7. from_location_text / to_location_text 仅验证兼容展示
 
 validation_strategy:
-  verify:
-  - "verify.py PASS"
-  - "odoo_check.py PASS"
-  test_run:
-  - "--test-tags wd_tlms.test_scene_address PASS"
-  - "--test-tags wd_tlms.test_scene_mapping PASS"
-  - "--test-tags wd_tlms.test_auto_fill PASS"
-  - "--test-tags wd_tlms.test_snapshot_chain PASS"
+  layers:
+  - name: static
+    checks:
+    - "verify.py PASS"
+    - "odoo_check.py PASS"
+  - name: functional
+    checks:
+    - "--test-tags wd_tlms.test_scene_address PASS"
+    - "--test-tags wd_tlms.test_snapshot_chain PASS"
+    - "--test-tags wd_tlms.test_inquiry_projection PASS"
+  required_pass:
+  - "static: all"
+  - "functional: all"
 
 loop_policy:
   max_iteration: 3
@@ -90,14 +100,13 @@ asset_snapshot_mode: human
 affected_assets:
   business:
   - addons/wd_tlms/tests/test_scene_address.py
-  - addons/wd_tlms/tests/test_scene_mapping.py
-  - addons/wd_tlms/tests/test_auto_fill.py
   - addons/wd_tlms/tests/test_snapshot_chain.py
+  - addons/wd_tlms/tests/test_inquiry_projection.py
   - addons/wd_tlms/tests/__init__.py
   governance:
   - docs/context/history/architecture_debt.md (AD-008)
 
 goal: >
   为 Sprint44/45 的地址架构建立自动化回归保护：
-  8 场景映射、auto-fill、快照链路、related 投影、手改不覆盖、
+  8 场景映射、auto-fill、快照链路、related 只读投影、手改不覆盖、
   确认后只读全部有测试覆盖，任何后续改动都能被测试发现。

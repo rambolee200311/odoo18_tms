@@ -68,3 +68,42 @@ class TestSceneAddress(TransactionCase):
         req._onchange_terminal_id()
         self.assertEqual(req.origin_street, 'User Edited Street')
         self.assertEqual(req.origin_city, self.terminal.city)
+
+    def test_eight_scenes_mapping(self):
+        """8 场景 origin_type / destination_type 与数据文件一致"""
+        expected = {
+            'terminal_to_warehouse': ('terminal', 'warehouse'),
+            'terminal_to_customer': ('terminal', 'customer'),
+            'warehouse_to_customer': ('warehouse', 'customer'),
+            'customer_to_customer': ('customer', 'customer'),
+            'warehouse_transfer': ('warehouse', 'warehouse'),
+            'customer_to_warehouse': ('customer', 'warehouse'),
+            'container_swap': ('terminal', 'warehouse'),
+            'empty_depot': ('depot', 'warehouse'),
+        }
+        scenes = self.env['tlmp.transport.scene'].search([])
+        for s in scenes:
+            exp_origin, exp_dest = expected[s.code]
+            self.assertEqual(s.origin_type, exp_origin, f'{s.code} origin')
+            self.assertEqual(s.destination_type, exp_dest, f'{s.code} destination')
+
+    def test_auto_fill_warehouse_destination(self):
+        """warehouse_id → destination 地址自动填充（仅空字段）"""
+        req = self._mk_request(destination_street='', destination_city='')
+        req._onchange_warehouse_id()
+        wh = self.wh1
+        if wh.partner_id:
+            self.assertEqual(req.destination_street, wh.partner_id.street)
+            self.assertEqual(req.destination_city, wh.partner_id.city)
+        else:
+            # 仓库无 partner 时不报错且不覆盖用户值
+            self.assertEqual(req.destination_street, '')
+
+    def test_auto_fill_partner_customer_destination(self):
+        """customer 场景下 partner_id → destination 地址自动填充"""
+        req = self._mk_request(scene=self.scene_tc, destination_type='customer',
+                               partner_id=self.customer.id,
+                               destination_street='', destination_city='')
+        req._onchange_partner_id()
+        self.assertEqual(req.destination_street, self.customer.street)
+        self.assertEqual(req.destination_city, self.customer.city)
