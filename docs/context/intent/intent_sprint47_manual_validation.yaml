@@ -1,0 +1,116 @@
+# ==============================================================
+# Sprint47 Intent 契约 — 地址架构后的人工验证
+# ==============================================================
+intent_id: INT-TMS-SPRINT47-001
+intent_work_type: Maintenance
+intent_change_type: Validation
+title: Sprint44/45 地址架构改造后的人工验证
+
+source:
+  type: regular_audit
+  origin_team: 研发 + 业务
+  based_on: INT-TMS-SPRINT44-001 / INT-TMS-SPRINT45-001 / INT-TMS-SPRINT46-001
+
+target_scope: >
+  Sprint44/45 完成了场景驱动地址架构改造（scene origin_type/destination_type、
+  Request/Order/Pickup Plan 地址字段、Inquiry related 投影、Order 确认后只读）。
+  Sprint46 已完成单元测试。
+  本 Sprint 进行人工验证，按 8 个场景逐项确认：
+  1. 表单按场景显示正确的起终点字段
+  2. 地址自动填充（terminal/warehouse/partner）
+  3. 地址快照链路（Request→Plan→Order / Request→Inquiry→Quote→Order）
+  4. 用户可手动编辑地址
+  5. Order 确认后地址只读
+  并同步更新 docs/business_validation/ 下全部文档。
+
+accept_criteria:
+- "8 个场景文档均已按 Sprint44/45 修改更新"
+- "每个场景文档包含：场景起终点类型、地址填充预期、快照链路验证步骤"
+- "common_pre_check.md 已加入地址架构公共预检项"
+- "result_summary.md 汇总 8 场景人工验证结果"
+- "人工验证发现的缺陷记录到对应场景 Issues Found"
+
+deliverables:
+- "docs/business_validation/common_pre_check.md: 地址架构公共预检项"
+- "docs/business_validation/scene_1_terminal_warehouse.md ~ scene_8_empty_container.md: 按地址架构更新"
+- "docs/business_validation/result_summary.md: 8 场景验证结果汇总"
+- "docs/context/history/architecture_debt.md: 验证中新发现的 AD 记录"
+
+test_matrix:
+  scene_1_terminal_warehouse:
+  - "场景选择后显示 terminal + warehouse 地址组"
+  - "terminal_id 自动填充 origin 地址"
+  - "warehouse_id 自动填充 destination 地址"
+  - "Go to Schedule 后 Plan 地址快照一致"
+  - "Create Order 后 Order 地址一致"
+  - "Order 确认后地址只读"
+  scene_2_terminal_customer:
+  - "场景选择后显示 terminal + 客户地址录入"
+  - "partner_id 自动填充 destination 地址"
+  - "Inquiry 投影 Request 地址"
+  - "Quote→Order 地址一致"
+  scene_3_warehouse_customer:
+  - "场景选择后显示 warehouse 起点 + 客户地址"
+  scene_4_customer_customer:
+  - "场景选择后显示客户起点 + 客户终点"
+  scene_5_warehouse_transfer:
+  - "场景选择后显示 source_warehouse + destination_warehouse"
+  scene_6_customer_warehouse:
+  - "场景选择后显示客户起点 + 仓库终点"
+  scene_7_container_swap:
+  - "场景选择后显示 terminal 起点 + 仓库终点（换柜）"
+  scene_8_empty_depot:
+  - "场景选择后显示 depot 起点 + 仓库终点"
+
+limit_constraints: |
+  1. 只做人工验证和文档更新，不修改业务代码
+  2. 验证中发现缺陷 → 记录到场景 Issues Found，不在本 Sprint 修复
+  3. 场景文档保持与 common_pre_check.md 的引用关系
+  4. 不新增/删除业务字段
+
+validation_strategy:
+  layers:
+  - name: doc_completeness
+    checks:
+    - "8 个场景文档全部包含地址架构验证步骤"
+    - "common_pre_check.md 包含地址公共预检"
+    - "result_summary.md 有 8 场景汇总"
+  - name: manual_verification
+    checks:
+    - "8 场景人工验证记录完成"
+    - "发现缺陷已记录到 Issues Found"
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+affected_assets:
+  business:
+  - docs/business_validation/common_pre_check.md
+  - docs/business_validation/scene_1_terminal_warehouse.md
+  - docs/business_validation/scene_2_terminal_customer.md
+  - docs/business_validation/scene_3_warehouse_customer.md
+  - docs/business_validation/scene_4_customer_customer.md
+  - docs/business_validation/scene_5_warehouse_transfer.md
+  - docs/business_validation/scene_6_customer_return.md
+  - docs/business_validation/scene_7_container_swap.md
+  - docs/business_validation/scene_8_empty_container.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/architecture_debt.md
+
+goal: >
+  在地址架构改造后，通过 8 场景人工验证确认：
+  场景→起终点字段→地址填充→快照链路→Order 只读 全部符合预期，
+  所有验证文档同步更新，为后续运营优化建立可信基线。

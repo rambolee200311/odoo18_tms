@@ -67,3 +67,25 @@
 - **Date**:
 - **Environment**:
 - **Context Version**:
+
+
+---
+
+## 地址架构验证（Sprint44/45）
+
+**场景**: S5 Warehouse ↔ Warehouse | **code**: warehouse_transfer
+
+| # | Action | Expected | Pass? |
+|---|--------|----------|-------|
+| A.1 | 新建 Request，选择场景 **warehouse_transfer** | Origin Address / Destination Address 两个组显示 | [ ] |
+| A.2 | 起点：warehouse (选 source_warehouse_id 自动填充) | 地址字段自动填充 | [ ] |
+| A.3 | 终点：warehouse (选 warehouse_id 自动填充) | 地址字段自动填充 | [ ] |
+| A.4 | 手动修改一个地址字段（如 street） | 可编辑，不被后续 onchange 覆盖 | [ ] |
+| A.5 | 按流程创建 Order（Plan → Go to Schedule → Plan → Order） | Order 地址与 Request/Plan 一致 | [ ] |
+| A.6 | Order 确认后尝试修改地址 | 被阻止（只读） | [ ] |
+
+**验证记录**:
+
+| Bug ID | Step | Issue | Severity | Status |
+|--------|------|-------|----------|--------|
+| | | | | |

@@ -108,3 +108,30 @@ OWL 日历拖拽排期组件请参考 `addons/transport/static/src/js/transport_
 - 必须 `export { ComponentName }`
 - 模版事件用 inline arrow function：`t-on-click="(ev) => methodName(ev, arg)"`
 - manifest 用精确路径而非 glob
+
+## 8. 地址架构预检（Sprint44/45）
+
+> 验证前确认以下地址架构能力已部署（版本 ≥ 1.0.90）。
+
+| # | Check | Expected | Status |
+|---|-------|----------|--------|
+| 8.1 | Scene 有 origin_type / destination_type | Configuration → Transport Scenes 每行可见 | [ ] |
+| 8.2 | 8 场景起终点类型正确 | 见下方映射表 | [ ] |
+| 8.3 | Request 表单有 Origin/Destination Address 组 | 选场景后显示 | [ ] |
+| 8.4 | terminal_id 自动填充 origin 地址 | 选 terminal 后 street/zip/city 自动填 | [ ] |
+| 8.5 | warehouse_id 自动填充 destination 地址 | 选 warehouse 后自动填 | [ ] |
+| 8.6 | Order 创建时地址快照正确 | 创建后检查 Order 地址 | [ ] |
+| 8.7 | Order 确认后地址只读 | confirm 后无法改地址 | [ ] |
+
+### 8 场景起终点类型映射（Sprint44）
+
+| Scene | code | origin_type | destination_type |
+|-------|------|-------------|-----------------|
+| S1 Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse |
+| S2 Terminal → Customer | terminal_to_customer | terminal | customer |
+| S3 Warehouse → Customer | warehouse_to_customer | warehouse | customer |
+| S4 Customer A → B | customer_to_customer | customer | customer |
+| S5 Warehouse ↔ Warehouse | warehouse_transfer | warehouse | warehouse |
+| S6 Customer Return | customer_to_warehouse | customer | warehouse |
+| S7 Container Swap | container_swap | terminal | warehouse |
+| S8 Empty Depot | empty_depot | depot | warehouse |
