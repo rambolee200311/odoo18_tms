@@ -30,7 +30,7 @@ class FeeLine(models.Model):
     source_type = fields.Selection([
         ('commercial', 'Commercial'),
         ('plan_driven', 'Plan-Driven'),
-    ], string='Source Type', required=True,
+    ], string='Source Type', required=True, default='commercial',
         help='Identifies which business flow this fee belongs to.')
     source_quote_id = fields.Many2one(
         'tlmp.transport.quote', string='Source Quote',

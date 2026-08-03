@@ -42,6 +42,7 @@
 | SD47-S2-007 | S2 | Quote Margin Rate 显示错误 + 无 cargo line | fixed（待 UI 复验） |
 | SD47-S2-008 | S2 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | fixed（待 UI 复验） |
 | SD47-S2-009 | S2 | Fee Type 下拉无记录（Charge Item 主档为空） | fixed（待 UI 复验） |
+| SD47-S2-010 | S2 | 保存 Fee Line 报 Source Type 必填未设置 | fixed（待 UI 复验） |
 
 ---
 

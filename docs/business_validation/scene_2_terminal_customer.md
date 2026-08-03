@@ -113,6 +113,7 @@
 | SD47-S2-007 | 2.4 | Quote 535 Margin Rate 显示 2631.58%，且无 cargo line | blocking | margin_rate 存为百分比数值又被 percentage widget 乘 100；`action_create_quote` 未复制 Request 柜明细 | margin_rate 改为销售利润率小数（margin/customer price）；Create Customer Quote 复制 cargo lines；535 已回填 | fixed |
 | SD47-S2-008 | 2.4 | Quote cargo line 描述未含柜号/BL，Fee Lines 只读不可编辑 | minor | 创建 Quote 时描述只取 cargo.description；fee_line_ids 视图 readonly | cargo line 描述补 Container No. + BL；Fee Lines 放开可编辑（editable bottom）；535 描述已回填 | fixed |
 | SD47-S2-009 | 2.6 | Fee Line 的 Fee Type 下拉无记录 | blocking | `world.depot.charge.item` 主档为空 | 预置 6 条运输费用档案：Transportation Fee / Fuel Surcharge / Terminal Handling / Container Pickup / Customs Clearance / Documentation；版本 1.0.100 | fixed |
+| SD47-S2-010 | 2.6 | Quote 535 新增 Fee Line 报错：Source Type 必填未设置 | blocking | `transport.fee.line.source_type` required 无默认值，Quote 表单新增行时未自动带值 | source_type 默认值改为 commercial；版本 1.0.101 | fixed |
 
 ---
 
@@ -130,6 +131,7 @@
 | SD47-S2-007 | margin_rate 双重百分比 + Quote 无 cargo line | margin_rate=100/480=20.83%（小数存储）；Create Quote 复制 cargo lines；535 已回填 | 待 UI 复验 | fixed |
 | SD47-S2-008 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | cargo line 描述补 Container No.+BL；Fee Lines 可编辑；535 描述已回填 | 待 UI 复验 | fixed |
 | SD47-S2-009 | Charge Item 主档为空 | 预置 6 条运输费用档案（data/transport_charge_item_data.xml），noupdate 防重复 | 待 UI 复验 | fixed |
+| SD47-S2-010 | Fee Line source_type 无默认值 | 默认 commercial；XML-RPC 升级 1.0.101 通过 | 待 UI 复验 | fixed |
 
 ---
 
@@ -173,3 +175,4 @@
 | SD47-S2-007 | 2.4 | Margin Rate 显示错误 + Quote 无 cargo line | blocking | fixed（待 UI 复验） |
 | SD47-S2-008 | 2.4 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | minor | fixed（待 UI 复验） |
 | SD47-S2-009 | 2.6 | Fee Type 下拉无记录 | blocking | fixed（待 UI 复验） |
+| SD47-S2-010 | 2.6 | 保存 Fee Line 报 Source Type 必填 | blocking | fixed（待 UI 复验） |
