@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.99',
+    'version': '1.0.100',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -23,6 +23,7 @@
         'data/sequences.xml',
         'data/surcharge_data.xml',
         'data/transport_scene_data.xml',
+        'data/transport_charge_item_data.xml',
         'views/pickup_plan_views.xml',
         'views/transport_request_views.xml',
         'views/transport_inquiry_views.xml',

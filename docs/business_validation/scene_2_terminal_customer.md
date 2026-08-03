@@ -112,6 +112,7 @@
 | SD47-S2-006 | 2.3-2.5 | 3PL 流程错误：Inquiry “Accept” 被当作客户接受，缺少“Create Customer Quote”按钮，Quote 客户价未按 Carrier Cost + Margin 计算 | blocking | 领域模型把承运商报价与客户报价混为同一动作 | Inquiry 按钮改为 Select Carrier；新增 Create Customer Quote；Quote total=Carrier Cost+Margin；客户接受 Quote 才建 Order | fixed |
 | SD47-S2-007 | 2.4 | Quote 535 Margin Rate 显示 2631.58%，且无 cargo line | blocking | margin_rate 存为百分比数值又被 percentage widget 乘 100；`action_create_quote` 未复制 Request 柜明细 | margin_rate 改为销售利润率小数（margin/customer price）；Create Customer Quote 复制 cargo lines；535 已回填 | fixed |
 | SD47-S2-008 | 2.4 | Quote cargo line 描述未含柜号/BL，Fee Lines 只读不可编辑 | minor | 创建 Quote 时描述只取 cargo.description；fee_line_ids 视图 readonly | cargo line 描述补 Container No. + BL；Fee Lines 放开可编辑（editable bottom）；535 描述已回填 | fixed |
+| SD47-S2-009 | 2.6 | Fee Line 的 Fee Type 下拉无记录 | blocking | `world.depot.charge.item` 主档为空 | 预置 6 条运输费用档案：Transportation Fee / Fuel Surcharge / Terminal Handling / Container Pickup / Customs Clearance / Documentation；版本 1.0.100 | fixed |
 
 ---
 
@@ -128,6 +129,7 @@
 | SD47-S2-006 | 承运商报价与客户报价混为同一动作 | Select Carrier → Create Customer Quote → 客户 Accept Quote 才建 Order；Customer Price=Carrier Cost+Margin | 待 UI 复验 | fixed |
 | SD47-S2-007 | margin_rate 双重百分比 + Quote 无 cargo line | margin_rate=100/480=20.83%（小数存储）；Create Quote 复制 cargo lines；535 已回填 | 待 UI 复验 | fixed |
 | SD47-S2-008 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | cargo line 描述补 Container No.+BL；Fee Lines 可编辑；535 描述已回填 | 待 UI 复验 | fixed |
+| SD47-S2-009 | Charge Item 主档为空 | 预置 6 条运输费用档案（data/transport_charge_item_data.xml），noupdate 防重复 | 待 UI 复验 | fixed |
 
 ---
 
@@ -170,3 +172,4 @@
 | SD47-S2-006 | 2.3-2.5 | 3PL 流程缺失客户接受环节 | blocking | fixed（待 UI 复验） |
 | SD47-S2-007 | 2.4 | Margin Rate 显示错误 + Quote 无 cargo line | blocking | fixed（待 UI 复验） |
 | SD47-S2-008 | 2.4 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | minor | fixed（待 UI 复验） |
+| SD47-S2-009 | 2.6 | Fee Type 下拉无记录 | blocking | fixed（待 UI 复验） |
