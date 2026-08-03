@@ -39,7 +39,7 @@ class TransportQuote(models.Model):
     margin_amount = fields.Monetary(string='Margin Amount (markup)',
         help='Manual markup on top of carrier cost.')
     margin_rate = fields.Float(string='Margin Rate (%)', compute='_compute_margin_rate', store=True,
-        help='Calculated as margin_amount / carrier_cost * 100.')
+        help='Sales margin on customer price: margin_amount / (carrier_cost + margin_amount).')
     fee_line_ids = fields.One2many('transport.fee.line', 'source_quote_id',
         string='Fee Lines', copy=False)
 
@@ -60,7 +60,8 @@ class TransportQuote(models.Model):
     @api.depends('carrier_cost', 'margin_amount')
     def _compute_margin_rate(self):
         for r in self:
-            r.margin_rate = (r.margin_amount / r.carrier_cost * 100) if r.carrier_cost else 0.0
+            price = (r.carrier_cost or 0.0) + (r.margin_amount or 0.0)
+            r.margin_rate = (r.margin_amount / price) if price else 0.0
 
     def action_accept(self):
         self.ensure_one()
