@@ -188,10 +188,11 @@ class PickupPlan(models.Model):
     # -----------------------------------------------------------
     # Validate: bonded transfer required when source or dest is bonded warehouse
     # -----------------------------------------------------------
-    @api.constrains('destination_type', 'is_bonded_transfer', 'warehouse_id', 'source_warehouse_id')
+    @api.constrains('scene_id', 'destination_type', 'is_bonded_transfer', 'warehouse_id', 'source_warehouse_id')
     def _check_bonded_transfer(self):
         for rec in self:
-            if rec.destination_type != 'warehouse_transfer':
+            dest = rec.scene_id.destination_type if rec.scene_id else rec.destination_type
+            if dest != 'warehouse_transfer' and rec.destination_type != 'warehouse_transfer':
                 continue
             warehouses = rec.source_warehouse_id + rec.warehouse_id
             is_bonded = any(warehouse.is_bonded_warehouse if hasattr(warehouse, 'is_bonded_warehouse') else False
@@ -203,30 +204,33 @@ class PickupPlan(models.Model):
     # -----------------------------------------------------------
     # Validate: partner_id required for customer/self_pickup
     # -----------------------------------------------------------
-    @api.constrains('destination_type', 'partner_id')
+    @api.constrains('scene_id', 'destination_type', 'partner_id', 'destination_street')
     def _check_partner_required(self):
         for rec in self:
-            if rec.destination_type in ('customer', 'self_pickup') and not rec.partner_id:
+            dest = rec.scene_id.destination_type if rec.scene_id else rec.destination_type
+            if dest in ('customer', 'self_pickup') and not rec.partner_id and not rec.destination_street:
                 raise UserError(
-                    _('Customer is required for customer delivery or self-pickup destinations.'))
+                    _('Customer or Destination Address required for customer delivery or self-pickup destinations.'))
 
     # -----------------------------------------------------------
     # Validate: warehouse_id required for warehouse / warehouse_transfer
     # -----------------------------------------------------------
-    @api.constrains('destination_type', 'warehouse_id')
+    @api.constrains('scene_id', 'destination_type', 'warehouse_id')
     def _check_warehouse_required(self):
         for rec in self:
-            if rec.destination_type in ('warehouse', 'warehouse_transfer') and not rec.warehouse_id:
+            dest = rec.scene_id.destination_type if rec.scene_id else rec.destination_type
+            if (dest in ('warehouse', 'warehouse_transfer') or rec.destination_type == 'warehouse_transfer') and not rec.warehouse_id:
                 raise UserError(
                     _('Destination Warehouse is required for warehouse or warehouse transfer destinations.'))
 
     # -----------------------------------------------------------
     # Validate: source_warehouse_id required for warehouse_transfer
     # -----------------------------------------------------------
-    @api.constrains('destination_type', 'source_warehouse_id')
+    @api.constrains('scene_id', 'destination_type', 'source_warehouse_id')
     def _check_source_warehouse_required(self):
         for rec in self:
-            if rec.destination_type == 'warehouse_transfer' and not rec.source_warehouse_id:
+            dest = rec.scene_id.destination_type if rec.scene_id else rec.destination_type
+            if (dest == 'warehouse_transfer' or rec.destination_type == 'warehouse_transfer') and not rec.source_warehouse_id:
                 raise UserError(
                     _('Source Warehouse is required for warehouse transfer destinations.'))
 
@@ -340,9 +344,12 @@ class PickupPlan(models.Model):
         tr_type = type_map.get(self.destination_type, 'port_to_warehouse')
 
         order_vals = {
-            'transport_type': tr_type,
+            'scene_id': self.scene_id.id or (self.transport_request_id.scene_id.id if self.transport_request_id else False),
+            'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_type).id,
             'fleet_operation_mode': 'subcontracted',
-            'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
+            'partner_id': (self.partner_id.id or
+                           (self.transport_request_id.partner_id.id if self.transport_request_id else False) or
+                           self.env.company.partner_id.id),
             'carrier_id': self.carrier_id.id,
             'cargo_description': self.cargo_description or (
                 _('Pickup plan %s') % self.name),
@@ -355,6 +362,8 @@ class PickupPlan(models.Model):
             'driver_phone': self.driver_phone,
             'vehicle_plate': self.vehicle_plate,
             'notes': self.notes,
+            'place_of_departure': ', '.join(x for x in (self.origin_street or '', self.origin_zip or '', self.origin_city or '') if x),
+            'place_of_destination': ', '.join(x for x in (self.destination_street or '', self.destination_zip or '', self.destination_city or '') if x),
         }
 
         if self.destination_type == 'warehouse_transfer':

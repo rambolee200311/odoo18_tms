@@ -25,8 +25,11 @@
 3. 表单自动显示 **Origin Address** / **Destination Address** 两个组
 4. **Origin Terminal** = select a terminal partner
    → origin_street / origin_zip / origin_city 自动填充
-5. **Customer** = select a customer partner
-   → destination_street / destination_zip / destination_city 自动填充
+5. 目的地二选一：
+   - 有客户主档：**Customer** = select a customer partner
+     → destination_street / destination_zip / destination_city 自动填充
+   - 无客户主档：直接在 **Destination Address** 手工填写 street / zip / city
+     （3PL 受货主委托送货，目的地是地址，不强制建立 Partner 档案）
 6. Save
 7. Expected: state=Draft, scene_id=terminal_to_customer,
    origin/destination 地址已自动填充（用户可编辑）
@@ -59,6 +62,15 @@
 
 ---
 
+## Sprint47 验证进度
+
+| Step | Description | Result | Notes |
+|------|-------------|--------|-------|
+| 2.1-S47 | Create Transport Request（request 2074） | ✅ PASS | scene=terminal_to_customer，origin 地址自动填充，无 Partner 手工填目的地地址（city 缺失与 legacy destination_type 不一致按用户决定忽略） |
+| 2.2-S47 | Start Inquiry（inquiry 690） | ⏳ PARTIAL | Inquiry 已创建；carrier 默认成 ljq、cargo 信息缺失、表单排版乱（SD47-S2-002/003/004），已修复并升级 1.0.96，待 UI 复验 |
+
+---
+
 ## Failure Handling
 
 | Symptom | Likely Cause | Action |
@@ -84,7 +96,11 @@
 
 | Bug ID | Step | Description | Severity | Root Cause | Fix Scope | Status |
 |--------|------|-------------|----------|-----------|-----------|--------|
-| | | | | | | |
+| SD47-S2-001 | 2.1 | 无客户主档的目的地无法保存，customer 场景强制 partner_id | blocking | 校验要求 customer/self_pickup 必须有 partner_id，与 3PL 按货主指令送临时地址的业务不符 | 校验放宽为 partner_id 或 destination_street 二选一；无 Partner 时手工填目的地地址；Quote→Order 的 carrier 不再取 customer | fixed |
+| SD47-S2-002 | 2.2 | Start Inquiry 后 Carrier 自动填成当前用户 ljq | blocking | `action_start_inquiry` 用 `self.carrier_id or env.user.partner_id` 兜底，Request 无承运商时把当前用户当承运商 | 去掉 env.user 兜底，仅取 request.carrier_id；Carrier 字段改为非必填，由用户在 Inquiry 中选择 | fixed |
+| SD47-S2-003 | 2.2 | Inquiry 无 cargo 信息（summary 空、无行明细） | blocking | 只复制 request.cargo_description，Request 只有 Cargo Lines 时 Inquiry 为空 | 从 Cargo Lines 生成 summary 和 inquiry line，重量/体积缺省从行汇总 | fixed |
+| SD47-S2-004 | 2.2 | Inquiry 表单排版混乱 | minor | 地址组嵌套在 Route & Cargo 内，deprecated 文本字段仍显示 | 重排表单：Inquiry Info / Schedule / Origin+Destination Address / Cargo / Cargo Lines / Notes | fixed |
+| SD47-S2-005 | 2.1 | request 2074 destination_city 为空、legacy destination_type=warehouse 与场景不一致 | minor | 手工录入未填 city；记录创建于场景 onchange 生效前 | 用户决定忽略，不阻塞验证 | accepted |
 
 ---
 
@@ -93,15 +109,20 @@
 | Bug ID | Root Cause | Fix Summary | Re-verified | Status |
 |--------|-----------|-------------|-------------|--------|
 | C-001~C-003, C-011 | 全局修复（参见 common_pre_check.md） | 全局修复 | ✅ | fixed |
+| SD47-S2-001 | 目的地被当作客户主档强制必填 | 校验放宽：有 Partner 自动带地址，无 Partner 手工填 Destination Address；同步修复 Quote→Order carrier 复用 customer 的问题 | 待 UI 复验 | fixed |
+| SD47-S2-002 | Inquiry carrier 用 env.user 兜底 | 仅取 request.carrier_id，Carrier 字段非必填，由用户在 Inquiry 选择 | 待 UI 复验 | fixed |
+| SD47-S2-003 | Inquiry 只复制 cargo_description | 从 Request Cargo Lines 生成 cargo_summary + inquiry line + 重量/体积 | 待 UI 复验 | fixed |
+| SD47-S2-004 | 表单地址组嵌套、旧字段未隐藏 | 重排 Inquiry 表单为清晰分组 | 待 UI 复验 | fixed |
+| SD47-S2-005 | 2074 目的地 city 缺失、legacy destination_type 未同步 | 用户决定忽略 | 已确认 | accepted |
 
 ---
 
 ## Final Result
 - **Manual**: ⏳ PENDING
-- **Executor**:
-- **Date**:
-- **Environment**:
-- **Context Version**: 1.0.78
+- **Executor**: lijianqiang
+- **Date**: 2026-08-03
+- **Environment**: Odoo 18 dev
+- **Context Version**: 1.0.96
 
 ---
 
@@ -116,9 +137,9 @@
 
 | # | Action | Expected | Pass? |
 |---|--------|----------|-------|
-| A.1 | 新建 Request，选择场景 **terminal_to_customer** | Origin Address / Destination Address 两个组显示 | [ ] |
-| A.2 | 起点：terminal (选 terminal_id 自动填充 origin 地址) | 地址字段自动填充 | [ ] |
-| A.3 | 终点：customer (选 partner_id 自动填充 destination 地址) | 地址字段自动填充 | [ ] |
+| A.1 | 新建 Request，选择场景 **terminal_to_customer** | Origin Address / Destination Address 两个组显示 | [x] |
+| A.2 | 起点：terminal (选 terminal_id 自动填充 origin 地址) | 地址字段自动填充 | [x] |
+| A.3 | 终点：有 partner 选 partner 自动填充；无 partner 手工填写 Destination Address | 两种方式都能保存 | [x] |
 | A.4 | 手动修改一个地址字段（如 street） | 可编辑，不被后续 onchange 覆盖 | [ ] |
 | A.5 | 按流程创建 Order（Commercial → Inquiry → Quote → Order） | Order 地址与 Request/Plan 一致 | [ ] |
 | A.6 | Order 确认后尝试修改地址 | 被阻止（只读） | [ ] |
@@ -127,4 +148,8 @@
 
 | Bug ID | Step | Issue | Severity | Status |
 |--------|------|-------|----------|--------|
-| | | | | |
+| SD47-S2-001 | 2.1 | 无客户主档的目的地无法保存 | blocking | fixed（待 UI 复验） |
+| SD47-S2-002 | 2.2 | Inquiry Carrier 默认成 ljq | blocking | fixed（待 UI 复验） |
+| SD47-S2-003 | 2.2 | Inquiry 无 cargo 信息 | blocking | fixed（待 UI 复验） |
+| SD47-S2-004 | 2.2 | Inquiry 表单排版混乱 | minor | fixed（待 UI 复验） |
+| SD47-S2-005 | 2.1 | 2074 city 缺失 / legacy destination_type 不一致 | minor | accepted |

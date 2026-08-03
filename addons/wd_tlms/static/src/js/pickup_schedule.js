@@ -4,6 +4,13 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
+function formatLocalDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
 export class TransportPlan extends Component {
     static template = "wd_tlms.TransportPlanTemplate";
 
@@ -94,7 +101,7 @@ export class TransportPlan extends Component {
         }
         for (let d = 1; d <= lastDay.getDate(); d++) {
             const date = new Date(year, month, d);
-            const dateStr = date.toISOString().split("T")[0];
+            const dateStr = formatLocalDate(date);
             days.push({
                 isEmpty: false, date: d, dateStr, fullDate: date,
                 dayOfWeek: date.getDay(), key: dateStr,
@@ -134,8 +141,8 @@ export class TransportPlan extends Component {
         try {
             const year = this.state.currentMonth.getFullYear();
             const month = this.state.currentMonth.getMonth();
-            const start = new Date(year, month, 1).toISOString().split('T')[0];
-            const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+            const start = formatLocalDate(new Date(year, month, 1));
+            const end = formatLocalDate(new Date(year, month + 1, 1));
 
             const plans = await this.orm.searchRead('pickup.plan',
                 [['scheduled_date', '>=', start], ['scheduled_date', '<', end]],

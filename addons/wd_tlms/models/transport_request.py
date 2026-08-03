@@ -58,7 +58,8 @@ class TransportRequest(models.Model):
 
     # ---- Partner ----
     partner_id = fields.Many2one('res.partner', string='Customer',
-                                domain=[('is_company', '=', True)])
+                                domain=[('is_company', '=', True)],
+                                help='Cargo owner / entrusting customer. Optional when the destination is entered manually as a free address.')
     customer_ref = fields.Char(string='Customer Reference')
     contact_person = fields.Char(string='Contact Person')
     contact_phone = fields.Char(string='Contact Phone')
@@ -244,12 +245,22 @@ class TransportRequest(models.Model):
        self.ensure_one()
        if self.request_type != 'commercial':
            raise UserError(_('Inquiry is only available for commercial requests.'))
+       cargo_summary = self.cargo_description
+       if not cargo_summary and self.cargo_line_ids:
+           cargo_summary = '\n'.join(
+               ' - '.join(x for x in (cl.description, cl.container_no, cl.bl_number) if x)
+               for cl in self.cargo_line_ids)
        inquiry = self.env['tlmp.transport.inquiry'].create({
            'request_id': self.id,
-           'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
-           'cargo_summary': self.cargo_description or '',
-           'weight_kg': self.cargo_weight, 'volume_m3': self.cargo_volume,
+           'partner_id': self.carrier_id.id if self.carrier_id else False,
+           'cargo_summary': cargo_summary or '',
+           'weight_kg': self.cargo_weight or sum(cl.gross_weight for cl in self.cargo_line_ids),
+           'volume_m3': self.cargo_volume or sum(cl.volume_m3 for cl in self.cargo_line_ids),
            'pickup_date': self.requested_pickup_date,
+           'line_ids': [(0, 0, {
+               'description': cl.description or cl.container_no or cl.bl_number or _('Cargo'),
+               'quantity': 1.0,
+           }) for cl in self.cargo_line_ids],
        })
        return {
            'type': 'ir.actions.act_window',
@@ -281,6 +292,19 @@ class TransportRequest(models.Model):
 
     # Constraints
     # -----------------------------------------------------------
+    @api.onchange('scene_id')
+    def _onchange_scene_id(self):
+        for rec in self:
+            if not rec.scene_id:
+                continue
+            scene = rec.scene_id
+            rec.destination_type = 'warehouse_transfer' if scene.code == 'warehouse_transfer' else scene.destination_type
+            rec.request_type = 'plan_driven' if scene.scene_type in ('plan_driven', 'mixed') else 'commercial'
+            if scene.destination_type == 'customer':
+                rec.warehouse_id = False
+            else:
+                rec.partner_id = False
+
     @api.onchange('terminal_id')
     def _onchange_terminal_id(self):
         for r in self:
@@ -313,15 +337,19 @@ class TransportRequest(models.Model):
                     r.destination_state_id = wh.partner_id.state_id
                     r.destination_country_id = wh.partner_id.country_id
 
-    @api.constrains('destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id')
+    @api.constrains('scene_id', 'destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id', 'destination_street')
     def _check_destination_fields(self):
        for rec in self:
-           if rec.destination_type in ('warehouse', 'warehouse_transfer') and not rec.warehouse_id:
-               raise UserError(_('Destination Warehouse required for warehouse/transfer.'))
-           if rec.destination_type == 'warehouse_transfer' and not rec.source_warehouse_id:
-               raise UserError(_('Source Warehouse required for warehouse transfer.'))
-           if rec.destination_type in ('customer', 'self_pickup') and not rec.partner_id:
-               raise UserError(_('Customer required for delivery/self-pickup.'))
+           scene = rec.scene_id
+           dest = scene.destination_type if scene else rec.destination_type
+           if dest == 'warehouse' or (not scene and rec.destination_type == 'warehouse_transfer'):
+               if not rec.warehouse_id:
+                   raise UserError(_('Destination Warehouse required for warehouse/transfer.'))
+           if (scene and scene.code == 'warehouse_transfer') or (not scene and rec.destination_type == 'warehouse_transfer'):
+               if not rec.source_warehouse_id:
+                   raise UserError(_('Source Warehouse required for warehouse transfer.'))
+           if dest in ('customer', 'self_pickup') and not rec.partner_id and not rec.destination_street:
+               raise UserError(_('Customer or Destination Address required for delivery/self-pickup.'))
 
     # -----------------------------------------------------------
     # IFFM reference (read-only soft link)

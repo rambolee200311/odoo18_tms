@@ -32,7 +32,6 @@
                 <field name="plan_id"/>
                 <field name="scheduled_date"/>
                 <field name="cargo_type"/>
-                <field name="destination_type"/>
                 <field name="warehouse_id" optional="show"/>
                 <field name="container_number" optional="show"/>
                 <field name="pallet_count" optional="show"/>
@@ -76,7 +75,6 @@
                         </group>
                         <group string="Cargo Details">
                             <field name="cargo_type"/>
-                            <field name="destination_type"/>
                             <field name="warehouse_id"/>
                             <field name="container_number"
                                    invisible="cargo_type != 'container'"/>

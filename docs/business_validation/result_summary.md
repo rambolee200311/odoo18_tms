@@ -4,8 +4,8 @@
 
 | Scene | Name | Scene Code | origin_type | destination_type | Manual | Issues | Notes |
 |-------|------|-----------|-------------|-----------------|--------|--------|-------|
-| S1 | Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse | ⏳ | 0 | Scene1 旧流程已 PASS，地址架构需重验 |
-| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 0 | 地址架构需重验 |
+| S1 | Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse | ⏳ | 3 | 1.1/1.2/1.4 PASS；1.3/1.5 已修复待 UI 复验（SD47-S1-002/003/004） |
+| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1 PASS；2.2 已修复待 UI 复验（SD47-S2-002/003/004） |
 | S3 | Warehouse → Customer | warehouse_to_customer | warehouse | customer | ⏳ | 0 | |
 | S4 | Customer A → B | customer_to_customer | customer | customer | ⏳ | 0 | |
 | S5 | Warehouse Transfer | warehouse_transfer | warehouse | warehouse | ⏳ | 0 | |
@@ -29,7 +29,15 @@
 
 | Bug ID | Scene | Description | Status |
 |--------|-------|-------------|--------|
-| （待人工验证填写） | | | |
+| SD47-S1-001 | S1 | Step 1.1 未创建 Cargo Line（container_no / bl_number 为空） | fixed |
+| SD47-S1-002 | S1 | Step 1.3 拖拽后日历不显示（时区日期偏移） | fixed（待 UI 复验） |
+| SD47-S1-003 | S1 | Step 1.5 Customer=Carrier 且 scene_id 缺失 | fixed（待 UI 复验） |
+| SD47-S1-004 | S1 | Step 1.5 订单无起始地点展示 | fixed（待 UI 复验） |
+| SD47-S2-001 | S2 | 无客户主档的目的地无法保存 | fixed |
+| SD47-S2-002 | S2 | Inquiry Carrier 默认成 ljq | fixed（待 UI 复验） |
+| SD47-S2-003 | S2 | Inquiry 无 cargo 信息 | fixed（待 UI 复验） |
+| SD47-S2-004 | S2 | Inquiry 表单排版混乱 | fixed（待 UI 复验） |
+| SD47-S2-005 | S2 | 2074 city 缺失 / legacy destination_type 不一致 | accepted |
 
 ---
 

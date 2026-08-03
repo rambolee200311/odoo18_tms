@@ -202,12 +202,19 @@ Sprint44+（架构清理 Sprint）
 - 或排期后日历卡片上显示承运商信息
 - 或点击日历卡片快速编辑承运商
 
+### 决策（2026-07-31 Sprint47 验证确认）
+
+交互方式确定为**拖拽分配**：
+
+- 排期页面左侧增加「可用港到仓承运商」列表（按 scene 过滤，如 terminal_to_warehouse）
+- 将承运商卡片拖拽到已排期计划上 → 写入 `pickup.plan.carrier_id`
+- 已排期日历卡片显示承运商名称，便于确认分配结果
+- 与 AD-003 批量排期共用左侧面板（待排期计划 / 可用承运商分块展示）
+
 ### 状态
 
 - [ ] 功能已实现
 - [ ] 测试已更新
-
----
 
 ## AD-005: Pickup Plan 字段可编辑性控制
 
@@ -405,3 +412,240 @@ Sprint44 — 场景驱动起终点地址架构
 - [ ] 自动填充逻辑已实现
 - [ ] Google Maps API 集成（可选）
 - [ ] 旧 destination_type 已标记 deprecated
+
+---
+
+## AD-009: 排期卡片应统一显示提单号和柜号
+
+**发现时间**: 2026-07-31
+**发现场景**: Sprint47 Scene 1 验证，Step 1.3 排期页面信息展示
+
+### 问题描述
+
+当前排期页面卡片只在一部分状态显示柜明细：
+
+- 左侧「待排期计划」卡片：显示 `container_no` / `bl_no`（取自 `pickup.plan.container.line`）
+- 日历上的「已排期计划」卡片：只显示 `plan.name`，不显示提单号和柜号
+
+同一个计划在待排和已排状态的信息密度不一致，用户无法在日历上直接核对柜号/BL。
+
+### 需求
+
+- 待排期计划卡片：显示 Container No. + BL Number（已有，保持）
+- 已排期计划日历卡片：同样显示 Container No. + BL Number
+- 若 `container.line` 缺失，降级显示 plan.name，并考虑在视觉上提示柜明细缺失
+
+### 影响范围
+
+- `addons/wd_tlms/static/src/js/pickup_schedule.js`
+- `addons/wd_tlms/static/src/xml/transport_plan.xml`
+
+### 建议 Sprint
+
+与 AD-003 / AD-004 同一轮排期页面增强 Sprint
+
+### 状态
+
+- [ ] 已排期卡片显示柜号/BL
+- [ ] 测试已更新
+
+---
+
+## AD-010: 排期日历增加月/周/日视图
+
+**发现时间**: 2026-07-31
+**发现场景**: Sprint47 Scene 1 验证，排期页面视图能力不足
+
+### 问题描述
+
+右侧排期日历目前只有月视图，只能看到日期格子里的计划数量与名称。排期密度高时无法快速定位某一天或某周的承运计划。
+
+### 需求
+
+- 右侧日历增加 **月视图 / 周视图 / 日视图** 切换
+- 月视图：保持当前网格布局，支持拖拽排期
+- 周视图：按周展示计划，便于本周排期和承运商分配
+- 日视图：单日时间线或计划列表，便于细化某一天的排期
+- 三种视图都保持拖拽排期和后续 AD-004 承运商拖拽分配能力
+
+### 影响范围
+
+- `addons/wd_tlms/static/src/js/pickup_schedule.js`
+- `addons/wd_tlms/static/src/xml/transport_plan.xml`
+- `addons/wd_tlms/static/src/css/pickup_schedule.css`
+
+### 建议 Sprint
+
+与 AD-003 / AD-004 / AD-009 同一轮排期页面增强 Sprint
+
+### 状态
+
+- [ ] 月视图切换
+- [ ] 周视图切换
+- [ ] 日视图切换
+- [ ] 三种视图均支持拖拽
+- [ ] 测试已更新
+
+---
+
+## AD-011: 统一 Pickup Plan 排期时间口径
+
+**发现时间**: 2026-07-31
+**发现场景**: Sprint47 Scene 1 验证，Step 1.5 检查 Order 计划时间时暴露
+
+### 问题描述
+
+Pickup Plan 上同时存在两个“计划时间”字段，口径重叠，用户容易混淆：
+
+- `scheduled_date`（Date）：日历拖拽写入的排期日期，是当前排期流程的唯一写入入口
+- `planned_pickup_date`（Datetime）：计划提货时间，表单中也可编辑
+
+创建 Transport Order 时又做了兜底合并：
+
+```python
+'planned_pickup_date': self.planned_pickup_date or self.scheduled_date,
+```
+
+因此同一计划在表单、日历、Order 三个位置看到的时间可能不一致。
+
+### 目标口径
+
+- Pickup Plan 只保留 `scheduled_date` 作为排期入口，表单不再暴露 `planned_pickup_date`
+- `planned_pickup_date` 仅在 Order 创建时从 `scheduled_date` 生成（可再由计划提货时间细化）
+- Order 仍保留 `planned_pickup_date` / `planned_delivery_date` 两个业务时点，不做合并
+
+### 影响范围
+
+- `pickup.plan.planned_pickup_date` / `scheduled_date`
+- `pickup_plan_views.xml`
+- `pickup_plan_fix.py` / `pickup_plan.py` 的 `action_create_transport_order`
+
+### 建议 Sprint
+
+与 AD-001 等架构清理 Sprint 一起处理
+
+### 状态
+
+- [ ] 口径统一方案已确认
+- [ ] 视图已调整
+- [ ] Order 生成逻辑已统一
+- [ ] 测试已更新
+
+---
+
+## AD-012: 港到仓自有车队自提只排期不建订单
+
+**发现时间**: 2026-07-31
+**发现场景**: Sprint47 Scene 1 验证，港到仓存在自有车队自提场景
+
+### 问题描述
+
+当前计划驱动流程固定为：Request → Pickup Plan → 排期 → Create Transport Order。
+但港到仓（terminal_to_warehouse）也有**自有车队自提**的情况：自有车辆提柜/提货，只需要在排期日历上安排计划，不需要生成运输订单，也不需要承运商。
+
+### 需求
+
+- 自有车队自提场景下，排期完成后停留在 Pickup Plan，不强制创建 Order
+- 该场景不需要 `carrier_id`，也不需要 Order 的 carrier/customer 校验
+- 排期页面需区分「自有车队自提」与「外部承运」两种模式：
+  - 自有车队：排期后直接完成计划
+  - 外部承运：排期后继续走 Create Transport Order
+
+### 影响范围
+
+- `pickup.plan` 创建/校验逻辑（`carrier_id` 是否必填）
+- `action_create_transport_order` 流程分流
+- 排期页面（OWL 日历）模式区分
+- `transport_order_views.xml` / `pickup_plan_views.xml`
+
+### 建议 Sprint
+
+排期页面增强 Sprint（与 AD-003 / AD-004 / AD-009 / AD-010 同一轮）
+
+### 状态
+
+- [ ] 自有车队模式已支持
+- [ ] 外部承运模式不受影响
+- [ ] 排期页面模式切换已实现
+- [ ] 测试已更新
+
+---
+
+## AD-013: Request / Order 缺少 T1 运输与 DGD 参数
+
+**发现时间**: 2026-07-31
+**发现场景**: Sprint47 Scene 1 验证，运输文档参数不完整
+
+### 问题描述
+
+`tlmp.transport.request` 和 `tlmp.transport.order` 目前都没有 T1 运输和 DGD（危险品申报）相关参数，导致港到仓/跨区运输时无法记录与传递：
+
+- **T1 运输**：欧盟海关转运程序（Union transit procedure），需要记录 T1 单据号、状态、有效期等
+- **DGD 参数**：危险品申报（Dangerous Goods Declaration），需要记录 UN 编号、危品类别、包装组、DGD 编号、申报状态等
+
+### 需求
+
+Request 与 Order 都补齐以下参数，并在创建 Order 时从 Request 快照复制：
+
+**T1**
+- `t1_number` / `t1_document_ref`：T1 单据号
+- `t1_state`：状态（draft / issued / closed / cancelled 等）
+- `t1_valid_until`：有效期
+
+**DGD**
+- `dgd_number` / `dgd_document_ref`：DGD 申报号
+- `dgd_un_number`：UN 编号
+- `dgd_class`：危险品类别
+- `dgd_packing_group`：包装组
+- `dgd_state`：申报状态
+
+### 影响范围
+
+- `transport_request.py` / `transport_request_views.xml`
+- `transport_order.py` / `transport_order_views.xml`
+- `pickup_plan_fix.py` / `pickup_plan.py` 的 Order 快照复制逻辑
+- 相关模型/测试
+
+### 建议 Sprint
+
+架构补充 Sprint（与地址快照、排期增强轮次分开，避免范围过大）
+
+### 状态
+
+- [ ] Request T1/DGD 字段已添加
+- [ ] Order T1/DGD 字段已添加并快照复制
+- [ ] 视图已更新
+- [ ] 测试已更新
+
+---
+
+## AD-014: 目的地不强制 Partner，支持临时收货地址
+
+**发现时间**: 2026-08-03
+**发现场景**: Sprint47 Scene 2 人工验证，3PL 配送业务
+
+### 问题描述
+
+3PL 受货主委托送货，目的地是货主指定的地址，很多是一次性收货地址，没有也不需要 Partner 主档。
+原实现把 destination/customer 场景的 `partner_id` 设为必填，导致无客户主档的目的地无法创建 Request。
+
+### 决策（2026-08-03 已实施）
+
+- `partner_id` 表示货主/委托客户，**可选**
+- 目的地用结构化地址（`destination_street/zip/city/state_id/country_id`），无 Partner 时手工填写
+- 校验放宽为：customer/self_pickup 场景要求 `partner_id` 或 `destination_street` 至少一项
+- Quote→Order 的 `carrier_id` 必须取 Inquiry 的承运商，不能复用 customer
+
+### 影响范围
+
+- `transport_request.py` 校验与字段帮助
+- `pickup_plan.py` `_check_partner_required`
+- `transport_quote.py` `_auto_create_order`
+- `scene_2_terminal_customer.md` 验证步骤
+
+### 状态
+
+- [x] Request 校验已放宽
+- [x] Pickup Plan 校验已放宽
+- [x] Quote→Order carrier 已修正
+- [ ] 测试已更新

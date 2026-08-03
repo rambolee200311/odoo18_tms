@@ -39,28 +39,41 @@
                             <field name="request_id" options="{'no_open': True, 'no_create': True}"/>
                             <field name="partner_id" options="{'no_create': True}"/>
                         </group>
-                        <group string="Route &amp; Cargo">
-                            <field name="from_location_text"/>
-                            <field name="to_location_text"/>
-                    <group string="Origin Address" invisible="not request_id">
-                        <field name="origin_street"/>
-                        <field name="origin_city"/>
-                        <field name="origin_country_id"/>
+                        <group string="Schedule">
+                            <field name="pickup_date"/>
+                            <field name="delivery_deadline"/>
+                            <field name="validity_date"/>
+                        </group>
                     </group>
-                    <group string="Destination Address" invisible="not request_id">
-                        <field name="destination_street"/>
-                        <field name="destination_city"/>
-                        <field name="destination_country_id"/>
+                    <group invisible="not request_id">
+                        <group string="Origin Address">
+                            <field name="origin_street" readonly="1"/>
+                            <field name="origin_zip" readonly="1"/>
+                            <field name="origin_city" readonly="1"/>
+                            <field name="origin_state_id" readonly="1" options="{'no_create': True}"/>
+                            <field name="origin_country_id" readonly="1" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Destination Address">
+                            <field name="destination_street" readonly="1"/>
+                            <field name="destination_zip" readonly="1"/>
+                            <field name="destination_city" readonly="1"/>
+                            <field name="destination_state_id" readonly="1" options="{'no_create': True}"/>
+                            <field name="destination_country_id" readonly="1" options="{'no_create': True}"/>
+                        </group>
                     </group>
+                    <group string="Cargo">
+                        <group>
                             <field name="cargo_summary"/>
                             <field name="weight_kg"/>
                             <field name="volume_m3"/>
-                            <field name="pickup_date"/>
-                            <field name="delivery_deadline"/>
+                        </group>
+                        <group>
+                            <field name="total_amount" widget="monetary"/>
+                            <field name="carrier_notes"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Carrier Quotes" name="lines_page">
+                        <page string="Cargo Lines" name="lines_page">
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="description"/>
@@ -69,14 +82,13 @@
                                     <field name="subtotal" widget="monetary" sum="Total"/>
                                 </list>
                             </field>
-                            <group>
-                                <field name="total_amount" widget="monetary"/>
-                                <field name="validity_date"/>
-                                <field name="carrier_notes"/>
-                            </group>
                         </page>
                         <page string="Notes" name="notes_page">
-                            <field name="carrier_notes"/>
+                            <group>
+                                <field name="carrier_notes"/>
+                                <field name="response_date" readonly="1"/>
+                                <field name="sent_date" readonly="1"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

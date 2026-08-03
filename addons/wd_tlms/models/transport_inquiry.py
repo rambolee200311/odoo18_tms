@@ -13,7 +13,7 @@ class TransportInquiry(models.Model):
     name = fields.Char(string='Inquiry No.', required=True, copy=False,
                        default=lambda self: _('New'))
     request_id = fields.Many2one('tlmp.transport.request', string='Request')
-    partner_id = fields.Many2one('res.partner', string='Carrier', required=True)
+    partner_id = fields.Many2one('res.partner', string='Carrier')
     from_location_text = fields.Text(string='From (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
     to_location_text = fields.Text(string='To (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
 

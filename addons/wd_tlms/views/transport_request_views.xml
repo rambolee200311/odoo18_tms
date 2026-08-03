@@ -7,10 +7,9 @@
          <field name="model">tlmp.transport.request</field>
          <field name="arch" type="xml">
              <list string="Transport Requests" default_order="id desc">
-                 <field name="name"/>
-                 <field name="request_type"/>
-                 <field name="destination_type"/>
-                 <field name="cargo_type"/>
+                <field name="name"/>
+                <field name="request_type"/>
+                <field name="cargo_type"/>
                  <field name="partner_id" optional="show"/>
                  <field name="state" widget="badge"/>
                  <field name="carrier_id" optional="show"/>
@@ -46,7 +45,6 @@
                              <field name="name" readonly="1"/>
                              <field name="scene_id" options="{'no_create': True}"/>
                             <field name="request_type"/>
-                             <field name="destination_type"/>
                              <field name="cargo_type"/>
                              <field name="source_type"/>
                              <field name="iff_requirement_ref"
@@ -88,19 +86,21 @@
                              <field name="cargo_volume"/>
                          </group>
                      </group>
-                     <group string="Origin Address" invisible="not scene_id">
+                     <group invisible="not scene_id">
+                         <group string="Origin Address">
                          <field name="origin_street" placeholder="Street"/>
                          <field name="origin_zip" placeholder="Zip" class="col-2"/>
                          <field name="origin_city" placeholder="City"/>
                          <field name="origin_state_id" options="{'no_create': True}" placeholder="State"/>
                          <field name="origin_country_id" options="{'no_create': True}" placeholder="Country"/>
                      </group>
-                     <group string="Destination Address" invisible="not scene_id">
+                     <group string="Destination Address">
                          <field name="destination_street" placeholder="Street"/>
                          <field name="destination_zip" placeholder="Zip" class="col-2"/>
                          <field name="destination_city" placeholder="City"/>
                          <field name="destination_state_id" options="{'no_create': True}" placeholder="State"/>
                          <field name="destination_country_id" options="{'no_create': True}" placeholder="Country"/>
+                     </group>
                      </group>
                      <notebook>
                          <page string="Scheduling" invisible="request_type != 'plan_driven'" name="scheduling_page">
@@ -196,7 +196,6 @@
                  <filter string="Manual" name="manual" domain="[('source_type', '=', 'manual')]"/>
                  <group expand="0" string="Group By">
                      <filter string="Request Type" name="group_type" context="{'group_by': 'request_type'}"/>
-                     <filter string="Destination" name="group_dest" context="{'group_by': 'destination_type'}"/>
                      <filter string="Cargo Type" name="group_cargo" context="{'group_by': 'cargo_type'}"/>
                  </group>
              </search>

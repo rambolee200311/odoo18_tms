@@ -96,9 +96,12 @@ class PickupPlan(models.Model):
         tr_type = type_map.get(self.destination_type, 'port_to_warehouse')
         order_vals = {
            'pickup_plan_id': self.id,
+            'scene_id': self.scene_id.id or (self.transport_request_id.scene_id.id if self.transport_request_id else False),
             'transport_type_id': self.env['tlmp.transport.type']._get_by_code(tr_type).id,
             'fleet_operation_mode': 'subcontracted',
-            'partner_id': self.carrier_id.id or self.env.user.partner_id.id,
+            'partner_id': (self.partner_id.id or
+                           (self.transport_request_id.partner_id.id if self.transport_request_id else False) or
+                           self.env.company.partner_id.id),
             'carrier_id': self.carrier_id.id,
             'cargo_description': self.cargo_description or (_('Pickup plan %s') % self.name),
             'cargo_weight': self.cargo_weight, 'cargo_volume': self.cargo_volume,
@@ -121,6 +124,8 @@ class PickupPlan(models.Model):
             'destination_city': self.destination_city,
             'destination_state_id': self.destination_state_id.id if self.destination_state_id else False,
             'destination_country_id': self.destination_country_id.id if self.destination_country_id else False,
+            'place_of_departure': ', '.join(x for x in (self.origin_street or '', self.origin_zip or '', self.origin_city or '') if x),
+            'place_of_destination': ', '.join(x for x in (self.destination_street or '', self.destination_zip or '', self.destination_city or '') if x),
         })
         if self.destination_type == 'warehouse_transfer':
             order_vals['pickup_location_id'] = (

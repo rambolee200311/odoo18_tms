@@ -10,7 +10,6 @@
                 <field name="scene_id" optional="show"/>
                 <field name="cargo_type"/>
                 <field name="source_type"/>
-                <field name="destination_type"/>
                 <field name="terminal_id" optional="show"/>
                 <field name="partner_id" optional="show"/>
                 <field name="carrier_id" optional="show"/>
@@ -49,7 +48,6 @@
                             <field name="iff_requirement_ref"
                                    invisible="source_type != 'iff'"
                                    options="{'no_create': True, 'no_open': True}"/>
-                            <field name="destination_type"/>
                         </group>
                         <group string="Destination">
                             <field name="terminal_id"
@@ -73,19 +71,21 @@
                             <field name="delivery_phone"
                                    invisible="destination_type not in ('customer', 'self_pickup')"/>
                         </group>
-                        <group string="Origin Address" invisible="not scene_id">
+                        <group invisible="not scene_id">
+                            <group string="Origin Address">
                             <field name="origin_street"/>
                             <field name="origin_zip"/>
                             <field name="origin_city"/>
                             <field name="origin_state_id" options="{'no_create': True}"/>
                             <field name="origin_country_id" options="{'no_create': True}"/>
                         </group>
-                        <group string="Destination Address" invisible="not scene_id">
+                        <group string="Destination Address">
                             <field name="destination_street"/>
                             <field name="destination_zip"/>
                             <field name="destination_city"/>
                             <field name="destination_state_id" options="{'no_create': True}"/>
                             <field name="destination_country_id" options="{'no_create': True}"/>
+                        </group>
                         </group>
                     </group>
 
@@ -163,15 +163,6 @@
                 <field name="terminal_id"/>
                 <field name="container_line_ids"/>
                 <separator/>
-                <filter string="Warehouse" name="to_warehouse"
-                        domain="[('destination_type', '=', 'warehouse')]"/>
-                <filter string="To Customer" name="to_customer"
-                        domain="[('destination_type', '=', 'customer')]"/>
-                <filter string="Self Pickup" name="self_pickup"
-                        domain="[('destination_type', '=', 'self_pickup')]"/>
-                <filter string="Warehouse Transfer" name="warehouse_transfer"
-                        domain="[('destination_type', '=', 'warehouse_transfer')]"/>
-                <separator/>
                 <filter string="Container" name="container"
                         domain="[('cargo_type', '=', 'container')]"/>
                 <filter string="Pallet / Piece" name="pallet"
@@ -187,8 +178,6 @@
                 <filter string="Not Scheduled" name="not_scheduled"
                         domain="[('scheduled_date', '=', False)]"/>
                 <group expand="0" string="Group By">
-                    <filter string="Destination" name="group_dest"
-                            context="{'group_by': 'destination_type'}"/>
                     <filter string="Cargo Type" name="group_cargo"
                             context="{'group_by': 'cargo_type'}"/>
                     <filter string="Source" name="group_source"
