@@ -14,7 +14,7 @@ class TransportQuote(models.Model):
                        default=lambda self: _('New'))
     request_id = fields.Many2one('tlmp.transport.request', string='Request')
     inquiry_id = fields.Many2one('tlmp.transport.inquiry', string='Inquiry')
-    partner_id = fields.Many2one('res.partner', string='Customer', required=True)
+    partner_id = fields.Many2one('res.partner', string='Customer (Cargo Owner)')
     transport_mode = fields.Selection([('road', 'Road'), ('multimodal', 'Multimodal')],
                                       default='road')
     line_ids = fields.One2many('tlmp.transport.quote.line', 'quote_id', string='Lines')
@@ -50,21 +50,17 @@ class TransportQuote(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.quote.seq') or _('New')
         return super().create(vals_list)
 
-    @api.depends('line_ids.subtotal')
+    @api.depends('line_ids.subtotal', 'carrier_cost', 'margin_amount')
     def _compute_total(self):
         for r in self:
             r.total_base_fee = sum(r.line_ids.mapped('subtotal'))
             r.total_surcharge = 0.0
-            r.total_amount = r.total_base_fee + r.total_surcharge
+            r.total_amount = (r.carrier_cost or 0.0) + (r.margin_amount or 0.0)
 
     @api.depends('carrier_cost', 'margin_amount')
     def _compute_margin_rate(self):
         for r in self:
             r.margin_rate = (r.margin_amount / r.carrier_cost * 100) if r.carrier_cost else 0.0
-        for r in self:
-            r.total_base_fee = sum(r.line_ids.mapped('subtotal'))
-            r.total_surcharge = 0.0
-            r.total_amount = r.total_base_fee + r.total_surcharge
 
     def action_accept(self):
         self.ensure_one()
@@ -118,7 +114,9 @@ class TransportQuote(models.Model):
             'request_id': self.request_id.id,
             'quote_id': self.id,
             'inquiry_id': self.inquiry_id.id,
-            'partner_id': self.partner_id.id,
+            'partner_id': (self.partner_id.id or
+                           (self.request_id.partner_id.id if self.request_id and self.request_id.partner_id else False) or
+                           self.env.company.partner_id.id),
             'transport_type_id': self.request_id.transport_type_id.id if self.request_id and self.request_id.transport_type_id else False,
             'fleet_operation_mode': 'subcontracted',
             'total_customer_charge': self.total_amount,

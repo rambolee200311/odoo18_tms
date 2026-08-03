@@ -35,6 +35,8 @@ class TransportInquiry(models.Model):
     delivery_deadline = fields.Datetime(string='Delivery Deadline')
     line_ids = fields.One2many('tlmp.transport.inquiry.line', 'inquiry_id',
                                string='Inquiry Lines')
+    quote_ids = fields.One2many('tlmp.transport.quote', 'inquiry_id',
+                                string='Customer Quotes')
     total_amount = fields.Monetary(string='Total', compute='_compute_total', store=True)
     currency_id = fields.Many2one('res.currency', string='Currency',
                                   default=lambda self: self.env.company.currency_id)
@@ -72,8 +74,40 @@ class TransportInquiry(models.Model):
         return True
 
     def action_accept(self):
+        self.ensure_one()
+        if self.state != 'responded':
+            raise UserError(_('Only responded carrier inquiries can be selected.'))
         self.write({'state': 'accepted'})
         return True
+
+    def action_create_quote(self):
+        self.ensure_one()
+        if self.state != 'accepted':
+            raise UserError(_('Select a carrier first (Inquiry state = Accepted/Selected).'))
+        existing = self.env['tlmp.transport.quote'].search(
+            [('inquiry_id', '=', self.id)], limit=1)
+        if existing:
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'tlmp.transport.quote',
+                'view_mode': 'form',
+                'res_id': existing.id,
+                'target': 'current',
+            }
+        quote = self.env['tlmp.transport.quote'].create({
+            'request_id': self.request_id.id if self.request_id else False,
+            'inquiry_id': self.id,
+            'partner_id': self.request_id.partner_id.id if self.request_id and self.request_id.partner_id else False,
+            'carrier_cost': self.total_amount,
+            'margin_amount': 0.0,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'tlmp.transport.quote',
+            'view_mode': 'form',
+            'res_id': quote.id,
+            'target': 'current',
+        }
 
     def action_reject(self, reason=None):
         self.write({'state': 'rejected'})

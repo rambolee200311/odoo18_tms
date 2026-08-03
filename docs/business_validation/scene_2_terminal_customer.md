@@ -34,31 +34,39 @@
 7. Expected: state=Draft, scene_id=terminal_to_customer,
    origin/destination 地址已自动填充（用户可编辑）
 
-### Step 2.2: Start Inquiry
+### Step 2.2: Start Carrier Inquiry
 
 1. Click **Start Inquiry** button
-2. Expected: Inquiry created, state=Draft, inquiry.scene_id = terminal_to_customer
-3. Verify: `request.scene_id` now equals `terminal_to_customer`
+2. Expected: Inquiry created, state=Draft，Carrier 为空（由 3PL 后续选择）
+3. Inquiry 显示 Request 的场景/起终点/Cargo（related 投影）
+4. Click **Send to Carrier** → state=Sent（向承运商询价）
 
-### Step 2.3: Accept Carrier Response
+### Step 2.3: Carrier Response & Select Carrier
 
-1. In Inquiry, add carrier response fields (Carrier, Total Amount)
-2. Click **Accept**
-3. Expected: Inquiry state = Accepted
+1. 承运商回复：在 Inquiry 设置 **Carrier**（partner_id）和承运商报价（Cargo Lines 单价，合计即 Carrier Quote）
+2. Click **Record Response** → state=Responded
+3. 3PL 内部选定承运商：Click **Select Carrier** → state=Accepted
+4. 注意：这里是「承运商选定」，不是客户接受
 
-### Step 2.4: Create and Accept Quote
+### Step 2.4: Create Customer Quote
 
-1. From the Inquiry → Click **Create Quote**
-2. Set **Carrier Cost**, **Margin**
-3. Set Quote state to **Accepted**
-4. Expected: Transport Order auto-created
-5. Verify: `order.scene_id` = terminal_to_customer
+1. From Inquiry → Click **Create Customer Quote**
+2. Expected: Quote 自动创建，request_id/inquiry_id 已带出，Carrier Cost=承运商报价，Customer Price=Carrier Cost + Margin
+3. Set **Margin**，Customer Price 自动计算
+4. Quote state=Draft，partner_id=货主/客户
 
-### Step 2.5: Verify Fee Lines
+### Step 2.5: Customer Accept Quote → Order
+
+1. Click **Send to Customer** → Quote state=Sent
+2. 客户接受：Click **Accept Quote** → state=Accepted，自动创建 Transport Order
+3. Verify: `order.scene_id` = terminal_to_customer
+4. Verify: `order.carrier_id` = Inquiry 选定的承运商，`order.partner_id` = Quote 客户
+
+### Step 2.6: Verify Fee Lines
 
 1. Open Order → **Fees** tab
-2. Expected: carrier_cost fee line exists
-3. Verify: fee line amounts match Inquiry/Quote
+2. Expected: carrier_cost fee line（应付承运商）与 customer_charge fee line（应收客户）存在
+3. Verify: fee line amounts match Inquiry Carrier Quote / Quote Customer Price
 
 ---
 
@@ -101,6 +109,7 @@
 | SD47-S2-003 | 2.2 | Inquiry 无 cargo 信息（summary 空、无行明细） | blocking | 只复制 request.cargo_description，Request 只有 Cargo Lines 时 Inquiry 为空 | 从 Cargo Lines 生成 summary 和 inquiry line，重量/体积缺省从行汇总 | fixed |
 | SD47-S2-004 | 2.2 | Inquiry 表单排版混乱 | minor | 地址组嵌套在 Route & Cargo 内，deprecated 文本字段仍显示 | 重排表单：Inquiry Info / Schedule / Origin+Destination Address / Cargo / Cargo Lines / Notes | fixed |
 | SD47-S2-005 | 2.1 | request 2074 destination_city 为空、legacy destination_type=warehouse 与场景不一致 | minor | 手工录入未填 city；记录创建于场景 onchange 生效前 | 用户决定忽略，不阻塞验证 | accepted |
+| SD47-S2-006 | 2.3-2.5 | 3PL 流程错误：Inquiry “Accept” 被当作客户接受，缺少“Create Customer Quote”按钮，Quote 客户价未按 Carrier Cost + Margin 计算 | blocking | 领域模型把承运商报价与客户报价混为同一动作 | Inquiry 按钮改为 Select Carrier；新增 Create Customer Quote；Quote total=Carrier Cost+Margin；客户接受 Quote 才建 Order | fixed |
 
 ---
 
@@ -114,6 +123,7 @@
 | SD47-S2-003 | Inquiry 只复制 cargo_description | 从 Request Cargo Lines 生成 cargo_summary + inquiry line + 重量/体积 | 待 UI 复验 | fixed |
 | SD47-S2-004 | 表单地址组嵌套、旧字段未隐藏 | 重排 Inquiry 表单为清晰分组 | 待 UI 复验 | fixed |
 | SD47-S2-005 | 2074 目的地 city 缺失、legacy destination_type 未同步 | 用户决定忽略 | 已确认 | accepted |
+| SD47-S2-006 | 承运商报价与客户报价混为同一动作 | Select Carrier → Create Customer Quote → 客户 Accept Quote 才建 Order；Customer Price=Carrier Cost+Margin | 待 UI 复验 | fixed |
 
 ---
 
@@ -153,3 +163,4 @@
 | SD47-S2-003 | 2.2 | Inquiry 无 cargo 信息 | blocking | fixed（待 UI 复验） |
 | SD47-S2-004 | 2.2 | Inquiry 表单排版混乱 | minor | fixed（待 UI 复验） |
 | SD47-S2-005 | 2.1 | 2074 city 缺失 / legacy destination_type 不一致 | minor | accepted |
+| SD47-S2-006 | 2.3-2.5 | 3PL 流程缺失客户接受环节 | blocking | fixed（待 UI 复验） |

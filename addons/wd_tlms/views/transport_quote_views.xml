@@ -47,7 +47,7 @@
                             <field name="carrier_cost" widget="monetary"/>
                             <field name="margin_amount" widget="monetary"/>
                             <field name="margin_rate" widget="percentage"/>
-                            <field name="total_amount" widget="monetary"/>
+                            <field name="total_amount" string="Customer Price" widget="monetary"/>
                             <field name="currency_id"/>
                         </group>
                     </group>
