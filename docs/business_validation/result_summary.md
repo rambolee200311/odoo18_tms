@@ -1,11 +1,11 @@
 # Sprint42-47 Business Scenario Validation — Results
-> Status: Sprint47 in_progress | Last Updated: 2026-07-31
+> Status: Sprint47 in_progress | Last Updated: 2026-08-03
 > Status Enums: pass / fail-fixed / fail-deferred / fail-accepted-risk / pending
 
 | Scene | Name | Scene Code | origin_type | destination_type | Manual | Issues | Notes |
 |-------|------|-----------|-------------|-----------------|--------|--------|-------|
 | S1 | Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse | ⏳ | 3 | 1.1/1.2/1.4 PASS；1.3/1.5 已修复待 UI 复验（SD47-S1-002/003/004） |
-| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1 PASS；2.2 已修复待 UI 复验（SD47-S2-002/003/004） |
+| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1/2.2/2.3 PASS；2.4 数据复验通过（quote 535）；2.5/2.6 待验证 |
 | S3 | Warehouse → Customer | warehouse_to_customer | warehouse | customer | ⏳ | 0 | |
 | S4 | Customer A → B | customer_to_customer | customer | customer | ⏳ | 0 | |
 | S5 | Warehouse Transfer | warehouse_transfer | warehouse | warehouse | ⏳ | 0 | |
@@ -38,11 +38,11 @@
 | SD47-S2-003 | S2 | Inquiry 无 cargo 信息 | fixed（待 UI 复验） |
 | SD47-S2-004 | S2 | Inquiry 表单排版混乱 | fixed（待 UI 复验） |
 | SD47-S2-005 | S2 | 2074 city 缺失 / legacy destination_type 不一致 | accepted |
-| SD47-S2-006 | S2 | 3PL 流程缺失客户接受环节 | fixed（待 UI 复验） |
-| SD47-S2-007 | S2 | Quote Margin Rate 显示错误 + 无 cargo line | fixed（待 UI 复验） |
-| SD47-S2-008 | S2 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | fixed（待 UI 复验） |
-| SD47-S2-009 | S2 | Fee Type 下拉无记录（Charge Item 主档为空） | fixed（待 UI 复验） |
-| SD47-S2-010 | S2 | 保存 Fee Line 报 Source Type 必填未设置 | fixed（待 UI 复验） |
+| SD47-S2-006 | S2 | 3PL 流程缺失客户接受环节 | fixed（2.4 数据复验通过） |
+| SD47-S2-007 | S2 | Quote Margin Rate 显示错误 + 无 cargo line | fixed（2.4 数据复验通过） |
+| SD47-S2-008 | S2 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | fixed（2.4 数据复验通过） |
+| SD47-S2-009 | S2 | Fee Type 下拉无记录（Charge Item 主档为空） | fixed（2.4 数据复验通过） |
+| SD47-S2-010 | S2 | 保存 Fee Line 报 Source Type 必填未设置 | fixed（2.4 数据复验通过） |
 
 ---
 

@@ -76,6 +76,8 @@
 |------|-------------|--------|-------|
 | 2.1-S47 | Create Transport Request（request 2074） | ✅ PASS | scene=terminal_to_customer，origin 地址自动填充，无 Partner 手工填目的地地址（city 缺失与 legacy destination_type 不一致按用户决定忽略） |
 | 2.2-S47 | Start Inquiry（inquiry 690） | ⏳ PARTIAL | Inquiry 已创建；carrier 默认成 ljq、cargo 信息缺失、表单排版乱（SD47-S2-002/003/004），已修复并升级 1.0.96，待 UI 复验 |
+| 2.3-S47 | Carrier Response & Select Carrier（inquiry 690） | ✅ PASS（数据核验） | Carrier=Gemini Furniture，inquiry line 单价 380，total=380，state=accepted |
+| 2.4-S47 | Create Customer Quote（quote 535） | ✅ PASS（数据核验） | margin_rate=0.208333（UI 显示 20.83%），Customer Price=480（carrier 380 + margin 100）；cargo line 描述 `ewew - eewdd232323 - dfadfd432223`；Fee Line 可新增保存（默认 source_type=commercial），6 条 Charge Item 下拉齐全 |
 
 ---
 
@@ -127,11 +129,11 @@
 | SD47-S2-003 | Inquiry 只复制 cargo_description | 从 Request Cargo Lines 生成 cargo_summary + inquiry line + 重量/体积 | 待 UI 复验 | fixed |
 | SD47-S2-004 | 表单地址组嵌套、旧字段未隐藏 | 重排 Inquiry 表单为清晰分组 | 待 UI 复验 | fixed |
 | SD47-S2-005 | 2074 目的地 city 缺失、legacy destination_type 未同步 | 用户决定忽略 | 已确认 | accepted |
-| SD47-S2-006 | 承运商报价与客户报价混为同一动作 | Select Carrier → Create Customer Quote → 客户 Accept Quote 才建 Order；Customer Price=Carrier Cost+Margin | 待 UI 复验 | fixed |
-| SD47-S2-007 | margin_rate 双重百分比 + Quote 无 cargo line | margin_rate=100/480=20.83%（小数存储）；Create Quote 复制 cargo lines；535 已回填 | 待 UI 复验 | fixed |
-| SD47-S2-008 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | cargo line 描述补 Container No.+BL；Fee Lines 可编辑；535 描述已回填 | 待 UI 复验 | fixed |
-| SD47-S2-009 | Charge Item 主档为空 | 预置 6 条运输费用档案（data/transport_charge_item_data.xml），noupdate 防重复 | 待 UI 复验 | fixed |
-| SD47-S2-010 | Fee Line source_type 无默认值 | 默认 commercial；XML-RPC 升级 1.0.101 通过 | 待 UI 复验 | fixed |
+| SD47-S2-006 | 承运商报价与客户报价混为同一动作 | Select Carrier → Create Customer Quote → 客户 Accept Quote 才建 Order；Customer Price=Carrier Cost+Margin | 数据复验通过（2.4） | fixed |
+| SD47-S2-007 | margin_rate 双重百分比 + Quote 无 cargo line | margin_rate=100/480=20.83%（小数存储）；Create Quote 复制 cargo lines；535 已回填 | 数据复验通过（2.4） | fixed |
+| SD47-S2-008 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | cargo line 描述补 Container No.+BL；Fee Lines 可编辑；535 描述已回填 | 数据复验通过（2.4） | fixed |
+| SD47-S2-009 | Charge Item 主档为空 | 预置 6 条运输费用档案（data/transport_charge_item_data.xml），noupdate 防重复 | 数据复验通过（2.4） | fixed |
+| SD47-S2-010 | Fee Line source_type 无默认值 | 默认 commercial；XML-RPC 升级 1.0.101 通过 | 数据复验通过（2.4） | fixed |
 
 ---
 
