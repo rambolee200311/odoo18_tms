@@ -40,6 +40,7 @@
 | SD47-S2-005 | S2 | 2074 city 缺失 / legacy destination_type 不一致 | accepted |
 | SD47-S2-006 | S2 | 3PL 流程缺失客户接受环节 | fixed（待 UI 复验） |
 | SD47-S2-007 | S2 | Quote Margin Rate 显示错误 + 无 cargo line | fixed（待 UI 复验） |
+| SD47-S2-008 | S2 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | fixed（待 UI 复验） |
 
 ---
 

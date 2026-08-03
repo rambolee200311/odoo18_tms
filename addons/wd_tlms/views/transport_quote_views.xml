@@ -52,7 +52,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Quote Lines" name="lines_page">
+                        <page string="Cargo Lines" name="lines_page">
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="description"/>
@@ -63,8 +63,8 @@
                             </field>
                         </page>
                         <page string="Fee Lines" name="fees_page">
-                            <field name="fee_line_ids" readonly="1">
-                                <list>
+                            <field name="fee_line_ids">
+                                <list editable="bottom">
                                     <field name="fee_type_id"/>
                                     <field name="party_type" widget="badge"/>
                                     <field name="partner_id"/>

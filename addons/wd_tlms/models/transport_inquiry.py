@@ -101,7 +101,8 @@ class TransportInquiry(models.Model):
             'carrier_cost': self.total_amount,
             'margin_amount': 0.0,
             'line_ids': [(0, 0, {
-                'description': cl.description or cl.container_no or cl.bl_number or _('Cargo'),
+                'description': ' - '.join(
+                    x for x in (cl.description, cl.container_no, cl.bl_number) if x) or _('Cargo'),
                 'quantity': 1.0,
                 'unit_price': 0.0,
             }) for cl in self.request_id.cargo_line_ids] if self.request_id else [],
