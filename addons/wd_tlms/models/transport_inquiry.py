@@ -94,18 +94,28 @@ class TransportInquiry(models.Model):
                 'res_id': existing.id,
                 'target': 'current',
             }
+        charge_item = self.env['world.depot.charge.item'].search(
+            [('item_name', '=', 'Transportation Fee')], limit=1) or \
+            self.env['world.depot.charge.item'].search([], limit=1)
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': self.request_id.id if self.request_id else False,
             'inquiry_id': self.id,
             'partner_id': self.request_id.partner_id.id if self.request_id and self.request_id.partner_id else False,
             'carrier_cost': self.total_amount,
-            'margin_amount': 0.0,
             'line_ids': [(0, 0, {
                 'description': ' - '.join(
                     x for x in (cl.description, cl.container_no, cl.bl_number) if x) or _('Cargo'),
                 'quantity': 1.0,
                 'unit_price': 0.0,
             }) for cl in self.request_id.cargo_line_ids] if self.request_id else [],
+            'fee_line_ids': [(0, 0, {
+                'fee_type_id': charge_item.id if charge_item else False,
+                'party_type': 'customer_charge',
+                'source_type': 'commercial',
+                'unit_amount': self.total_amount,
+                'quantity': 1.0,
+                'description': 'Transportation Fee',
+            })] if charge_item else [],
         })
         return {
             'type': 'ir.actions.act_window',

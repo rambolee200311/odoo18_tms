@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 
 class FeeLine(models.Model):
@@ -60,3 +61,17 @@ class FeeLine(models.Model):
     def _compute_total_amount(self):
         for r in self:
             r.total_amount = (r.quantity or 0.0) * (r.unit_amount or 0.0)
+
+    @api.ondelete(at_uninstall=False)
+    def _check_quote_fee_line_not_locked(self):
+        for line in self:
+            if line.source_quote_id and line.source_quote_id.state != 'draft':
+                raise UserError(
+                    _('Fee lines of a sent or accepted quote cannot be deleted.'))
+
+    def write(self, vals):
+        for line in self:
+            if line.source_quote_id and line.source_quote_id.state != 'draft':
+                raise UserError(
+                    _('Fee lines of a sent or accepted quote cannot be modified.'))
+        return super().write(vals)

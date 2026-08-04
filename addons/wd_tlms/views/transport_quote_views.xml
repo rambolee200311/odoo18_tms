@@ -45,9 +45,9 @@
                         </group>
                         <group string="Pricing">
                             <field name="carrier_cost" widget="monetary"/>
-                            <field name="margin_amount" widget="monetary"/>
+                            <field name="margin_amount" widget="monetary" readonly="1"/>
                             <field name="margin_rate" widget="percentage"/>
-                            <field name="total_amount" string="Customer Price" widget="monetary"/>
+                            <field name="total_amount" string="Customer Price" widget="monetary" readonly="1"/>
                             <field name="currency_id"/>
                         </group>
                     </group>
@@ -63,7 +63,7 @@
                             </field>
                         </page>
                         <page string="Fee Lines" name="fees_page">
-                            <field name="fee_line_ids">
+                            <field name="fee_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="fee_type_id"/>
                                     <field name="party_type" widget="badge"/>
