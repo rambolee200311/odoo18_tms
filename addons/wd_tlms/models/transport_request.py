@@ -108,6 +108,14 @@ class TransportRequest(models.Model):
                                   string='Inquiries', copy=False)
     quote_ids = fields.One2many('tlmp.transport.quote', 'request_id',
                                 string='Quotes', copy=False)
+    has_accepted_quote = fields.Boolean(
+        string='Has Accepted Quote', compute='_compute_has_accepted_quote', store=True,
+        help='Whether the commercial flow already has an accepted quote.')
+
+    @api.depends('quote_ids.state')
+    def _compute_has_accepted_quote(self):
+        for r in self:
+            r.has_accepted_quote = any(q.state == 'accepted' for q in r.quote_ids)
 
     # ---- Misc ----
     special_requirements = fields.Text(string='Special Requirements')
@@ -245,6 +253,8 @@ class TransportRequest(models.Model):
        self.ensure_one()
        if self.request_type != 'commercial':
            raise UserError(_('Inquiry is only available for commercial requests.'))
+       if self.has_accepted_quote:
+           raise UserError(_('This request already has an accepted quote. Start a new inquiry only after the quote is rejected or cancelled.'))
        cargo_summary = self.cargo_description
        if not cargo_summary and self.cargo_line_ids:
            cargo_summary = '\n'.join(
@@ -280,13 +290,19 @@ class TransportRequest(models.Model):
        accepted = self.quote_ids.filtered(lambda q: q.state == 'accepted')
        if not accepted:
           raise UserError(_('No accepted quotes found.'))
+       existing_ids = accepted.mapped('transport_order_id').ids
        created = []
        for quote in accepted:
-          if hasattr(quote, '_auto_create_order') and not quote.transport_order_id:
+          if not quote.transport_order_id:
               order = quote._auto_create_order()
               created.append(order.id)
-       if created:
-          return {'type': 'ir.actions.act_window', 'res_model': 'tlmp.transport.order', 'view_mode': 'list', 'domain': [('id', 'in', created)], 'target': 'current'}
+       target_ids = existing_ids + created
+       if target_ids:
+          if len(target_ids) == 1:
+              return {'type': 'ir.actions.act_window', 'res_model': 'tlmp.transport.order',
+                      'view_mode': 'form', 'res_id': target_ids[0], 'target': 'current'}
+          return {'type': 'ir.actions.act_window', 'res_model': 'tlmp.transport.order',
+                  'view_mode': 'list', 'domain': [('id', 'in', target_ids)], 'target': 'current'}
        return {'type': 'ir.actions.act_window', 'res_model': 'tlmp.transport.request', 'view_mode': 'form', 'res_id': self.id}
 
 

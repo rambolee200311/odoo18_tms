@@ -39,6 +39,7 @@
                             <field name="name" readonly="1"/>
                             <field name="request_id" options="{'no_open': True, 'no_create': True}"/>
                             <field name="inquiry_id" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="transport_order_id" readonly="1" options="{'no_create': True}"/>
                             <field name="partner_id" options="{'no_create': True}"/>
                             <field name="transport_mode"/>
                             <field name="validity_date"/>

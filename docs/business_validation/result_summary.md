@@ -5,7 +5,7 @@
 | Scene | Name | Scene Code | origin_type | destination_type | Manual | Issues | Notes |
 |-------|------|-----------|-------------|-----------------|--------|--------|-------|
 | S1 | Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse | ⏳ | 3 | 1.1/1.2/1.4 PASS；1.3/1.5 已修复待 UI 复验（SD47-S1-002/003/004） |
-| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1/2.2/2.3 PASS；2.4 数据复验通过（quote 535，1.0.103 费用行驱动+锁定）；2.5/2.6 待 UI 复验 |
+| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1/2.2/2.3 PASS；2.4 数据复验通过（quote 535）；2.5 数据复验通过（2074 锁定 Start Inquiry，Create Order 直达 1579）；2.6 待 UI 复验 |
 | S3 | Warehouse → Customer | warehouse_to_customer | warehouse | customer | ⏳ | 0 | |
 | S4 | Customer A → B | customer_to_customer | customer | customer | ⏳ | 0 | |
 | S5 | Warehouse Transfer | warehouse_transfer | warehouse | warehouse | ⏳ | 0 | |
@@ -45,6 +45,7 @@
 | SD47-S2-010 | S2 | 保存 Fee Line 报 Source Type 必填未设置 | fixed（2.4 数据复验通过） |
 | SD47-S2-011 | S2 | Quote 表头 Customer Price 与 Fee Lines 合计不一致 | fixed（1.0.102 数据复验通过） |
 | SD47-S2-012 | S2 | 已接受 Quote 费用行可改删 + 定价不一致 + Order 无费用行 | fixed（1.0.103 数据复验通过） |
+| SD47-S2-013 | S2 | 已有 accepted quote 仍可 Start Inquiry；Create Order 按钮难找/不可用 | fixed（1.0.104 数据复验通过） |
 
 ---
 

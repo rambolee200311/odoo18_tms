@@ -30,11 +30,14 @@
                      <button name="action_go_schedule" type="object" string="Go to Schedule"
                              class="btn-primary"
                              invisible="request_type != 'plan_driven'"/>
-                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
-                             invisible="request_type != 'plan_driven'"/>
-                     <button name="action_start_inquiry" type="object" string="Start Inquiry"
-                             class="btn-primary"
-                             invisible="request_type != 'commercial'"/>
+                    <button name="action_create_transport_order" type="object" string="Create Transport Order"
+                            invisible="request_type != 'plan_driven'"/>
+                    <button name="action_start_inquiry" type="object" string="Start Inquiry"
+                            class="btn-primary"
+                            invisible="request_type != 'commercial' or has_accepted_quote"/>
+                    <button name="action_create_orders_from_quotes" type="object" string="Create Order"
+                            class="btn-primary"
+                            invisible="request_type != 'commercial' or not has_accepted_quote"/>
                      <button name="action_confirm" type="object" string="Confirm" invisible="state != 'draft'"/>
                      <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('draft', 'confirmed')"/>
                      <field name="state" widget="statusbar"/>
@@ -135,12 +138,9 @@
                                      </list>
                                  </field>
                              </group>
-                         </page>
-                         <page string="Inquiry &amp; Quote" invisible="request_type != 'commercial'" name="inquiry_page">
-                             <button name="action_create_orders_from_quotes" type="object" string="Create Orders from Accepted Quotes"
-                                     class="btn-primary"
-                                     invisible="not quote_ids"/>
-                             <group string="Inquiries">
+                        </page>
+                        <page string="Inquiry &amp; Quote" invisible="request_type != 'commercial'" name="inquiry_page">
+                            <group string="Inquiries">
                                  <field name="inquiry_ids" readonly="1">
                                      <list>
                                          <field name="name"/>

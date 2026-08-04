@@ -43,6 +43,8 @@ class TransportQuote(models.Model):
         help='Sales margin on customer price: margin_amount / total_amount.')
     fee_line_ids = fields.One2many('transport.fee.line', 'source_quote_id',
         string='Fee Lines', copy=False)
+    transport_order_id = fields.Many2one('tlmp.transport.order',
+        string='Transport Order', readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -136,6 +138,7 @@ class TransportQuote(models.Model):
                            (self.request_id.carrier_id.id if self.request_id and self.request_id.carrier_id else False)),
             'price_source': 'quote',
         })
+        self.write({'transport_order_id': order.id})
         # Copy quote fee lines onto the order; quote fee lines stay locked after accept.
         FeeLine = self.env['transport.fee.line']
         for fl in self.fee_line_ids:
