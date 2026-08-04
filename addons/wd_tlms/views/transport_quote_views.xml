@@ -69,6 +69,7 @@
                                     <field name="party_type" widget="badge"/>
                                     <field name="partner_id"/>
                                     <field name="unit_amount" widget="monetary"/>
+                                    <field name="quantity"/>
                                     <field name="total_amount" widget="monetary" sum="Total"/>
                                 </list>
                             </field>

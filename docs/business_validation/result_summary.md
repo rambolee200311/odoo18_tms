@@ -43,6 +43,7 @@
 | SD47-S2-008 | S2 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | fixed（2.4 数据复验通过） |
 | SD47-S2-009 | S2 | Fee Type 下拉无记录（Charge Item 主档为空） | fixed（2.4 数据复验通过） |
 | SD47-S2-010 | S2 | 保存 Fee Line 报 Source Type 必填未设置 | fixed（2.4 数据复验通过） |
+| SD47-S2-011 | S2 | Quote 表头 Customer Price 与 Fee Lines 合计不一致 | fixed（1.0.102 数据复验通过） |
 
 ---
 

@@ -50,17 +50,22 @@ class TransportQuote(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.quote.seq') or _('New')
         return super().create(vals_list)
 
-    @api.depends('line_ids.subtotal', 'carrier_cost', 'margin_amount')
+    @api.depends('line_ids.subtotal', 'carrier_cost', 'margin_amount',
+                 'fee_line_ids.party_type', 'fee_line_ids.total_amount')
     def _compute_total(self):
         for r in self:
             r.total_base_fee = sum(r.line_ids.mapped('subtotal'))
             r.total_surcharge = 0.0
-            r.total_amount = (r.carrier_cost or 0.0) + (r.margin_amount or 0.0)
+            customer_fee = sum(
+                r.fee_line_ids.filtered(lambda f: f.party_type == 'customer_charge')
+                .mapped('total_amount'))
+            r.total_amount = customer_fee if customer_fee else (
+                (r.carrier_cost or 0.0) + (r.margin_amount or 0.0))
 
-    @api.depends('carrier_cost', 'margin_amount')
+    @api.depends('total_amount', 'margin_amount')
     def _compute_margin_rate(self):
         for r in self:
-            price = (r.carrier_cost or 0.0) + (r.margin_amount or 0.0)
+            price = r.total_amount or 0.0
             r.margin_rate = (r.margin_amount / price) if price else 0.0
 
     def action_accept(self):

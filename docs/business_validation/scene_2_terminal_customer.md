@@ -116,6 +116,7 @@
 | SD47-S2-008 | 2.4 | Quote cargo line 描述未含柜号/BL，Fee Lines 只读不可编辑 | minor | 创建 Quote 时描述只取 cargo.description；fee_line_ids 视图 readonly | cargo line 描述补 Container No. + BL；Fee Lines 放开可编辑（editable bottom）；535 描述已回填 | fixed |
 | SD47-S2-009 | 2.6 | Fee Line 的 Fee Type 下拉无记录 | blocking | `world.depot.charge.item` 主档为空 | 预置 6 条运输费用档案：Transportation Fee / Fuel Surcharge / Terminal Handling / Container Pickup / Customs Clearance / Documentation；版本 1.0.100 | fixed |
 | SD47-S2-010 | 2.6 | Quote 535 新增 Fee Line 报错：Source Type 必填未设置 | blocking | `transport.fee.line.source_type` required 无默认值，Quote 表单新增行时未自动带值 | source_type 默认值改为 commercial；版本 1.0.101 | fixed |
+| SD47-S2-011 | 2.4 | Quote 535 表头 Customer Price（480）与 Fee Lines 合计（550）不一致 | blocking | `tlmp.transport.quote.total_amount` 只按 carrier_cost+margin 计算，忽略 fee_line_ids | total_amount 改为按 customer_charge 费用行合计（无费用行时回退 carrier+margin）；Fee Lines 列表显示 quantity；存量数据已重算回填；版本 1.0.102 | fixed |
 
 ---
 
@@ -134,6 +135,7 @@
 | SD47-S2-008 | Quote cargo 描述缺柜号/BL；Fee Lines 只读 | cargo line 描述补 Container No.+BL；Fee Lines 可编辑；535 描述已回填 | 数据复验通过（2.4） | fixed |
 | SD47-S2-009 | Charge Item 主档为空 | 预置 6 条运输费用档案（data/transport_charge_item_data.xml），noupdate 防重复 | 数据复验通过（2.4） | fixed |
 | SD47-S2-010 | Fee Line source_type 无默认值 | 默认 commercial；XML-RPC 升级 1.0.101 通过 | 数据复验通过（2.4） | fixed |
+| SD47-S2-011 | total_amount 忽略 fee_line_ids | total_amount = customer_charge 费用行合计；无费用行回退 carrier+margin；view 显示 quantity；1.0.102 XML-RPC 升级通过并重算回填 | 数据复验通过（2.4） | fixed |
 
 ---
 
