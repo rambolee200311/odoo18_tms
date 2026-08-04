@@ -75,9 +75,11 @@
 | Step | Description | Result | Notes |
 |------|-------------|--------|-------|
 | 2.1-S47 | Create Transport Request（request 2074） | ✅ PASS | scene=terminal_to_customer，origin 地址自动填充，无 Partner 手工填目的地地址（city 缺失与 legacy destination_type 不一致按用户决定忽略） |
-| 2.2-S47 | Start Inquiry（inquiry 690） | ⏳ PARTIAL | Inquiry 已创建；carrier 默认成 ljq、cargo 信息缺失、表单排版乱（SD47-S2-002/003/004），已修复并升级 1.0.96，待 UI 复验 |
+| 2.2-S47 | Start Inquiry（inquiry 690） | ✅ PASS | Inquiry 已创建；SD47-S2-002/003/004 修复后复验通过 |
 | 2.3-S47 | Carrier Response & Select Carrier（inquiry 690） | ✅ PASS（数据核验） | Carrier=Gemini Furniture，inquiry line 单价 380，total=380，state=accepted |
 | 2.4-S47 | Create Customer Quote（quote 535） | ✅ PASS（数据核验） | margin_rate=0.208333（UI 显示 20.83%），Customer Price=480（carrier 380 + margin 100）；cargo line 描述 `ewew - eewdd232323 - dfadfd432223`；Fee Line 可新增保存（默认 source_type=commercial），6 条 Charge Item 下拉齐全 |
+| 2.5-S47 | Customer Accept Quote → Order（quote 535） | ✅ PASS | Order 1579 自动创建：scene=terminal_to_customer、carrier=Gemini Furniture、partner 与地址快照一致；request header 的 Create Order 可直达已有 Order |
+| 2.6-S47 | Verify Fee Lines（order 1579） | ✅ PASS | Order Fees 页含 customer_charge 480（应收）+ carrier_cost 380（应付），金额与 Quote/Inquiry 一致 |
 
 ---
 
@@ -144,11 +146,11 @@
 ---
 
 ## Final Result
-- **Manual**: ⏳ PENDING
+- **Manual**: ✅ PASS
 - **Executor**: lijianqiang
-- **Date**: 2026-08-03
+- **Date**: 2026-08-04
 - **Environment**: Odoo 18 dev
-- **Context Version**: 1.0.96
+- **Context Version**: 1.0.104
 
 ---
 

@@ -1,11 +1,11 @@
 # Sprint42-47 Business Scenario Validation — Results
-> Status: Sprint47 in_progress | Last Updated: 2026-08-03
+> Status: Sprint47 in_progress | Last Updated: 2026-08-04
 > Status Enums: pass / fail-fixed / fail-deferred / fail-accepted-risk / pending
 
 | Scene | Name | Scene Code | origin_type | destination_type | Manual | Issues | Notes |
 |-------|------|-----------|-------------|-----------------|--------|--------|-------|
 | S1 | Terminal → Warehouse | terminal_to_warehouse | terminal | warehouse | ⏳ | 3 | 1.1/1.2/1.4 PASS；1.3/1.5 已修复待 UI 复验（SD47-S1-002/003/004） |
-| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ⏳ | 3 | 2.1/2.2/2.3 PASS；2.4 数据复验通过（quote 535）；2.5 数据复验通过（2074 锁定 Start Inquiry，Create Order 直达 1579）；2.6 待 UI 复验 |
+| S2 | Terminal → Customer | terminal_to_customer | terminal | customer | ✅ | 3 | 2.1-2.6 全部 PASS（1.0.104）；Order 1579 费用行 480 应收 + 380 应付 |
 | S3 | Warehouse → Customer | warehouse_to_customer | warehouse | customer | ⏳ | 0 | |
 | S4 | Customer A → B | customer_to_customer | customer | customer | ⏳ | 0 | |
 | S5 | Warehouse Transfer | warehouse_transfer | warehouse | warehouse | ⏳ | 0 | |
