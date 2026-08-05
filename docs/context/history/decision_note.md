@@ -1673,6 +1673,31 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
 
 ---
 
+## Sprint49 完成：TLMS Business Rule Engine Foundation（2026-08-05）
+
+已按契约 v3 完成开发并验证：
+
+- 六维矩阵字段（business_driver / cargo_category / carrier_type / t1_attribute /
+  dg_attribute）唯一归属 Transport Request，matrix_code + matrix_version 生成，
+  matrix_snapshot_status 在 confirm 后冻结；
+- cargo.line 仅保留货物结构字段 + cargo_category，并与 Request Root 单一货型校验；
+- `tlmp.carrier.capability` 主数据（T1/ADR/DG/温控/超限/关务）+
+  res.partner.carrier_capability_ids；
+- `tlmp.business.rule` 配置化规则（RULE-CARGO-001~005 / RULE-CARRIER-001/002），
+  require_capability 支持 E1/F1 承运能力校验；
+- business_matrix 规则包（rule_engine / rule_definition / rules/*）与
+  data/business_matrix_data.xml；
+- Rule Result 三态 PASS / WARNING / BLOCK + violations[]，多违规全量收集；
+- Order 创建时快照复制 matrix_code / matrix_version / matrix_validation_result /
+  matrix_snapshot，confirm 后冻结；
+- 自动化测试 TestBusinessMatrix 9 项全部通过（正向 8 + 负向 7 + 冲突 1），
+  XML-RPC 常驻升级 1.0.113 通过，日志零 ERROR。
+
+遗留：正向 8 与负向 7 的“前端/API/Excel 三入口”覆盖为框架级实现，
+后续可在 UI 自动化阶段补前端用例。
+
+---
+
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
 
 已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：

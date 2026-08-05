@@ -11,7 +11,9 @@ class TransportOrder(models.Model):
                       'destination_city', 'destination_state_id', 'destination_country_id')
     CARGO_SNAPSHOT_FIELDS = (
         'cargo_description', 'cargo_weight', 'cargo_volume',
-        'pallet_count', 'package_count', 'cargo_line_ids', 'container_ids')
+        'pallet_count', 'package_count', 'cargo_line_ids', 'container_ids',
+        'matrix_code', 'matrix_version', 'matrix_validation_result',
+        'matrix_snapshot')
 
     def write(self, vals):
         if any(k in vals for k in self.ADDRESS_FIELDS):
@@ -108,6 +110,15 @@ class TransportOrder(models.Model):
         ('locked', 'Locked'),
         ('cancelled', 'Cancelled'),
     ], string='Cargo Snapshot Status', default='draft', copy=False)
+    matrix_code = fields.Char(string='Matrix Code', readonly=True)
+    matrix_version = fields.Char(
+        string='Matrix Version', default='V1.0', readonly=True)
+    matrix_validation_result = fields.Selection([
+        ('pass', 'PASS'),
+        ('warning', 'WARNING'),
+        ('block', 'BLOCK'),
+    ], string='Matrix Result', readonly=True)
+    matrix_snapshot = fields.Text(string='Matrix Snapshot', readonly=True)
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
     container_no_set = fields.Char(string='Container No. Set')
     swap_container = fields.Boolean(string='Swap Container')

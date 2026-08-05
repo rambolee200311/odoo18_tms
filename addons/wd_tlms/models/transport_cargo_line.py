@@ -37,6 +37,12 @@ class TransportCargoLine(models.Model):
                             help='Bill of Lading number for this container')
     container_type = fields.Char(string='Container Type', default='20GP',
                                  help='ISO container type code, e.g. 20GP, 40HC')
+    cargo_category = fields.Selection([
+        ('container', 'C1 Container'),
+        ('pallet', 'C2 Pallet'),
+        ('piece', 'C3 Piece'),
+    ], string='Cargo Category',
+       help='Business matrix dimension C; must match the request root category.')
     node_type = fields.Selection([
         ('equipment', 'Equipment'),
         ('cargo', 'Cargo'),
@@ -92,6 +98,25 @@ class TransportCargoLine(models.Model):
         help='ADR attribute template linked to UN dictionary. '
              'NOT an ADR field expansion on cargo_line.')
     notes = fields.Text(string='Notes')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('cargo_category') and vals.get('request_id'):
+                request = self.env['tlmp.transport.request'].browse(
+                    vals['request_id'])
+                if request:
+                    vals['cargo_category'] = request.cargo_category
+        return super().create(vals_list)
+
+    @api.constrains('request_id', 'cargo_category')
+    def _check_category_matches_request(self):
+        for r in self:
+            if (r.request_id and r.cargo_category
+                    and r.request_id.cargo_category
+                    and r.cargo_category != r.request_id.cargo_category):
+                raise ValidationError(
+                    _('Cargo line category must match request cargo category.'))
 
     @api.constrains('request_id', 'order_id')
     def _check_owner_exclusive(self):

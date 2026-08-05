@@ -64,6 +64,20 @@
                              <field name="cargo_description"/>
                          </group>
                      </group>
+                     <group string="Business Matrix">
+                         <group>
+                             <field name="business_driver"/>
+                             <field name="cargo_category" readonly="1"/>
+                             <field name="carrier_type"/>
+                         </group>
+                         <group>
+                             <field name="t1_attribute"/>
+                             <field name="dg_attribute"/>
+                             <field name="matrix_code" readonly="1"/>
+                             <field name="matrix_version" readonly="1"/>
+                             <field name="matrix_validation_result" widget="badge" readonly="1"/>
+                         </group>
+                     </group>
                      <group string="Scene Details">
                          <group>
                              <field name="terminal_id"

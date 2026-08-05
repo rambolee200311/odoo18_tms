@@ -11,3 +11,5 @@ class ResPartner(models.Model):
         ('contracted', 'Contracted'),
         ('subcontracted', 'Subcontracted'),
     ], string='Carrier Type')
+    carrier_capability_ids = fields.Many2many(
+        'tlmp.carrier.capability', string='Carrier Capabilities')

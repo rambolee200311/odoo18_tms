@@ -40,4 +40,16 @@
         <field name="res_model">tlmp.carrier.profile</field>
         <field name="view_mode">list,form</field>
     </record>
+    <record id="view_res_partner_carrier_capability_inherit" model="ir.ui.view">
+        <field name="name">res.partner.carrier.capability.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Carrier Capabilities" name="carrier_capabilities_page">
+                    <field name="carrier_capability_ids" widget="many2many_tags"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
 </odoo>

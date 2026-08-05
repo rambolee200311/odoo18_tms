@@ -178,6 +178,12 @@ access_case_clerk,tlmp.case.clerk,model_tlmp_carrier_settlement_case,wd_tlms.gro
 access_case_manager,tlmp.case.manager,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_manager,1,1,1,1
 access_case_matchop,tlmp.case.matchop,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_match_operator,1,0,0,0
 access_case_fin,tlmp.case.fin,model_tlmp_carrier_settlement_case,wd_tlms.group_tlm_financier,1,0,0,0
+access_tlmp_carrier_capability_manager,tlmp.carrier.capability.manager,model_tlmp_carrier_capability,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_carrier_capability_operator,tlmp.carrier.capability.operator,model_tlmp_carrier_capability,wd_tlms.group_tlm_operator,1,0,0,0
+access_tlmp_carrier_capability_all,tlmp.carrier.capability.all,model_tlmp_carrier_capability,base.group_user,1,0,0,0
+access_tlmp_business_rule_manager,tlmp.business.rule.manager,model_tlmp_business_rule,wd_tlms.group_tlm_manager,1,1,1,1
+access_tlmp_business_rule_operator,tlmp.business.rule.operator,model_tlmp_business_rule,wd_tlms.group_tlm_operator,1,0,0,0
+access_tlmp_business_rule_all,tlmp.business.rule.all,model_tlmp_business_rule,base.group_user,1,0,0,0
 access_caseline_clerk,tlmp.caseline.clerk,model_tlmp_carrier_settlement_case_line,wd_tlms.group_tlm_settlement_clerk,1,1,0,0
 access_caseline_manager,tlmp.caseline.manager,model_tlmp_carrier_settlement_case_line,wd_tlms.group_tlm_manager,1,1,1,0
 access_adjust_clerk,tlmp.adjust.clerk,model_tlmp_carrier_settlement_adjustment,wd_tlms.group_tlm_settlement_clerk,1,1,1,0

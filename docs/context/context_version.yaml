@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.62
+context_version: 1.0.63
 update_time: 2026-08-05
-adapt_sprint: Sprint48-C
+adapt_sprint: Sprint49
 update_author: AI-Engineering-Team
 
 version_log:
@@ -426,3 +426,15 @@ bind_asset_folder:
       - Sprint48-A/B/C 定向回归 12 项全部通过
     update_type: 数据清理 + 回归验证
     effect_scope: test_data_reset + business_scenario_regression
+  1.0.63:
+    update_content: |
+      Sprint49 TLMS Business Rule Engine Foundation（wd_tlms 1.0.113）
+      - Request 六维矩阵字段 + matrix_code/matrix_version + snapshot 冻结
+      - cargo.line cargo_category 与单一 Root 校验
+      - tlmp.carrier.capability + res.partner.carrier_capability_ids
+      - tlmp.business.rule 配置化规则 + business_matrix 规则包
+      - Rule Result 三态 + violations[] 多违规收集
+      - Order Matrix Snapshot 快照复制与冻结
+      - TestBusinessMatrix 9 项通过
+    update_type: 架构升级 + 规则引擎
+    effect_scope: business_matrix_rule_engine

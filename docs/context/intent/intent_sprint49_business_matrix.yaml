@@ -4,7 +4,7 @@
 # 修订：2026-08-05 第二轮/第三轮架构评审（v2 6 项修正 + v3 8 项修正）
 # ==============================================================
 intent_id: INT-TMS-SPRINT49-001
-status: CREATED
+status: COMPLETED
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
 title: Sprint49 — TLMS Business Rule Engine Foundation

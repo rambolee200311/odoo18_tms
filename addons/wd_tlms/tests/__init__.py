@@ -56,3 +56,4 @@ from . import test_inquiry_projection
 from . import test_transport_cargo_node
 from . import test_transport_document_projection
 from . import test_sprint48_business_scenarios
+from . import test_business_matrix

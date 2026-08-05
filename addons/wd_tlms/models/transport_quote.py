@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date
@@ -173,6 +175,20 @@ class TransportQuote(models.Model):
             'cargo_volume': request.cargo_volume,
             'pallet_count': request.pallet_count,
             'package_count': request.package_count,
+            'matrix_code': request.matrix_code,
+            'matrix_version': request.matrix_version,
+            'matrix_validation_result': request.matrix_validation_result,
+            'matrix_snapshot': json.dumps({
+                'scene': request.scene_id.code if request.scene_id else False,
+                'driver': request.business_driver,
+                'cargo_category': request.cargo_category,
+                'carrier_type': request.carrier_type,
+                't1': request.t1_attribute,
+                'dg': request.dg_attribute,
+                'matrix_code': request.matrix_code,
+                'matrix_version': request.matrix_version,
+                'validation_result': request.matrix_validation_result,
+            }, ensure_ascii=False),
             'carrier_id': (self.inquiry_id.partner_id.id if self.inquiry_id and self.inquiry_id.partner_id else
                            (self.request_id.carrier_id.id if self.request_id and self.request_id.carrier_id else False)),
             'price_source': 'quote',

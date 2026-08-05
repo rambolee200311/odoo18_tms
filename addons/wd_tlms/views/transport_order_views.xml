@@ -107,6 +107,9 @@
                                  <group>
                                      <field name="snapshot_status" widget="badge" readonly="1"/>
                                      <field name="cargo_snapshot_version" readonly="1"/>
+                                     <field name="matrix_code" readonly="1"/>
+                                     <field name="matrix_version" readonly="1"/>
+                                     <field name="matrix_validation_result" widget="badge" readonly="1"/>
                                      <field name="cargo_description" readonly="snapshot_status != 'draft'"/>
                                      <field name="cargo_weight" readonly="snapshot_status != 'draft'"/>
                                      <field name="cargo_volume" readonly="snapshot_status != 'draft'"/>

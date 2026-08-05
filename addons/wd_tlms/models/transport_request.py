@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+
+from ..business_matrix.rule_engine import BusinessMatrixEngine
+from ..business_matrix.rule_definition import (
+    SCENE_S_CODES, BUSINESS_DRIVER, CARGO_CATEGORY,
+    CARRIER_TYPE, T1_ATTRIBUTE, DG_ATTRIBUTE)
 
 
 class TransportRequest(models.Model):
@@ -48,6 +55,49 @@ class TransportRequest(models.Model):
        ('pallet', 'Pallet'),
        ('piece', 'Piece / Bulk'),
     ], string='Cargo Type', default='container', required=True)
+    business_driver = fields.Selection([
+       ('plan_driven', 'B1 Plan-Driven'),
+       ('commercial', 'B2 Commercial'),
+    ], string='Business Driver', default='plan_driven', required=True,
+       help='Business matrix dimension B.')
+    cargo_category = fields.Selection([
+       ('container', 'C1 Container'),
+       ('pallet', 'C2 Pallet'),
+       ('piece', 'C3 Piece'),
+    ], string='Cargo Category', compute='_compute_cargo_category', store=True,
+       help='Business matrix dimension C; root determines the Cargo Category.')
+    carrier_type = fields.Selection([
+       ('own_fleet', 'D1 Own Fleet'),
+       ('truck', 'D2 Third-Party Truck'),
+       ('courier', 'D3 Courier'),
+    ], string='Carrier Type', default='truck', required=True,
+       help='Business matrix dimension D.')
+    t1_attribute = fields.Selection([
+       ('t1', 'E1 T1'),
+       ('normal', 'E2 Normal'),
+    ], string='T1 Attribute', default='normal', required=True,
+       help='Business matrix dimension E.')
+    dg_attribute = fields.Selection([
+       ('dg', 'F1 Dangerous'),
+       ('normal', 'F2 Normal'),
+    ], string='DG Attribute', default='normal', required=True,
+       help='Business matrix dimension F.')
+    matrix_code = fields.Char(
+       string='Matrix Code', compute='_compute_matrix_code', store=True,
+       help='Six-dimension combination code, e.g. S1-B1-C1-D2-E2-F2.')
+    matrix_version = fields.Char(
+       string='Matrix Version', default='V1.0', readonly=True, copy=False)
+    matrix_snapshot_status = fields.Selection([
+       ('draft', 'Draft'),
+       ('frozen', 'Frozen'),
+    ], string='Matrix Snapshot Status', default='draft', readonly=True, copy=False)
+    matrix_validation_result = fields.Selection([
+       ('pass', 'PASS'),
+       ('warning', 'WARNING'),
+       ('block', 'BLOCK'),
+    ], string='Matrix Validation', compute='_compute_matrix_validation', store=True)
+    matrix_validation_violations = fields.Text(
+       string='Matrix Violations', compute='_compute_matrix_validation', store=True)
 
     # ---- Cargo fields (pallet goes to pickup.plan, container mgmt at pickup.plan level) ----
     cargo_line_ids = fields.One2many("tlmp.transport.cargo.line", "request_id", string="Cargo Lines")
@@ -143,14 +193,109 @@ class TransportRequest(models.Model):
        for vals in vals_list:
            if vals.get('name', _('New')) == _('New'):
                vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.request.seq') or _('New')
+           if not vals.get('business_driver') and vals.get('request_type'):
+               vals['business_driver'] = vals['request_type']
+           if not vals.get('dg_attribute') and vals.get('has_dangerous_goods'):
+               vals['dg_attribute'] = 'dg' if vals.get('has_dangerous_goods') else 'normal'
+           self._raise_if_matrix_block_vals(vals)
        return super().create(vals_list)
+
+    def write(self, vals):
+        for r in self:
+            self._raise_if_matrix_block_vals(vals, record=r)
+        return super().write(vals)
+
+    def _raise_if_matrix_block_vals(self, vals, record=None):
+        ctx = self._matrix_vals_context(vals, record)
+        res = BusinessMatrixEngine.validate(self.env, ctx)
+        if res['result'] == 'block':
+            msgs = '; '.join(v.get('message', '') for v in res['violations'])
+            raise UserError(_('Business Matrix BLOCK: %s') % msgs)
+
+    def _matrix_vals_context(self, vals, record=None):
+        scene_id = vals.get('scene_id', record.scene_id.id if record else False)
+        carrier_id = vals.get('carrier_id', record.carrier_id.id if record else False)
+        capabilities = set()
+        if carrier_id:
+            capabilities = set(
+                self.env['res.partner'].browse(carrier_id)
+                .carrier_capability_ids.mapped('code'))
+        categories = set()
+        if record:
+            categories = set(record.cargo_line_ids.mapped('cargo_category'))
+        scene = self.env['tlmp.transport.scene'].browse(scene_id) if scene_id else False
+        cargo_category = (
+            vals.get('cargo_category') or vals.get('cargo_type')
+            or (record.cargo_category if record else False)
+            or (record.cargo_type if record else False))
+        return {
+            'scene_code': scene.code if scene else (
+                record.scene_id.code if record and record.scene_id else False),
+            'business_driver': vals.get(
+                'business_driver', record.business_driver if record else 'plan_driven'),
+            'cargo_category': cargo_category or 'piece',
+            'carrier_type': vals.get(
+                'carrier_type', record.carrier_type if record else 'truck'),
+            't1_attribute': vals.get(
+                't1_attribute', record.t1_attribute if record else 'normal'),
+            'dg_attribute': vals.get(
+                'dg_attribute', record.dg_attribute if record else 'normal'),
+            'carrier_capabilities': capabilities,
+            'mixed_roots': len(categories) > 1,
+        }
+
+    @api.depends('cargo_type')
+    def _compute_cargo_category(self):
+        for r in self:
+            r.cargo_category = r.cargo_type or 'piece'
+
+    @api.depends('scene_id.code', 'business_driver', 'cargo_category',
+                 'carrier_type', 't1_attribute', 'dg_attribute')
+    def _compute_matrix_code(self):
+        for r in self:
+            r.matrix_code = '-'.join([
+                SCENE_S_CODES.get(r.scene_id.code, 'S0') if r.scene_id else 'S0',
+                BUSINESS_DRIVER.get(r.business_driver, 'B0'),
+                CARGO_CATEGORY.get(r.cargo_category, 'C0'),
+                CARRIER_TYPE.get(r.carrier_type, 'D0'),
+                T1_ATTRIBUTE.get(r.t1_attribute, 'E0'),
+                DG_ATTRIBUTE.get(r.dg_attribute, 'F0'),
+            ])
+
+    def _matrix_context(self):
+        capabilities = set()
+        if self.carrier_id:
+            capabilities = set(self.carrier_id.carrier_capability_ids.mapped('code'))
+        categories = set(self.cargo_line_ids.mapped('cargo_category'))
+        return {
+            'scene_code': self.scene_id.code if self.scene_id else False,
+            'business_driver': self.business_driver,
+            'cargo_category': self.cargo_category,
+            'carrier_type': self.carrier_type,
+            't1_attribute': self.t1_attribute,
+            'dg_attribute': self.dg_attribute,
+            'carrier_capabilities': capabilities,
+            'mixed_roots': len(categories) > 1,
+        }
+
+    @api.depends('scene_id.code', 'business_driver', 'cargo_category',
+                 'carrier_type', 't1_attribute', 'dg_attribute',
+                 'carrier_id.carrier_capability_ids',
+                 'cargo_line_ids.cargo_category')
+    def _compute_matrix_validation(self):
+        for r in self:
+            res = BusinessMatrixEngine.validate(self.env, r._matrix_context())
+            r.matrix_validation_result = res['result']
+            r.matrix_validation_violations = json.dumps(
+                res['violations'], ensure_ascii=False)
+
 
     # -----------------------------------------------------------
     # State transitions
     # -----------------------------------------------------------
     def action_confirm(self):
-       self.write({'state': 'confirmed'})
-       return True
+        self.write({'state': 'confirmed', 'matrix_snapshot_status': 'frozen'})
+        return True
 
     def action_cancel(self):
        self.write({'state': 'cancelled'})
@@ -333,6 +478,7 @@ class TransportRequest(models.Model):
             scene = rec.scene_id
             rec.destination_type = 'warehouse_transfer' if scene.code == 'warehouse_transfer' else scene.destination_type
             rec.request_type = 'plan_driven' if scene.scene_type in ('plan_driven', 'mixed') else 'commercial'
+            rec.business_driver = rec.request_type
             if scene.destination_type == 'customer':
                 rec.warehouse_id = False
             else:
@@ -347,6 +493,17 @@ class TransportRequest(models.Model):
                 r.origin_city = r.terminal_id.city
                 r.origin_state_id = r.terminal_id.state_id
                 r.origin_country_id = r.terminal_id.country_id
+
+    @api.onchange('carrier_id')
+    def _onchange_carrier_id(self):
+        for r in self:
+            if r.carrier_id:
+                partner_type = r.carrier_id.carrier_type
+                r.carrier_type = {
+                    'own_fleet': 'own_fleet',
+                    'contracted': 'truck',
+                    'subcontracted': 'truck',
+                }.get(partner_type, 'truck')
 
     @api.onchange('source_warehouse_id')
     def _onchange_source_warehouse_id(self):
