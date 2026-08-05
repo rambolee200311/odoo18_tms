@@ -45,7 +45,8 @@ class PickupPlan(models.Model):
     # ---- Cargo type ----
     cargo_type = fields.Selection([
         ('container', 'Container'),
-        ('pallet', 'Pallet / Piece'),
+        ('pallet', 'Pallet'),
+        ('piece', 'Piece / Bulk'),
     ], string='Cargo Type', required=True, default='container')
 
     # ---- Destination (determines downstream flow) ----

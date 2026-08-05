@@ -113,6 +113,13 @@ class TransportInquiry(models.Model):
                     'quantity': self.request_id.pallet_count or 1.0,
                     'unit_price': 0.0,
                 })]
+            elif not line_ids and self.request_id.cargo_type == 'piece':
+                line_ids = [(0, 0, {
+                    'description': _('Pieces %s') % (
+                        self.request_id.package_count or 0),
+                    'quantity': self.request_id.package_count or 1.0,
+                    'unit_price': 0.0,
+                })]
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': self.request_id.id if self.request_id else False,
             'inquiry_id': self.id,

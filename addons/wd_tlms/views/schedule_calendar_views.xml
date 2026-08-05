@@ -122,7 +122,7 @@
                 <filter string="Container" name="container"
                         domain="[('cargo_type', '=', 'container')]"/>
                 <filter string="Pallet / Piece" name="pallet"
-                        domain="[('cargo_type', '=', 'pallet')]"/>
+                        domain="[('cargo_type', 'in', ('pallet', 'piece'))]"/>
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Date" name="group_date"

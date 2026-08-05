@@ -91,7 +91,7 @@
 
                     <notebook>
                         <page string="Containers"
-                              invisible="cargo_type == 'pallet'"
+                              invisible="cargo_type != 'container'"
                               name="container_tab">
                             <field name="container_line_ids">
                                 <list editable="bottom" create="1" delete="1">
@@ -113,7 +113,7 @@
                               invisible="cargo_type == 'container'"
                               name="cargo_tab">
                             <group>
-                                <field name="pallet_count"/>
+                                <field name="pallet_count" invisible="cargo_type == 'piece'"/>
                                 <field name="package_count"/>
                                 <field name="cargo_weight"/>
                                 <field name="cargo_volume"/>
@@ -166,7 +166,7 @@
                 <filter string="Container" name="container"
                         domain="[('cargo_type', '=', 'container')]"/>
                 <filter string="Pallet / Piece" name="pallet"
-                        domain="[('cargo_type', '=', 'pallet')]"/>
+                        domain="[('cargo_type', 'in', ('pallet', 'piece'))]"/>
                 <separator/>
                 <filter string="From IFF" name="from_iff"
                         domain="[('source_type', '=', 'iff')]"/>

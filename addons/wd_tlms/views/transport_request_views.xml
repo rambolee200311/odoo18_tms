@@ -84,7 +84,7 @@
                          </group>
                          <group>
                              <field name="pallet_count" invisible="cargo_type != 'pallet'"/>
-                             <field name="package_count" invisible="cargo_type != 'pallet'"/>
+                             <field name="package_count" invisible="cargo_type not in ('pallet', 'piece')"/>
                              <field name="cargo_weight"/>
                              <field name="cargo_volume"/>
                          </group>
@@ -149,6 +149,21 @@
                                         <field name="description" required="1"/>
                                         <field name="commodity"/>
                                         <field name="qty" string="Pallets" sum="Total"/>
+                                        <field name="packages" sum="Total"/>
+                                        <field name="gross_weight" sum="Total"/>
+                                        <field name="volume_m3" sum="Total"/>
+                                    </list>
+                                 </field>
+                             </group>
+                        </page>
+                        <page string="Piece Lines" name="piece_cargo_page"
+                               invisible="cargo_type != 'piece'">
+                             <group>
+                                <field name="cargo_line_ids" nolabel="1">
+                                    <list editable="bottom">
+                                        <field name="sequence" optional="show"/>
+                                        <field name="description" required="1"/>
+                                        <field name="qty" string="Pieces" sum="Total"/>
                                         <field name="packages" sum="Total"/>
                                         <field name="gross_weight" sum="Total"/>
                                         <field name="volume_m3" sum="Total"/>

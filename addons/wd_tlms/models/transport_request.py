@@ -45,7 +45,8 @@ class TransportRequest(models.Model):
     # ---- Cargo type control ----
     cargo_type = fields.Selection([
        ('container', 'Container'),
-       ('pallet', 'Pallet / Piece'),
+       ('pallet', 'Pallet'),
+       ('piece', 'Piece / Bulk'),
     ], string='Cargo Type', default='container', required=True)
 
     # ---- Cargo fields (pallet goes to pickup.plan, container mgmt at pickup.plan level) ----
@@ -269,6 +270,11 @@ class TransportRequest(models.Model):
                'description': cargo_summary,
                'quantity': self.pallet_count or 1.0,
            })]
+       elif not cargo_lines and self.cargo_type == 'piece':
+           inquiry_lines = [(0, 0, {
+               'description': _('Pieces %s') % (self.package_count or 0),
+               'quantity': self.package_count or 1.0,
+           })]
        else:
            inquiry_lines = [(0, 0, {
                'description': cl.description or cl.container_no or cl.bl_number or _('Cargo'),
@@ -382,6 +388,9 @@ class TransportRequest(models.Model):
             if r.cargo_type == 'pallet':
                 r.pallet_count = sum(lines.mapped('qty'))
                 r.package_count = sum(lines.mapped('packages'))
+            elif r.cargo_type == 'piece':
+                r.pallet_count = 0
+                r.package_count = sum(lines.mapped('qty'))
             r.cargo_weight = sum(lines.mapped('gross_weight'))
             r.cargo_volume = sum(lines.mapped('volume_m3'))
 
