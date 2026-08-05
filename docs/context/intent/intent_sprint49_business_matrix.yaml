@@ -1,7 +1,7 @@
 # ==============================================================
-# Sprint49 Intent 契约 v2 — TLMS Business Rule Engine Foundation
+# Sprint49 Intent 契约 v3 — TLMS Business Rule Engine Foundation
 # 基线：docs/context/business/bussiness_matrix.md V1.0
-# 修订：2026-08-05 架构评审（7 项必改全部纳入）
+# 修订：2026-08-05 第二轮/第三轮架构评审（v2 6 项修正 + v3 8 项修正）
 # ==============================================================
 intent_id: INT-TMS-SPRINT49-001
 status: CREATED
@@ -11,39 +11,40 @@ title: Sprint49 — TLMS Business Rule Engine Foundation
 
 target_scope: >
   建设 TLMS 业务规则引擎基础，覆盖 Matrix / Carrier Capability / Validation /
-  Snapshot 四层，为 Sprint50 Workflow Engine 提供稳定底座：
-  1. 六维业务矩阵归属 Transport Request（Business Matrix Snapshot），
-     Cargo Line 不重复六维字段，只保留 cargo_category / packaging_level /
-     qty / weight / volume
+  Snapshot 四层，为 Sprint50 Workflow Engine 提供唯一输入基线：
+  1. 六维业务矩阵唯一归属 Transport Request（Business Matrix Snapshot）；
+     Cargo Line 只保留 cargo_category / packaging_level / qty / weight / volume
   2. Cargo Category（container / pallet / piece，UI Tab + 业务规则）与
      Packaging Level（container / pallet / package / piece，Cargo Tree）分层；
      Category 对应 Cargo Tree Root
-  3. RULE-CARGO-005 改为 Root Type 限制：单 Request 一个 Cargo Category Root，
-     禁止同层级混合业务类型；C1 Root 可含 pallet/package 子节点
-  4. Rule Result 三态：PASS / WARNING / BLOCK，结构化返回
-     code + message(中文) + result
-  5. RULE-SUMMARY-001 按 root cargo_category 汇总，不依赖 UI active Tab
-  6. Order 保存 Business Matrix Snapshot
-     （scene / business_driver / cargo_category / carrier_type / t1_attribute /
-     dg_attribute / matrix_code / validation_result），confirm 后不可变
-  7. Carrier Capability 模型：carrier.capability 主数据 +
-     res.partner.carrier_capability_ids Many2many
-     （T1 / ADR / DG / temperature_control / oversize / customs 预留）；
-     Sprint49 实现 T1 / DG 校验
-  8. tlmp.business.matrix 规则服务覆盖 RULE-CARGO-001~005 /
-     RULE-CARRIER-001~002，前端 / API / Excel / 自动建单全入口生效
+  3. RULE-CARGO-005 Root Type 限制；Cargo Category 由 Root 决定，
+     子节点 Packaging Level 不得改变业务分类与计费维度
+  4. Business Matrix Snapshot 生命周期：
+     draft=实时计算可编辑；submitted=生成冻结快照；
+     order_confirmed=复制到 Order 并锁定
+  5. matrix_code + matrix_version 双字段，历史订单可解释
+  6. Rule Result 三态 PASS / WARNING / BLOCK + violations[]（rule_id/message/timestamp）
+  7. Carrier Capability 模型：tlmp.carrier.capability 主数据 +
+     res.partner.carrier_capability_ids（避免 Odoo delivery.carrier 冲突）
+  8. 规则目录化：business_matrix/（rule_engine / rule_definition / rules/*）
+     + data/business_matrix_rules.xml 配置基线
+  9. RULE-SUMMARY-001 按 root cargo_category 汇总，不依赖 UI active Tab
+  10. Inquiry/Quote 仅 Cargo Summary 投影（description/qty/weight/volume/amount），
+      禁止复制 Cargo Tree 结构字段
 
 accept_criteria:
-- "六维矩阵字段仅落在 Transport Request：scene / business_driver / carrier_type / cargo_category / t1_attribute / dg_attribute / matrix_code"
+- "六维矩阵字段仅落在 Transport Request：scene / business_driver / carrier_type / cargo_category / t1_attribute / dg_attribute / matrix_code / matrix_version"
 - "cargo.line 不含六维字段，仅 cargo_category / packaging_level / qty / weight / volume"
-- "Cargo Category 与 Packaging Level 分层建模，Category=Tree Root 映射正确"
+- "Business Matrix Snapshot 生命周期：draft 可编辑实时计算；submitted 冻结生成；order_confirmed 复制到 Order 并锁定"
+- "Cargo Category 与 Packaging Level 分层；Root 决定业务分类，子节点 Packaging Level 不改变分类/计费"
 - "RULE-CARGO-005 Root Type 限制：单 Request 单一 Cargo Category Root，C1 Root 允许 pallet/package 子节点，禁止 C1+C2 Root 混合"
-- "Rule Result 三态 PASS / WARNING / BLOCK，返回标准错误码+中文"
-- "RULE-SUMMARY-001 按 root cargo_category 汇总表头，UI Tab 仅展示不参与计算"
-- "Order 保存 Business Matrix Snapshot，confirm 后不可变"
-- "carrier.capability 主数据 + res.partner.carrier_capability_ids 落地；E1/F1 承运商过滤与后端校验"
-- "规则在 create/write、XML-RPC、Excel 导入、自动建单全部生效"
-- "正向 8 例 + 负向 7 例自动化测试全覆盖（前端/API/Excel 三入口）"
+- "Rule Result 三态 PASS / WARNING / BLOCK；violations[] 至少含 rule_id + message + timestamp，多违规不丢失"
+- "matrix_version（如 V1.0）随 matrix_code 保存到 Order，历史可解释"
+- "tlmp.carrier.capability 主数据 + res.partner.carrier_capability_ids 落地；E1/F1 承运商过滤与后端校验"
+- "规则目录化：business_matrix/rule_engine.py + rule_definition.py + rules/cargo_rules.py + carrier_rules.py + compliance_rules.py；规则配置不硬编码"
+- "RULE-SUMMARY-001 按 root cargo_category 汇总，UI Tab 仅展示"
+- "Inquiry/Quote 仅 Cargo Summary 投影，禁止复制 Cargo Tree 结构字段"
+- "正向 8 例 + 负向 7 例 + 规则冲突测试（同时违反多规则时全部收集、优先级稳定）"
 - "XML-RPC 常驻升级通过，日志零 ERROR；决策/版本/验证文档同步更新"
 
 source:
@@ -52,7 +53,7 @@ source:
   based_on:
   - "docs/context/business/bussiness_matrix.md V1.0（Development Baseline）"
   - "Sprint48-A/B/C（Cargo Node 三视图 + 单证投影 + 快照）"
-  - "Sprint49 架构评审（7 项必改）"
+  - "Sprint49 第二轮/第三轮架构评审"
 
 asset_snapshot_profile: development
 asset_snapshot_mode: human
@@ -69,14 +70,37 @@ loop_policy:
   - human_accept
   - risk_block
 
+business_rule_lifecycle:
+  draft:
+    matrix_editable: true
+  submitted:
+    snapshot_created: true
+  order_confirmed:
+    snapshot_locked: true
+
+rule_result:
+  result:
+  - PASS
+  - WARNING
+  - BLOCK
+  contains:
+  - rule_id
+  - message
+  - timestamp
+
 affected_assets:
   architecture:
   - addons/wd_tlms/models/transport_request.py
   - addons/wd_tlms/models/transport_cargo_line.py
   - addons/wd_tlms/models/transport_order.py
   - addons/wd_tlms/models/res_partner.py
-  - addons/wd_tlms/models/carrier_capability.py
-  - addons/wd_tlms/services/business_matrix.py
+  - addons/wd_tlms/models/tlmp_carrier_capability.py
+  - addons/wd_tlms/business_matrix/rule_engine.py
+  - addons/wd_tlms/business_matrix/rule_definition.py
+  - addons/wd_tlms/business_matrix/rules/cargo_rules.py
+  - addons/wd_tlms/business_matrix/rules/carrier_rules.py
+  - addons/wd_tlms/business_matrix/rules/compliance_rules.py
+  - addons/wd_tlms/data/business_matrix_rules.xml
   - addons/wd_tlms/views/transport_request_views.xml
   - addons/wd_tlms/views/transport_carrier_profile_views.xml
   - addons/wd_tlms/views/transport_order_views.xml
@@ -98,13 +122,14 @@ validation_strategy:
   required_pass: all
 
 deliverables:
-- "Request Business Matrix Snapshot 字段与 matrix_code 组合编码"
+- "Request Business Matrix Snapshot（matrix_code + matrix_version + 生命周期钩子）"
 - "Cargo Category / Packaging Level 分层与 Root Type 约束"
-- "carrier.capability 主数据 + res.partner.carrier_capability_ids"
-- "tlmp.business.matrix 规则服务（PASS/WARNING/BLOCK + code + 中文）"
-- "RULE-SUMMARY-001 root 汇总口径"
-- "Order Business Matrix Snapshot（结构化字段/JSON）"
-- "正向 8 例 + 负向 7 例自动化测试（三入口）"
+- "tlmp.carrier.capability 主数据 + res.partner.carrier_capability_ids"
+- "business_matrix/ 规则包（rule_engine / rule_definition / rules/*）"
+- "data/business_matrix_rules.xml 规则配置基线"
+- "Rule Result 三态 + violations[]（rule_id/message/timestamp）"
+- "Order Business Matrix Snapshot（matrix_code + matrix_version + validation_result）"
+- "正向 8 + 负向 7 + 规则冲突测试（三入口）"
 - "decision_note / context_version / 验证文档更新"
 
 limit_constraints: |
@@ -112,15 +137,19 @@ limit_constraints: |
   2. bussiness_matrix.md V1.0 为开发冻结基线；维度枚举与刚性互斥规则修改
      必须业务负责人 + 架构师双审批
   3. 六维矩阵字段不落 cargo.line；cargo.line 只保留货物结构字段
-  4. Cargo Category 与 Packaging Level 分层；RULE-CARGO-005 按 Root Type 校验
-  5. 表头汇总按 root cargo_category，数据库不依赖 UI active Tab
-  6. Rule Result 三态 PASS / WARNING / BLOCK，返回标准错误码 + 中文
-  7. Order 保存 Business Matrix Snapshot，confirm 后不可变
-  8. Inquiry/Quote 仅摘要投影，禁止新增货物维度字段
-  9. 前端 / API / Excel / 自动建单共用同一套矩阵校验
+  4. Cargo Category 与 Packaging Level 分层；RULE-CARGO-005 按 Root Type 校验；
+     子节点 Packaging Level 不得改变业务分类与计费维度
+  5. Business Matrix Snapshot 生命周期：draft 可编辑、submitted 冻结、
+     order_confirmed 复制并锁定
+  6. matrix_version 随 matrix_code 保存，历史订单可解释
+  7. Rule Result 三态 + violations[] 全量收集，优先级稳定
+  8. 表头汇总按 root cargo_category，数据库不依赖 UI active Tab
+  9. Inquiry/Quote 仅 Cargo Summary 投影，禁止复制 Cargo Tree 结构字段
+  10. 前端 / API / Excel / 自动建单共用同一套矩阵校验
 
 risk_precheck: |
-  - Cargo Tree 与 Root Type 收敛：C1 Root 允许子节点，但禁止跨 Category Root 混合
-  - carrier_type / fleet_operation_mode 与 D1/D2/D3、carrier.capability 映射
+  - Request 状态机需接入 snapshot 生命周期钩子（submitted/order_confirmed）
+  - Cargo Tree 与 Root Type 收敛：C1 Root 允许子节点，禁止跨 Category Root 混合
+  - carrier_type / fleet_operation_mode 与 D1/D2/D3、tlmp.carrier.capability 映射
   - 表头汇总语义从“全部行/激活 Tab”改为“root cargo_category”的回归
   - 测试库已清空，可按矩阵用例全量建数验证

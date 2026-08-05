@@ -1652,3 +1652,21 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
    Sprint49 落地 T1/DG 校验并预留扩展。
 
 测试口径调整为正向 8 例 + 负向 7 例（三入口）。
+
+---
+
+## Sprint49 契约 v3 修订：第三轮评审 8 项修正（2026-08-05）
+
+1. Business Matrix Snapshot 生命周期明确：draft 实时可编辑 / submitted 冻结生成 /
+   order_confirmed 复制到 Order 并锁定；
+2. matrix_code 增加 matrix_version（如 V1.0），Order 保存
+   matrix_code + matrix_version + validation_result，历史订单可解释；
+3. Rule Result 增加 violations[]（rule_id / message / timestamp），多违规不丢失；
+4. Inquiry/Quote 措辞改为“禁止复制 Cargo Tree 结构字段，仅允许 Cargo Summary 投影”；
+5. Carrier Capability 改名为 tlmp.carrier.capability，避免与 Odoo delivery.carrier 冲突；
+6. 增加规则冲突测试：多规则同时违反时全量收集、优先级稳定；
+7. C1 Root 子节点 Packaging Level 不得改变业务分类与计费维度；
+8. 规则目录化：business_matrix/rule_engine.py + rule_definition.py +
+   rules/{cargo_rules,carrier_rules,compliance_rules}.py + data/business_matrix_rules.xml。
+
+契约 v3（CREATED）已作为 Sprint50 Workflow Engine 的唯一输入基线。
