@@ -1670,3 +1670,22 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
    rules/{cargo_rules,carrier_rules,compliance_rules}.py + data/business_matrix_rules.xml。
 
 契约 v3（CREATED）已作为 Sprint50 Workflow Engine 的唯一输入基线。
+
+---
+
+## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
+
+已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：
+
+- request：draft→submitted→processing→completed/cancelled + validation_state +
+  fulfillment_status + 聚合字段；
+- inquiry：draft→sent→closed/cancelled；
+- quote：draft→issued→approved→confirmed/rejected/expired + 议价字段；
+- plan：draft→scheduled→reserved→executing→finished/failed/cancelled；
+- order：draft→confirmed→allocated→in_transit→exception→delivered→
+  settlement_pending→settled/cancelled + exception_type；
+- 前置规则：Scene 唯一入口、事件驱动单向联动、Event Ledger 先写、
+  异常字段化；四条守卫规则。
+
+已起草契约 INT-TMS-SPRINT50-001（CREATED），依赖 INT-TMS-SPRINT49-001，
+作为 Sprint50 Workflow Engine 开发基线。

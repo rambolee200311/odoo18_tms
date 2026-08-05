@@ -1,0 +1,130 @@
+# ==============================================================
+# Sprint50 Intent 契约 — TLMS Workflow Engine
+# 基线：docs/context/business/workflow_engine.md V1.0
+# 前置依赖：INT-TMS-SPRINT49-001（Business Rule Engine Foundation）
+# ==============================================================
+intent_id: INT-TMS-SPRINT50-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT49-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: Sprint50 — TLMS Workflow Engine（五模型状态机收敛 + Transport Event Ledger）
+
+target_scope: >
+  按 workflow_engine.md V1.0 收敛五模型状态机，并建立事件账本与守卫规则：
+  1. transport.request：draft → submitted → processing → completed / cancelled；
+     validation_state（pending/passed/failed）独立；
+     fulfillment_status（pending/partial/completed/cancelled）+ 聚合字段
+     （planned_qty / ordered_qty / delivered_qty / settled_order_count /
+     total_order_count / requested_qty）
+  2. transport.inquiry：draft → sent → closed / cancelled；进度字段仅展示
+  3. transport.quote：draft → issued → approved → confirmed / rejected / expired；
+     negotiation_count / last_negotiation_time / negotiation_log
+  4. transport.plan：draft → scheduled → reserved → executing →
+     finished / failed / cancelled（allocated 统一更名 reserved）
+  5. transport.order：draft → confirmed → allocated → in_transit → exception →
+     delivered → settlement_pending → settled / cancelled；
+     exception_type（delay / damage / customer_refuse / document_issue /
+     customs_hold / vehicle_failure），异常字段化不新增状态
+  6. Transport Event Ledger：所有状态变更先写账本，再更新单据状态；
+     事件驱动单向联动，下游禁止直接改写上游状态
+  7. 状态守卫规则配置化：submitted→processing 需 validation_state=passed；
+     approved→confirmed 需 approval_user；in_transit→delivered 需 POD_RECEIVED；
+     delivered→settlement_pending 需 Delivery Event 完成
+  8. Scene 唯一业务语义入口，彻底下线 destination_type 冗余字段（保留兼容计算）
+  9. 与 Sprint49 Rule Engine 集成：状态变更前执行矩阵校验
+     （BLOCK 拦截 / WARNING 记录），并接入 Business Matrix Snapshot 生命周期钩子
+
+accept_criteria:
+- "五模型状态机按 workflow_engine.md 收敛，旧状态值迁移兼容"
+- "Transport Event Ledger 落地：状态变更先写账本再更新单据，账本可审计"
+- "四类守卫规则生效并配置化（validation_state / approval_user / POD_RECEIVED / Delivery Event）"
+- "request 聚合字段与 fulfillment_status 正确计算，支持部分履约"
+- "inquiry / quote / plan 状态与进度/议价字段按文档落地"
+- "order 链路完整保留，exception_type 字段化，cancelled 仅限 confirmed/allocated 前"
+- "destination_type 冗余字段下线（视图/校验/创建逻辑同步清理，保留兼容计算）"
+- "Rule Engine 集成：BLOCK 拦截、WARNING 记录、Business Matrix Snapshot 生命周期钩子生效"
+- "前端/API/Excel/自动建单共用同一套状态守卫与矩阵校验"
+- "自动化测试覆盖状态机、守卫规则、事件账本、迁移与部分履约"
+- "XML-RPC 常驻升级通过，日志零 ERROR；决策/版本/验证文档同步更新"
+
+source:
+  type: regular_audit
+  origin_team: 业务 + 研发
+  based_on:
+  - "docs/context/business/workflow_engine.md V1.0（Development Baseline）"
+  - "INT-TMS-SPRINT49-001（Business Rule Engine Foundation）"
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_inquiry.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/models/pickup_plan.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/models/transport_event_ledger.py
+  - addons/wd_tlms/services/workflow_engine.py
+  - addons/wd_tlms/views/transport_request_views.xml
+  - addons/wd_tlms/views/transport_inquiry_views.xml
+  - addons/wd_tlms/views/transport_quote_views.xml
+  - addons/wd_tlms/views/pickup_plan_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  - addons/wd_tlms/tests/
+  business:
+  - docs/context/business/workflow_engine.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "五模型状态机收敛代码与状态迁移"
+- "Transport Event Ledger 模型 + 服务（先写账本再更新状态）"
+- "守卫规则配置与校验（guard_rules）"
+- "request 聚合字段 + fulfillment_status 部分履约"
+- "inquiry/quote/plan 状态与进度/议价字段"
+- "order exception_type 字段化"
+- "destination_type 冗余字段下线（兼容计算）"
+- "Rule Engine 集成（BLOCK/WARNING + snapshot 生命周期钩子）"
+- "自动化测试与决策/版本/验证文档更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. workflow_engine.md V1.0 为开发冻结基线；状态机修改必须业务负责人 + 架构师双审批
+  3. 事件驱动单向联动：下游禁止直接改写上游状态
+  4. 状态是计算结果，Event 是唯一事实：状态变更必先写 Transport Event Ledger
+  5. 异常字段化、不新增独立异常状态
+  6. Scene 唯一业务语义入口；destination_type 下线后仅保留兼容计算
+  7. 与 Sprint49 Rule Engine 集成：BLOCK 拦截、WARNING 记录
+  8. 前端/API/Excel/自动建单共用同一套守卫与矩阵校验
+
+risk_precheck: |
+  - 存量状态值迁移（plan allocated→reserved、request validated 移除等）
+  - destination_type 下线影响视图/校验/创建逻辑，需逐处清理
+  - Transport Event Ledger 写入顺序与事务一致性
+  - Sprint49 未完成前，Business Matrix Snapshot 生命周期钩子依赖其字段
