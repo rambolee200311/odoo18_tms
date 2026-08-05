@@ -1,0 +1,94 @@
+# ==============================================================
+# Sprint48 Intent 契约 — Cargo Line 三视图跨单证同步
+# ==============================================================
+intent_id: INT-TMS-SPRINT48-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: Cargo Line 三视图（整柜 / 托盘 / 散件）跨单证同步改造
+
+target_scope: >
+  Scene 3 人工验证（Sprint47）发现 cargo line 只有柜/托件合一视图，
+  qty/uom/packages/weight/volume 语义不清，且与 request 表头无关联。
+  本 Sprint 将 cargo line 拆为整柜 / 托盘 / 散件三套视图，并按同一字段与汇总口径
+  贯穿 request → cargo line → inquiry → quote → order 五个模型：
+  1. request.cargo_line_ids 为明细源（新增字段，按 cargo_type 展示三套视图）
+  2. inquiry.line / quote.line 为摘要投影（数量/描述/金额）
+  3. order 创建时快照复制 cargo line 字段与表头汇总
+
+accept_criteria:
+- "cargo_type 拆为 container / pallet / piece 三档，Request 表单按 cargo_type 动态切换三套 Cargo Lines 视图"
+- "托盘视图必填：托盘数量、每托件数、单托重量/体积、商品、批次；自动汇总总件数、总毛重、总体积"
+- "整柜视图字段：柜型、柜号、封条号、柜内托盘总数、柜总重；隐藏托盘粒度明细字段"
+- "散件视图字段：单件长宽高、单件净重、包装类型（纸箱/缠绕膜）；自动换算等效托盘数"
+- "request 表头 pallet/package/weight/volume = Σ cargo line 行合计"
+- "Inquiry / Quote 的货物行对 pallet/piece 正确投影，Order 创建时快照复制 cargo line 与汇总"
+- "XML-RPC button_immediate_upgrade 验证通过，日志零 ERROR，新增自动化测试覆盖三视图与汇总"
+- "decision_note.md、scene_3 验证文档、result_summary.md、context_version.yaml 同步更新"
+
+source:
+  type: customer_demand
+  origin_team: 业务 + 研发
+  based_on: Sprint47 Scene 3 人工验证（SD47-S3-001/002/003）
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  business:
+  - docs/business_validation/scene_3_warehouse_customer.md
+  - docs/business_validation/result_summary.md
+  architecture:
+  - addons/wd_tlms/models/transport_cargo_line.py
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_inquiry.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/views/transport_request_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "tlmp.transport.cargo.line 新增字段：seal_number / pallets_in_container / pieces_per_pallet / unit_gross_weight / unit_volume_m3 / batch_no / length_cm / width_cm / height_cm / unit_net_weight_kg / packing_type / equivalent_pallets"
+- "transport_request_views.xml 三套 Cargo Lines 视图（Container / Pallet / Piece）动态切换"
+- "transport_request._onchange_cargo_line_totals 按货型汇总表头；container 保持柜级手工字段"
+- "transport_inquiry / transport_quote 对 pallet/piece 的货物行投影"
+- "transport_order 创建时快照复制 cargo line 与表头汇总"
+- "自动化测试覆盖三视图字段、汇总公式与 inquiry/quote/order 同步"
+- "decision_note.md、业务验证文档、result_summary.md、context_version.yaml 更新"
+- "intent_records/INT-TMS-SPRINT48-001/ 执行记录"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. cargo line 行合计 = 明细汇总；pallet 重量/体积为“每托”输入，行合计=托盘数量×每托；piece 行合计=件数×单件
+  3. container 视图隐藏托盘粒度字段，柜级字段（柜型/柜号/封条号/柜内托盘总数/柜总重）手工录入
+  4. 等效托盘数按体积与重量上限换算（ir.config_parameter: tlms.pallet_volume_m3 / tlms.pallet_max_weight_kg）
+  5. 既有 pallet 数据语义从“行合计”切换为“每托×数量”，存量数据需回填并记录
+  6. 任何单证层的视图改动必须同步 request / inquiry / quote / order，禁止只在某一层实现
+
+risk_precheck: |
+  - cargo line 既有数据语义变化 → 迁移脚本 + 回填验证
+  - quote/order 快照字段需同步，避免旧订单显示不一致
+  - Sprint47 验证文档需与本 Sprint 结果合并维护

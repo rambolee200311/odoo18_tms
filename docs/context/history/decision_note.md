@@ -1473,3 +1473,25 @@ shell 会话结束时事务回滚，数据未被删除。用户反复看到旧�
 - [ ] 模版用 inline arrow function
 - [ ] 无 `&larr;`/`&rarr;` 等 HTML 实体
 - [ ] shell 写操作有 `env.cr.commit()`
+
+---
+
+## Sprint47/48 决策：Cargo Line 三视图跨单证同步（2026-08-05）
+
+**背景**: Scene 3 人工验证（SD47-S3-001/002/003）发现 cargo line 只有柜/托件合一视图，
+qty/uom/packages/weight/volume 语义不清，且与 request 表头无关联；
+业务明确需要整柜 / 托盘 / 散件三套视图，并贯穿 request → cargo line → inquiry → quote → order。
+
+**决策**:
+1. `cargo_type` 拆为 `container / pallet / piece` 三档，Cargo Lines 三套视图动态切换。
+2. 托盘视图：必填托盘数量、每托件数、单托重量/体积、商品、批次；自动汇总总件数、总毛重、总体积。
+3. 整柜视图：柜型、柜号、封条号、柜内托盘总数、柜总重；隐藏托盘粒度明细字段。
+4. 散件视图：单件长宽高、单件净重、包装类型（纸箱/缠绕膜）；自动换算等效托盘数。
+5. 汇总口径：request 表头 = Σ cargo line 行合计；pallet/piece 行合计由“数量×单托/单件”自动计算，
+   container 行合计手工录入柜级字段。
+6. 同步范围：request.cargo_line_ids（明细源）、inquiry.line / quote.line（摘要投影）、
+   order（快照复制）；任何一层改动必须同步其余模型，禁止只在某一层实现。
+7. 已建 Sprint48 意图契约 INT-TMS-SPRINT48-001 约束开发、验收与验证。
+
+**后果/影响**: cargo line 既有 pallet 数据语义从“行合计”切换为“每托×数量”，存量数据需回填；
+Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图字段规格为准。
