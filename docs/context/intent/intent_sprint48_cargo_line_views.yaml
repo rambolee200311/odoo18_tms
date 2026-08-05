@@ -1,8 +1,10 @@
 # ==============================================================
 # Sprint48 Intent 契约 v2 — Cargo Line 运输包装层级模型收敛 + 三视图
 # 评审修订：2026-08-05（架构评审后收敛，不推翻 Sprint48）
+# 状态：SUPERSEDED — 按用户指示忽略总契约，以 A/B/C 子契约独立执行
 # ==============================================================
 intent_id: INT-TMS-SPRINT48-001
+status: SUPERSEDED
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
 title: Cargo Node 层级模型收敛 + 柜/托/件三视图跨单证同步（Sprint48-A/B/C v2）

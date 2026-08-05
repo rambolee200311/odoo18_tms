@@ -1539,3 +1539,29 @@ Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图�
 9. 新增业务验收场景：一柜20托、托盘拆件双订单、报价快照冻结。
 10. A/B/C 改名：Cargo Hierarchy Model Upgrade / Transport Document Projection /
     Cargo Model Reset & Regression。
+
+---
+
+## Sprint48-A 启动：总契约忽略，模型层开始执行（2026-08-05）
+
+**决定**: 按用户指示“忽略 Sprint48”，总契约 INT-TMS-SPRINT48-001 标记 SUPERSEDED，
+直接以 INT-TMS-SPRINT48A-001 为活动契约开始开发，不再等总契约验收。
+
+**Sprint48-A 已完成（1.0.111）**:
+1. `tlmp.transport.cargo.line` 升级为 Cargo Node：`node_type`（equipment / cargo）、
+   `packaging_level`（container / handling_unit / package / piece）、
+   `parent_cargo_line_id` 树。
+2. 层级约束：container parent=None；handling_unit parent=container；
+   package parent=handling_unit；piece parent=package/handling_unit；禁止跨级。
+3. 容器设备字段：container_no / container_type / bl_number / seal_no；
+   `pallets_in_container` 由 handling_unit 子节点自动计算。
+4. 每托/每件字段：`pallet_gross_weight_kg / pallet_volume_m3 / piece_gross_weight_kg /
+   piece_volume_m3 / pieces_per_pallet`。
+5. source 追溯：`source_module / source_model / source_id / source_line_id`。
+6. `equivalent_pallets` 仅对 package/piece 按
+   `ceil(max(volume/pallet_volume_limit, weight/pallet_weight_limit))` 计算。
+7. request 表头 = Σ 顶层 cargo node 汇总；容器子行不重复计入。
+
+**验证**: XML-RPC 升级 1.0.111 通过，日志零 ERROR；临时 Cargo Node 树验证
+（container→2 pallet→piece）通过：pallets=20、packages=500、weight=500、volume=32；
+piece→container 跨级被 ValidationError 拦截；测试数据已清理。

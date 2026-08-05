@@ -384,15 +384,36 @@ class TransportRequest(models.Model):
     @api.onchange('cargo_line_ids')
     def _onchange_cargo_line_totals(self):
         for r in self:
-            lines = r.cargo_line_ids
-            if r.cargo_type == 'pallet':
-                r.pallet_count = sum(lines.mapped('qty'))
-                r.package_count = sum(lines.mapped('packages'))
-            elif r.cargo_type == 'piece':
-                r.pallet_count = 0
-                r.package_count = sum(lines.mapped('qty'))
-            r.cargo_weight = sum(lines.mapped('gross_weight'))
-            r.cargo_volume = sum(lines.mapped('volume_m3'))
+            pallet_count = 0
+            package_count = 0
+            weight = 0.0
+            volume = 0.0
+            for line in r.cargo_line_ids:
+                level = line.packaging_level or 'piece'
+                if level == 'handling_unit':
+                    line.packages = int(round(
+                        (line.qty or 0.0) * (line.pieces_per_pallet or 0)))
+                    line.gross_weight = (
+                        (line.qty or 0.0) * (line.pallet_gross_weight_kg or 0.0))
+                    line.volume_m3 = (
+                        (line.qty or 0.0) * (line.pallet_volume_m3 or 0.0))
+                    pallet_count += line.qty or 0.0
+                    package_count += line.packages or 0
+                elif level in ('package', 'piece'):
+                    line.packages = int(round(line.qty or 0.0))
+                    line.gross_weight = (
+                        (line.qty or 0.0) * (line.piece_gross_weight_kg or 0.0))
+                    line.volume_m3 = (
+                        (line.qty or 0.0) * (line.piece_volume_m3 or 0.0))
+                    package_count += line.qty or 0.0
+                if line.child_cargo_line_ids:
+                    continue
+                weight += line.gross_weight or 0.0
+                volume += line.volume_m3 or 0.0
+            r.pallet_count = int(round(pallet_count))
+            r.package_count = int(round(package_count))
+            r.cargo_weight = weight
+            r.cargo_volume = volume
 
     @api.constrains('scene_id', 'destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id', 'destination_street')
     def _check_destination_fields(self):

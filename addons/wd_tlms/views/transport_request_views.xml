@@ -134,6 +134,8 @@
                                         <field name="container_no"/>
                                         <field name="container_type"/>
                                         <field name="bl_number"/>
+                                        <field name="seal_no"/>
+                                        <field name="pallets_in_container" readonly="1"/>
                                         <field name="gross_weight" sum="Total"/>
                                         <field name="volume_m3" sum="Total"/>
                                     </list>
@@ -149,9 +151,12 @@
                                         <field name="description" required="1"/>
                                         <field name="commodity"/>
                                         <field name="qty" string="Pallets" sum="Total"/>
-                                        <field name="packages" sum="Total"/>
-                                        <field name="gross_weight" sum="Total"/>
-                                        <field name="volume_m3" sum="Total"/>
+                                        <field name="pieces_per_pallet"/>
+                                        <field name="pallet_gross_weight_kg"/>
+                                        <field name="pallet_volume_m3"/>
+                                        <field name="packages" sum="Total" readonly="1"/>
+                                        <field name="gross_weight" sum="Total" readonly="1"/>
+                                        <field name="volume_m3" sum="Total" readonly="1"/>
                                     </list>
                                  </field>
                              </group>
@@ -164,9 +169,12 @@
                                         <field name="sequence" optional="show"/>
                                         <field name="description" required="1"/>
                                         <field name="qty" string="Pieces" sum="Total"/>
-                                        <field name="packages" sum="Total"/>
-                                        <field name="gross_weight" sum="Total"/>
-                                        <field name="volume_m3" sum="Total"/>
+                                        <field name="piece_gross_weight_kg"/>
+                                        <field name="piece_volume_m3"/>
+                                        <field name="packages" sum="Total" readonly="1"/>
+                                        <field name="gross_weight" sum="Total" readonly="1"/>
+                                        <field name="volume_m3" sum="Total" readonly="1"/>
+                                        <field name="equivalent_pallets" readonly="1" sum="Total"/>
                                     </list>
                                  </field>
                              </group>
