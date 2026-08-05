@@ -1495,3 +1495,25 @@ qty/uom/packages/weight/volume 语义不清，且与 request 表头无关联；
 
 **后果/影响**: cargo line 既有 pallet 数据语义从“行合计”切换为“每托×数量”，存量数据需回填；
 Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图字段规格为准。
+
+---
+
+## Sprint48 评审修正：Cargo Line 升级为运输包装层级模型（2026-08-05）
+
+**评审结论**: Sprint48 三视图方向正确，但 `cargo_type` 把运输载体/包装单元/商品包装单元
+混在同一张表，长期会在一柜多托、多 SKU、多包装层级、CMR/DGD/计费中再次返工。
+
+**修正决策**:
+1. `cargo_line` 升级为包装层级模型：`packaging_level`（container / pallet / package / piece）
+   + `parent_cargo_line_id` 树形结构。
+2. `request.cargo_line` 定义为运输需求（Transport Requirement），不是库存真相；
+   执行真相以 `order.cargo_line` 快照为准。
+3. inquiry / quote 只投影 Cargo Summary（重量/体积/件数/包装），不复制逐行托盘/件。
+4. order 快照复制 cargo line 并带 `cargo_snapshot_version`，历史不可变。
+5. container 设备字段（container_no / seal_no / container_type）与货物字段分离，
+   支持换柜/空柜不污染货物。
+6. `batch_no` 移出 TLMS，改 `source_reference / source_module`，未来由 WMS 推送。
+7. 字段命名明确：`pallet_gross_weight_kg / pallet_volume_m3 / piece_gross_weight_kg / piece_volume_m3`。
+8. 等效托盘数公式：`equivalent_pallets = ceil(max(volume/pallet_volume_limit, weight/pallet_weight_limit))`。
+9. Sprint48 拆三阶段：A 模型升级 / B 单证同步+三视图 / C 历史数据迁移与回归。
+10. 契约升级为 v2（INT-TMS-SPRINT48-001，Architecture Upgrade）。

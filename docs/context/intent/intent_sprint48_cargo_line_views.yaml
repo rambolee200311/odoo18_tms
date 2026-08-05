@@ -1,34 +1,46 @@
 # ==============================================================
-# Sprint48 Intent 契约 — Cargo Line 三视图跨单证同步
+# Sprint48 Intent 契约 v2 — Cargo Line 运输包装层级模型收敛 + 三视图
+# 评审修订：2026-08-05（架构评审后收敛，不推翻 Sprint48）
 # ==============================================================
 intent_id: INT-TMS-SPRINT48-001
 intent_work_type: Development
-intent_change_type: New Feature
-title: Cargo Line 三视图（整柜 / 托盘 / 散件）跨单证同步改造
+intent_change_type: Architecture Upgrade
+title: Cargo Line 包装层级模型收敛 + 柜/托/件三视图跨单证同步
 
 target_scope: >
-  Scene 3 人工验证（Sprint47）发现 cargo line 只有柜/托件合一视图，
-  qty/uom/packages/weight/volume 语义不清，且与 request 表头无关联。
-  本 Sprint 将 cargo line 拆为整柜 / 托盘 / 散件三套视图，并按同一字段与汇总口径
-  贯穿 request → cargo line → inquiry → quote → order 五个模型：
-  1. request.cargo_line_ids 为明细源（新增字段，按 cargo_type 展示三套视图）
-  2. inquiry.line / quote.line 为摘要投影（数量/描述/金额）
-  3. order 创建时快照复制 cargo line 字段与表头汇总
+  Sprint48 v1 评审结论：Cargo Line 三视图方向正确，但 cargo_type 把
+  “运输载体 / 包装单元 / 商品包装单元”三个不同维度混在同一张表。
+  本 Sprint 做一次模型收敛：
+  1. cargo_line 升级为“运输包装层级模型”：packaging_level
+     （container / pallet / package / piece）+ parent_cargo_line_id 树形结构
+  2. request.cargo_line_ids 定义为“客户申报运输需求（Transport Requirement）”，
+     不是库存/货物真相
+  3. inquiry / quote 使用 Cargo Summary（重量/体积/件数/包装汇总），不复制逐行托盘/件
+  4. order 创建时快照复制 cargo line，并带 cargo_snapshot_version，历史不可变
+  5. container 设备字段（container_no / seal_no / container_type）与货物字段分离
+  6. batch_no 移出 TLMS，改 source_reference / source_module（未来由 WMS 推送）
+  7. 字段命名明确：pallet_gross_weight_kg / pallet_volume_m3 /
+     piece_gross_weight_kg / piece_volume_m3
+  8. 等效托盘数公式：
+     equivalent_pallets = ceil(max(volume / pallet_volume_limit,
+     weight / pallet_weight_limit))
 
 accept_criteria:
-- "cargo_type 拆为 container / pallet / piece 三档，Request 表单按 cargo_type 动态切换三套 Cargo Lines 视图"
-- "托盘视图必填：托盘数量、每托件数、单托重量/体积、商品、批次；自动汇总总件数、总毛重、总体积"
-- "整柜视图字段：柜型、柜号、封条号、柜内托盘总数、柜总重；隐藏托盘粒度明细字段"
-- "散件视图字段：单件长宽高、单件净重、包装类型（纸箱/缠绕膜）；自动换算等效托盘数"
-- "request 表头 pallet/package/weight/volume = Σ cargo line 行合计"
-- "Inquiry / Quote 的货物行对 pallet/piece 正确投影，Order 创建时快照复制 cargo line 与汇总"
-- "XML-RPC button_immediate_upgrade 验证通过，日志零 ERROR，新增自动化测试覆盖三视图与汇总"
-- "decision_note.md、scene_3 验证文档、result_summary.md、context_version.yaml 同步更新"
+- "cargo_line 支持 packaging_level + parent_cargo_line_id 树（container → pallet → package/piece 可嵌套）"
+- "request 表单按包装层级/视图显示：整柜视图（设备字段+柜级货重）、托盘视图（托盘数量/每托件数/单托重量体积/商品）、散件视图（单件长宽高/单件净重/包装类型）"
+- "request 表头 = Σ 顶层 cargo line 汇总；pallet 行合计 = 数量×每托；piece 行合计 = 数量×每件；container 行合计 = 柜级录入或子行汇总"
+- "inquiry / quote 显示 Cargo Summary（总重量/总体积/总件数/包装层级），不展开每托/每件"
+- "order.cargo_line_ids 快照复制 + cargo_snapshot_version，订单创建后不可改"
+- "equivalent_pallets 按 tlms.pallet_volume_m3 / tlms.pallet_max_weight_kg 上限参数计算并向上取整"
+- "XML-RPC button_immediate_upgrade 验证通过，日志零 ERROR；自动化测试覆盖模型、汇总、单证同步与迁移"
+- "decision_note.md、意图契约、场景文档、result_summary.md、context_version.yaml 同步更新"
 
 source:
-  type: customer_demand
-  origin_team: 业务 + 研发
-  based_on: Sprint47 Scene 3 人工验证（SD47-S3-001/002/003）
+  type: architecture_upgrade
+  origin_team: 研发 + 业务（Sprint48 v1 架构评审）
+  based_on:
+  - "Sprint47 Scene 3 人工验证（SD47-S3-001/002/003）"
+  - "Sprint48 v1 契约评审（packaging hierarchy 收敛）"
 
 asset_snapshot_profile: development
 asset_snapshot_mode: human
@@ -45,6 +57,11 @@ loop_policy:
   - human_accept
   - risk_block
 
+execution_plan:
+  sprint48_a_model: "cargo line 模型升级：packaging_level / parent_cargo_line_id / 字段重命名 / 汇总与等效托盘公式"
+  sprint48_b_docs: "request / inquiry / quote / order 单证同步 + 三视图 UI + Cargo Summary 投影"
+  sprint48_c_migration: "历史数据迁移：cargo_type → packaging_level、unit_* → pallet_*/piece_*、parent 关系回填、回归验证"
+
 affected_assets:
   business:
   - docs/business_validation/scene_3_warehouse_customer.md
@@ -59,6 +76,7 @@ affected_assets:
   - addons/wd_tlms/views/transport_order_views.xml
   governance:
   - docs/context/history/decision_note.md
+  - docs/context/intent/intent_sprint48_cargo_line_views.yaml
   - docs/context/context_version.yaml
 
 validation_strategy:
@@ -71,24 +89,27 @@ validation_strategy:
   required_pass: all
 
 deliverables:
-- "tlmp.transport.cargo.line 新增字段：seal_number / pallets_in_container / pieces_per_pallet / unit_gross_weight / unit_volume_m3 / batch_no / length_cm / width_cm / height_cm / unit_net_weight_kg / packing_type / equivalent_pallets"
-- "transport_request_views.xml 三套 Cargo Lines 视图（Container / Pallet / Piece）动态切换"
-- "transport_request._onchange_cargo_line_totals 按货型汇总表头；container 保持柜级手工字段"
-- "transport_inquiry / transport_quote 对 pallet/piece 的货物行投影"
-- "transport_order 创建时快照复制 cargo line 与表头汇总"
-- "自动化测试覆盖三视图字段、汇总公式与 inquiry/quote/order 同步"
-- "decision_note.md、业务验证文档、result_summary.md、context_version.yaml 更新"
-- "intent_records/INT-TMS-SPRINT48-001/ 执行记录"
+- "cargo_line 模型：packaging_level / parent_cargo_line_id / 容器设备字段 / pallet_* / piece_* / source_reference / source_module（无 batch_no）"
+- "request 三视图 UI + 汇总公式 + 等效托盘换算"
+- "inquiry / quote Cargo Summary 投影"
+- "order cargo snapshot + cargo_snapshot_version"
+- "Sprint48-A/B/C 执行记录与迁移脚本"
+- "自动化测试、业务验证文档、decision_note、context_version 更新"
 
 limit_constraints: |
   1. 不修改 odoo/ 官方代码与原生 stock/account 模块
-  2. cargo line 行合计 = 明细汇总；pallet 重量/体积为“每托”输入，行合计=托盘数量×每托；piece 行合计=件数×单件
-  3. container 视图隐藏托盘粒度字段，柜级字段（柜型/柜号/封条号/柜内托盘总数/柜总重）手工录入
-  4. 等效托盘数按体积与重量上限换算（ir.config_parameter: tlms.pallet_volume_m3 / tlms.pallet_max_weight_kg）
-  5. 既有 pallet 数据语义从“行合计”切换为“每托×数量”，存量数据需回填并记录
-  6. 任何单证层的视图改动必须同步 request / inquiry / quote / order，禁止只在某一层实现
+  2. cargo_line 是运输包装层级树，不承载库存/批次真相；batch_no 不落 TLMS，
+     由 source_reference/source_module 关联 WMS
+  3. request.cargo_line 只记录客户申报运输需求；执行真相以 order cargo snapshot 为准
+  4. inquiry/quote 用 Cargo Summary，不复制逐行托盘/件
+  5. container 设备字段与货物行分离，支持换柜/空柜不污染货物
+  6. pallet 字段命名 pallet_gross_weight_kg / pallet_volume_m3（每托）；
+     piece 字段命名 piece_gross_weight_kg / piece_volume_m3（每件）
+  7. equivalent_pallets = ceil(max(volume/pallet_volume_limit, weight/pallet_weight_limit))，
+     参数 tlms.pallet_volume_m3 / tlms.pallet_max_weight_kg
+  8. order snapshot 带版本且不可变
 
 risk_precheck: |
-  - cargo line 既有数据语义变化 → 迁移脚本 + 回填验证
-  - quote/order 快照字段需同步，避免旧订单显示不一致
-  - Sprint47 验证文档需与本 Sprint 结果合并维护
+  - cargo_type → packaging_level、unit_* → pallet_*/piece_* 数据迁移与回填
+  - Scene 3 已建数据（request 2077 等）与 quote/order 快照兼容
+  - Sprint47 验证文档与结果合并维护
