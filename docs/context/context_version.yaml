@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.61
+context_version: 1.0.62
 update_time: 2026-08-05
-adapt_sprint: Sprint48-B
+adapt_sprint: Sprint48-C
 update_author: AI-Engineering-Team
 
 version_log:
@@ -418,3 +418,11 @@ bind_asset_folder:
       - 自动化测试 9 项通过（TestCargoNode 6 + TestDocumentProjection 3）
     update_type: 功能开发 + 单证投影
     effect_scope: inquiry_quote_summary + order_cargo_snapshot
+  1.0.62:
+    update_content: |
+      Sprint48-C 测试库清空 + 业务场景回归
+      - 清空 order/plan/quote/inquiry/request 及附属记录（search_count=0）
+      - 新增 test_sprint48_business_scenarios：一柜20托 / 拆件双订单 / 快照冻结隔离
+      - Sprint48-A/B/C 定向回归 12 项全部通过
+    update_type: 数据清理 + 回归验证
+    effect_scope: test_data_reset + business_scenario_regression

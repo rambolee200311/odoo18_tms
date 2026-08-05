@@ -1589,3 +1589,21 @@ piece→container 跨级被 ValidationError 拦截；测试数据已清理；
 shell 验证：rollup 10/200/300/20、quote 摘要、order 快照 draft→confirmed 冻结、
 cargo 节点复制（container→pallet）、order 创建前汇总校验；
 自动化测试 9 项全部通过（TestCargoNode 6 + TestDocumentProjection 3）。
+
+---
+
+## Sprint48-C 完成：测试库清空 + 业务场景回归（2026-08-05）
+
+**决定**: 测试库历史数据全部清空（不迁移），Sprint48-C 按“清空 + 新模型业务场景回归”收口。
+
+**已完成**:
+1. 清空 order / plan / quote / inquiry / request 及 cargo line / fee line /
+   container line / schedule 等附属记录，新会话 search_count 全部为 0。
+2. 新增业务场景回归测试 `test_sprint48_business_scenarios`：
+   - 一柜20托：container + 20 handling_unit 子节点 → 表头 20 托 / 200 件 / 600 kg / 30 m³；
+   - 托盘拆件双订单：同一 request/cargo node 生成两个独立 order，快照各自复制；
+   - 报价快照冻结：order confirm 后 cargo 快照不可变，request 后续改动不影响 order。
+3. Sprint48-A/B/C 定向回归 12 项全部通过（0 failed, 0 errors）。
+
+**遗留说明**: 全量 332 项测试在开发库仍有主数据唯一键等环境冲突（与本次改动无关），
+本 Sprint 以定向测试类验证；后续如需全量绿，需在干净测试库跑。

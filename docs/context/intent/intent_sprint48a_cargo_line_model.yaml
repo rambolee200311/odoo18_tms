@@ -3,6 +3,7 @@
 # 父契约：INT-TMS-SPRINT48-001（v2）｜第二轮评审修正：2026-08-05
 # ==============================================================
 intent_id: INT-TMS-SPRINT48A-001
+status: COMPLETED
 parent_intent_id: INT-TMS-SPRINT48-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade

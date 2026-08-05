@@ -4,6 +4,7 @@
 # 第二轮评审修正：2026-08-05｜测试库数据清空，不做历史迁移
 # ==============================================================
 intent_id: INT-TMS-SPRINT48C-001
+status: COMPLETED
 parent_intent_id: INT-TMS-SPRINT48-001
 depends_on:
 - INT-TMS-SPRINT48A-001

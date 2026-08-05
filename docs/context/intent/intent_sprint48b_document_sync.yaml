@@ -4,6 +4,7 @@
 # 第二轮评审修正：2026-08-05
 # ==============================================================
 intent_id: INT-TMS-SPRINT48B-001
+status: COMPLETED
 parent_intent_id: INT-TMS-SPRINT48-001
 depends_on:
 - INT-TMS-SPRINT48A-001
