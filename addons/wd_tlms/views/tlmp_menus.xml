@@ -99,6 +99,10 @@
               action="action_tlmp_scene_event" sequence="50"/>
     <menuitem id="menu_tlmp_carrier_service" name="Carrier Services" parent="menu_tlmp_config"
               action="action_tlmp_carrier_service" sequence="49"/>
+    <menuitem id="menu_tlmp_carrier_capability" name="Carrier Capabilities" parent="menu_tlmp_config"
+              action="action_tlmp_carrier_capability" sequence="51"/>
+    <menuitem id="menu_tlmp_business_rule" name="Business Matrix Rules" parent="menu_tlmp_config"
+              action="action_tlmp_business_rule" sequence="52"/>
     <menuitem id="menu_tlmp_charge_types" name="Charge Types" parent="menu_tlmp_config"
               action="action_tlmp_carrier_charge_type" sequence="12"
               groups="wd_tlms.group_tlm_settlement_clerk,wd_tlms.group_tlm_manager"/>

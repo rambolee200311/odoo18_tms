@@ -1698,6 +1698,17 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
 
 ---
 
+## Sprint49 Configuration 菜单补充（2026-08-05）
+
+Configuration 下新增两个菜单（wd_tlms 1.0.114）：
+- Carrier Capabilities（tlmp.carrier.capability）
+- Business Matrix Rules（tlmp.business.rule）
+
+含列表/表单视图与窗口动作；升级后复核菜单、动作与数据加载成功
+（6 项能力、7 条规则），日志零 ERROR。
+
+---
+
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
 
 已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：

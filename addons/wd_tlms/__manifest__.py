@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.113',
+    'version': '1.0.114',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -74,6 +74,7 @@
         'views/settlement_export_wizard.xml',
         'views/transport_match_rule_views.xml',
         'views/transport_scene_views.xml',
+        'views/business_matrix_views.xml',
         'views/pickup_schedule_templates.xml',
         'views/product_adr_views.xml',
         'views/tlmp_menus.xml',

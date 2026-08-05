@@ -3,7 +3,7 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.63
+context_version: 1.0.64
 update_time: 2026-08-05
 adapt_sprint: Sprint49
 update_author: AI-Engineering-Team
@@ -438,3 +438,10 @@ bind_asset_folder:
       - TestBusinessMatrix 9 项通过
     update_type: 架构升级 + 规则引擎
     effect_scope: business_matrix_rule_engine
+  1.0.64:
+    update_content: |
+      Sprint49 Configuration 菜单补充（wd_tlms 1.0.114）
+      - Configuration 新增 Carrier Capabilities 与 Business Matrix Rules 菜单
+      - 列表/表单视图与动作
+    update_type: 配置界面完善
+    effect_scope: business_matrix_config_menus
