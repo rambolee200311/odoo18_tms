@@ -148,8 +148,7 @@
                                         <field name="sequence" optional="show"/>
                                         <field name="description" required="1"/>
                                         <field name="commodity"/>
-                                        <field name="qty" sum="Total"/>
-                                        <field name="uom"/>
+                                        <field name="qty" string="Pallets" sum="Total"/>
                                         <field name="packages" sum="Total"/>
                                         <field name="gross_weight" sum="Total"/>
                                         <field name="volume_m3" sum="Total"/>
