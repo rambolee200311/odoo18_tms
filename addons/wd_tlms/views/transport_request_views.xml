@@ -72,8 +72,8 @@
                              <field name="warehouse_id"
                                     invisible="scene_code not in ('terminal_to_warehouse', 'warehouse_transfer', 'customer_to_warehouse', 'empty_depot')"
                                     options="{'no_create': True}"/>
-                             <field name="source_warehouse_id"
-                                    invisible="scene_code != 'warehouse_transfer'"
+                             <field name="source_warehouse_id" string="Origin Warehouse"
+                                    invisible="scene_code not in ('warehouse_to_customer', 'warehouse_transfer')"
                                     options="{'no_create': True}"/>
                              <field name="delivery_address"
                                     invisible="scene_code not in ('terminal_to_customer', 'warehouse_to_customer', 'customer_to_customer', 'customer_to_warehouse')"/>
@@ -124,19 +124,33 @@
                                  </field>
                              </group>
                          </page>
-                         <page string="Cargo Lines" name="cargo_page">
+                         <page string="Container Lines" name="container_cargo_page"
+                               invisible="cargo_type != 'container'">
                              <group>
                                 <field name="cargo_line_ids" nolabel="1">
                                     <list editable="bottom">
                                         <field name="sequence" optional="show"/>
                                         <field name="description" required="1"/>
-                                        <field name="container_no" invisible="parent.cargo_type == 'pallet'"/>
-                                        <field name="container_type" invisible="parent.cargo_type == 'pallet'"/>
-                                        <field name="bl_number" invisible="parent.cargo_type == 'pallet'"/>
-                                        <field name="commodity" invisible="parent.cargo_type != 'pallet'"/>
-                                        <field name="qty" invisible="parent.cargo_type != 'pallet'"/>
-                                        <field name="uom" invisible="parent.cargo_type != 'pallet'"/>
-                                        <field name="packages" invisible="parent.cargo_type != 'pallet'"/>
+                                        <field name="container_no"/>
+                                        <field name="container_type"/>
+                                        <field name="bl_number"/>
+                                        <field name="gross_weight"/>
+                                        <field name="volume_m3"/>
+                                    </list>
+                                 </field>
+                             </group>
+                        </page>
+                        <page string="Pallet Lines" name="pallet_cargo_page"
+                               invisible="cargo_type != 'pallet'">
+                             <group>
+                                <field name="cargo_line_ids" nolabel="1">
+                                    <list editable="bottom">
+                                        <field name="sequence" optional="show"/>
+                                        <field name="description" required="1"/>
+                                        <field name="commodity"/>
+                                        <field name="qty"/>
+                                        <field name="uom"/>
+                                        <field name="packages"/>
                                         <field name="gross_weight"/>
                                         <field name="volume_m3"/>
                                     </list>

@@ -31,7 +31,7 @@
 
 | Step | Description | Result | Notes |
 |------|-------------|--------|-------|
-| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | 发现 SD47-S3-001：pallet cargo line 无托件明细，1.0.105 已修复待 UI 复验 |
+| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | 发现 SD47-S3-001/002：pallet 托件明细 + origin/destination 选择填充，1.0.106 已修复待 UI 复验 |
 | 3.2-S47 | Start Inquiry | ⏳ PENDING | |
 | 3.3-S47 | Carrier Response & Select Carrier | ⏳ PENDING | |
 | 3.4-S47 | Create Customer Quote | ⏳ PENDING | |
@@ -42,13 +42,15 @@
 ## Issues Found
 | Step | Issue Description | Severity | Reported | Fix Status |
 |------|------------------|----------|----------|------------|
-| 3.1 | cargo_type=pallet 时 Cargo Lines 仍匹配集装箱字段（container_no/BL），无托件明细；Inquiry/Quote 无托件行 | blocking | 2026-08-05 | fixed（1.0.105 待 UI 复验） |
+| 3.1 | cargo_type=pallet 时 Cargo Lines 仍匹配集装箱字段（container_no/BL），无托件明细；Inquiry/Quote 无托件行；需要柜/托件两套 Cargo Lines 视图动态切换 | blocking | 2026-08-05 | fixed（1.0.106 待 UI 复验） |
+| 3.1 | warehouse_to_customer 的 Origin 无仓库选择/自动填充；Destination 需要可选客户自动填充或手动填写 | blocking | 2026-08-05 | fixed（1.0.106 待 UI 复验） |
 
 
 ## Fix Record
 | Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
 |--------|-------|-----------|-----------|--------|-----------------|--------|
-| SD47-S3-001 | S3 | cargo line 视图/Inquiry/Quote 只处理集装箱明细，pallet 无对应行 | Request Cargo Lines 按 cargo_type 显隐列（pallet 显示 commodity/qty/uom/packages）；action_start_inquiry / action_create_quote 无 cargo line 且 cargo_type=pallet 时生成 Pallet x / Package y 行 | 1.0.105 | shell 临时 pallet request→inquiry→quote 验证通过 | fixed |
+| SD47-S3-001 | S3 | cargo line 只处理集装箱明细，pallet 无对应行，且无柜/托件两套视图 | Cargo Lines 拆为 Container Lines / Pallet Lines 两个动态切换页面；action_start_inquiry / action_create_quote 对 pallet 生成 Pallet x / Package y 行 | 1.0.106 | shell 临时 pallet request→inquiry→quote 验证通过 | fixed |
+| SD47-S3-002 | S3 | warehouse_to_customer 的 Origin 无仓库选择/自动填充 | source_warehouse_id 改为 Origin Warehouse，对 warehouse_to_customer/warehouse_transfer 可见，onchange 自动填充 origin 地址；partner 选择自动填充 destination，地址可手动编辑 | 1.0.106 | shell 临时 request 验证 SPN 仓库自动填充 origin，手动地址保留 | fixed |
 
 
 ## Final Result
