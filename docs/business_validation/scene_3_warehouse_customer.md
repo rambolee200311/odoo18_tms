@@ -2,6 +2,8 @@
 
 **Flow**: commercial | **Entry**: Inquiry → Quote → Order | **Expected Scene**: warehouse_to_customer
 
+> Sprint47 人工验证进行中 | 开始日期：2026-08-05 | wd_tlms 1.0.104
+
 ## Prerequisites
 | # | 档案 | 检查方式 | 如果缺失 |
 |---|------|---------|---------|
@@ -19,7 +21,22 @@
 | # | Action | Instructions | Expected Result | Pass? |
 |---|--------|-------------|-----------------|-------|
 | 3.1 | Create Request（场景驱动） | Transport Scene=warehouse_to_customer → 自动匹配 origin=warehouse, dest=customer；选 source warehouse 自动填充 origin 地址、选 customer 自动填充 destination 地址 | Saved, 地址已填充 | [ ] |
-| 3.2 | Inquiry → Quote → Order | Same flow as S2 | Order created, scene_id=warehouse_to_customer | [ ] |
+| 3.2 | Start Inquiry | Click Start Inquiry；Inquiry 投影 Request 场景/地址/Cargo | Inquiry draft，Carrier 为空 | [ ] |
+| 3.3 | Carrier Response & Select Carrier | 承运商在 Inquiry 录入报价 → Record Response → Select Carrier | Inquiry responded → accepted，total=承运商报价 | [ ] |
+| 3.4 | Create Customer Quote | From Inquiry → Create Customer Quote；自动生成 Transportation Fee（=询价合计）；编辑费用行定客户价 | Quote draft；Customer Price=应收费用行合计；margin 自动推导 | [ ] |
+| 3.5 | Customer Accept Quote → Order | Send to Customer → Accept Quote | Order 自动创建；scene_id=warehouse_to_customer；carrier=Inquiry 承运商 | [ ] |
+| 3.6 | Verify Fee Lines | Open Order → Fees 页 | customer_charge 应收 + carrier_cost 应付 与 Quote/Inquiry 一致 | [ ] |
+
+## Sprint47 验证进度
+
+| Step | Description | Result | Notes |
+|------|-------------|--------|-------|
+| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | |
+| 3.2-S47 | Start Inquiry | ⏳ PENDING | |
+| 3.3-S47 | Carrier Response & Select Carrier | ⏳ PENDING | |
+| 3.4-S47 | Create Customer Quote | ⏳ PENDING | |
+| 3.5-S47 | Customer Accept Quote → Order | ⏳ PENDING | |
+| 3.6-S47 | Verify Fee Lines | ⏳ PENDING | |
 
 
 ## Issues Found
@@ -37,6 +54,10 @@
 ## Final Result
 - **BAT**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
 - **Manual**: ⏳ pass / fail-fixed / fail-deferred / fail-accepted-risk
+- **Executor**: lijianqiang
+- **Date**: 2026-08-05
+- **Environment**: Odoo 18 dev
+- **Context Version**: 1.0.104
 
 
 ---
