@@ -5,7 +5,7 @@
 intent_id: INT-TMS-SPRINT48-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
-title: Cargo Line 包装层级模型收敛 + 柜/托/件三视图跨单证同步
+title: Cargo Node 层级模型收敛 + 柜/托/件三视图跨单证同步（Sprint48-A/B/C v2）
 
 target_scope: >
   Sprint48 v1 评审结论：Cargo Line 三视图方向正确，但 cargo_type 把
@@ -24,6 +24,15 @@ target_scope: >
   8. 等效托盘数公式：
      equivalent_pallets = ceil(max(volume / pallet_volume_limit,
      weight / pallet_weight_limit))
+  9. cargo_line 概念升级为 Cargo Node（node_type: equipment / cargo）
+  10. packaging_level 固定枚举：container / handling_unit / package / piece；
+      handling_unit 即托盘物理单元，避免与 Odoo stock.quant.package 冲突
+  11. parent 层级约束：container parent=None；handling_unit parent=container；
+      package parent=handling_unit；piece parent=package or handling_unit；禁止跨级
+  12. source 追溯字段：source_module / source_model / source_id / source_line_id
+  13. order snapshot 增加 snapshot_status（draft/confirmed/locked/cancelled），
+      confirmed 后不可变
+  14. 业务验收场景：一柜20托、托盘拆件双订单、报价快照冻结
 
 accept_criteria:
 - "cargo_line 支持 packaging_level + parent_cargo_line_id 树（container → pallet → package/piece 可嵌套）"
@@ -32,6 +41,10 @@ accept_criteria:
 - "inquiry / quote 显示 Cargo Summary（总重量/总体积/总件数/包装层级），不展开每托/每件"
 - "order.cargo_line_ids 快照复制 + cargo_snapshot_version，订单创建后不可改"
 - "equivalent_pallets 按 tlms.pallet_volume_m3 / tlms.pallet_max_weight_kg 上限参数计算并向上取整"
+- "cargo node 概念、node_type、packaging_level 层级约束实现并通过测试"
+- "source_module / source_model / source_id / source_line_id 追溯字段落地"
+- "order snapshot_status 与 confirmed 后冻结规则实现"
+- "一柜20托、托盘拆件双订单、报价快照冻结三个业务验收场景通过"
 - "XML-RPC button_immediate_upgrade 验证通过，日志零 ERROR；自动化测试覆盖模型、汇总、单证同步与迁移"
 - "decision_note.md、意图契约、场景文档、result_summary.md、context_version.yaml 同步更新"
 
@@ -58,9 +71,9 @@ loop_policy:
   - risk_block
 
 execution_plan:
-  sprint48_a_model: "INT-TMS-SPRINT48A-001：cargo line 模型升级（packaging_level / parent_cargo_line_id / 字段重命名 / 汇总与等效托盘公式）"
-  sprint48_b_docs: "INT-TMS-SPRINT48B-001：request / inquiry / quote / order 单证同步 + 三视图 UI + Cargo Summary 投影"
-  sprint48_c_migration: "INT-TMS-SPRINT48C-001：历史数据迁移（cargo_type → packaging_level、unit_* → pallet_*/piece_*、parent 关系回填、回归验证）"
+  sprint48_a_model: "INT-TMS-SPRINT48A-001：Cargo Hierarchy Model Upgrade（Cargo Node 树 / packaging_level 约束 / 字段重命名 / source 追溯）"
+  sprint48_b_docs: "INT-TMS-SPRINT48B-001：Transport Document Projection（request 三视图 / inquiry-quote Cargo Summary / order snapshot 冻结）"
+  sprint48_c_migration: "INT-TMS-SPRINT48C-001：Cargo Model Reset & Regression（测试库数据清空 + 新模型业务场景回归）"
 
 affected_assets:
   business:

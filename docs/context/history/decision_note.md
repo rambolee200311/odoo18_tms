@@ -1517,3 +1517,25 @@ Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图�
 8. 等效托盘数公式：`equivalent_pallets = ceil(max(volume/pallet_volume_limit, weight/pallet_weight_limit))`。
 9. Sprint48 拆三阶段：A 模型升级 / B 单证同步+三视图 / C 历史数据迁移与回归。
 10. 契约升级为 v2（INT-TMS-SPRINT48-001，Architecture Upgrade）。
+
+---
+
+## Sprint48 第二轮评审修正：Cargo Node 层级模型（2026-08-05）
+
+**结论**: Sprint48-A/B/C 拆分方向正确；按评审收敛为 Cargo Node 层级模型。
+
+**修正**:
+1. cargo line 概念升级为 Cargo Node，新增 `node_type`（equipment / cargo）。
+2. `packaging_level` 固定枚举 `container / handling_unit / package / piece`；
+   `handling_unit` 代表托盘物理单元，避免与 Odoo `stock.quant.package` 冲突。
+3. parent 层级约束：container parent=None；handling_unit parent=container；
+   package parent=handling_unit；piece parent=package 或 handling_unit；禁止跨级。
+4. source 追溯字段：`source_module / source_model / source_id / source_line_id`。
+5. `equivalent_pallets` 仅对 package / piece 计算，container 不适用。
+6. inquiry / quote 保留 Cargo Summary + `cargo_source_reference`（source_request_id）回溯。
+7. order snapshot 增加 `snapshot_status`，confirmed 后不可变。
+8. 历史 package 映射必须人工确认，禁止自动归入；测试库数据按用户决定全部清空，
+   Sprint48-C 改为“清空 + 回归”，不做历史迁移。
+9. 新增业务验收场景：一柜20托、托盘拆件双订单、报价快照冻结。
+10. A/B/C 改名：Cargo Hierarchy Model Upgrade / Transport Document Projection /
+    Cargo Model Reset & Regression。

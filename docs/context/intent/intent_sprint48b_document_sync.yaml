@@ -1,6 +1,7 @@
 # ==============================================================
-# Sprint48-B 子契约 — 单证同步 + 三视图 UI
+# Sprint48-B 子契约 v2 — Transport Document Projection
 # 父契约：INT-TMS-SPRINT48-001（v2）｜依赖：INT-TMS-SPRINT48A-001
+# 第二轮评审修正：2026-08-05
 # ==============================================================
 intent_id: INT-TMS-SPRINT48B-001
 parent_intent_id: INT-TMS-SPRINT48-001
@@ -8,24 +9,28 @@ depends_on:
 - INT-TMS-SPRINT48A-001
 intent_work_type: Development
 intent_change_type: New Feature
-title: Sprint48-B 单证同步 + 柜/托/件三视图 UI
+title: Sprint48-B Transport Document Projection（单证同步 + 三视图 UI）
 
 target_scope: >
-  在 Sprint48-A 模型之上完成单证层同步：
+  在 Sprint48-A 的 Cargo Node 模型之上完成单证层投影：
   1. request 表单按 packaging_level 显示整柜/托盘/散件三套 Cargo Lines 视图
   2. request.cargo_line 定义为运输需求（Transport Requirement）
-  3. inquiry / quote 使用 Cargo Summary（重量/体积/件数/包装层级），不复制逐行托盘/件
-  4. order 创建时快照复制 cargo line，并带 cargo_snapshot_version
-  5. request 表头汇总 = Σ 顶层 cargo line（onchange + 保存校验）
-  6. 容器设备视图与货物视图分离展示
+  3. inquiry / quote 使用 Cargo Summary（重量/体积/件数/包装层级）
+     + cargo_source_reference（source_request_id）回溯，不复制逐行托盘/件
+  4. order 创建时快照复制 cargo node，并带 cargo_snapshot_version +
+     snapshot_status（draft / confirmed / locked / cancelled）
+  5. snapshot confirmed 后不可变
+  6. request 表头汇总 = Σ 顶层 cargo node（onchange + 保存校验）
+  7. 容器设备视图与货物视图分离展示
 
 accept_criteria:
 - "request 表单三视图按 packaging_level 动态切换且字段完整"
-- "inquiry / quote 显示 Cargo Summary，无逐行托盘/件展开"
-- "order 创建时复制 cargo line 快照并生成 cargo_snapshot_version"
-- "order 快照创建后不可变，历史版本可读"
-- "request 表头汇总与 cargo line 汇总一致"
-- "XML-RPC 升级通过，日志零 ERROR；自动化测试覆盖单证同步"
+- "inquiry / quote 显示 Cargo Summary + cargo_source_reference，无逐行托盘/件展开"
+- "order 创建时复制 cargo node 快照并生成 cargo_snapshot_version"
+- "snapshot_status 实现 draft→confirmed→locked 流转，confirmed 后不可修改"
+- "request 表头汇总与顶层 cargo node 汇总一致"
+- "业务验收场景：一柜20托、托盘拆件双订单、报价快照冻结通过"
+- "XML-RPC 升级通过，日志零 ERROR；自动化测试覆盖单证投影"
 
 source:
   type: customer_demand
@@ -72,16 +77,17 @@ validation_strategy:
 
 deliverables:
 - "request 三视图 UI"
-- "inquiry / quote Cargo Summary 投影"
-- "order cargo snapshot + cargo_snapshot_version"
-- "自动化测试与业务验证文档"
+- "inquiry / quote Cargo Summary + cargo_source_reference"
+- "order cargo snapshot + cargo_snapshot_version + snapshot_status"
+- "业务验收场景用例与自动化测试"
+- "业务验证文档更新"
 
 limit_constraints: |
   1. 不修改 odoo/ 官方代码与原生 stock/account 模块
   2. inquiry/quote 只投影汇总，禁止复制逐行托盘/件
-  3. order 快照带版本且不可变
+  3. order snapshot confirmed 后不可变
   4. 任何单证层改动必须同步 request / inquiry / quote / order
 
 risk_precheck: |
-  - 旧 quote/order 快照字段兼容（C 阶段迁移）
+  - 测试库数据已清空，无需兼容旧快照
   - 三视图与既有 Scene 3 验证文档同步维护

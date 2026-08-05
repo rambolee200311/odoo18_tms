@@ -1,37 +1,45 @@
 # ==============================================================
-# Sprint48-A 子契约 — Cargo Line 包装层级模型升级
-# 父契约：INT-TMS-SPRINT48-001（v2）
+# Sprint48-A 子契约 v2 — Cargo Hierarchy Model Upgrade
+# 父契约：INT-TMS-SPRINT48-001（v2）｜第二轮评审修正：2026-08-05
 # ==============================================================
 intent_id: INT-TMS-SPRINT48A-001
 parent_intent_id: INT-TMS-SPRINT48-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
-title: Sprint48-A Cargo Line 包装层级模型升级
+title: Sprint48-A Cargo Hierarchy Model Upgrade（Cargo Node 包装层级模型）
 
 target_scope: >
-  tlmp.transport.cargo.line 从“货物类型表”升级为“运输包装层级模型”：
-  1. 新增 packaging_level（container / pallet / package / piece）
-  2. 新增 parent_cargo_line_id，形成 container → pallet → package/piece 树
-  3. 容器设备字段与货物字段分离：container_no / seal_no / container_type
-  4. 字段重命名：pallet_gross_weight_kg / pallet_volume_m3（每托），
+  tlmp.transport.cargo.line 升级为“Cargo Node”层级模型：
+  1. 概念明确：Cargo Line 是运输货物层级节点，不代表一行货物
+  2. 新增 node_type（equipment / cargo）
+  3. packaging_level 固定枚举：container / handling_unit / package / piece
+     （handling_unit = 托盘物理单元，避免与 Odoo stock.quant.package 冲突）
+  4. parent_cargo_line_id 树 + 层级约束：
+     container parent=None；handling_unit parent=container；
+     package parent=handling_unit；piece parent=package 或 handling_unit；
+     禁止跨级（如 piece → container）
+  5. 容器设备字段独立：container_no / seal_no / container_type
+  6. 字段重命名：pallet_gross_weight_kg / pallet_volume_m3（每托），
      piece_gross_weight_kg / piece_volume_m3（每件）
-  5. 移除 batch_no，改 source_reference / source_module（WMS 推送通道）
-  6. equivalent_pallets 计算字段与公式实现
-  7. request 表头汇总逻辑切换为 Σ 顶层 cargo line
+  7. 移除 batch_no；source 追溯字段：source_module / source_model /
+     source_id / source_line_id
+  8. equivalent_pallets 仅对 packaging_level in (package, piece) 计算
+  9. request 表头汇总 = Σ 顶层 cargo node，子行不重复计入
 
 accept_criteria:
-- "cargo_line 新增 packaging_level + parent_cargo_line_id，父子约束与层级校验通过"
-- "container 设备字段独立且不参与托盘粒度汇总"
-- "pallet/piece 字段命名与帮助文案按 v2 规格落地"
-- "batch_no 字段移除，source_reference/source_module 可用"
-- "equivalent_pallets = ceil(max(volume/pallet_volume_limit, weight/pallet_weight_limit)) 正确"
-- "request 表头 = Σ 顶层 cargo line；子行不重复计入"
+- "cargo_line 模型含 node_type + packaging_level + parent_cargo_line_id"
+- "层级约束校验通过：container→None、handling_unit→container、package→handling_unit、piece→package/handling_unit"
+- "container 设备字段独立，不参与托盘粒度汇总"
+- "pallet/piece 字段按 pallet_*/piece_* 命名，帮助文案明确每托/每件"
+- "batch_no 已移除，source_module/source_model/source_id/source_line_id 可用"
+- "equivalent_pallets 仅在 package/piece 层级计算，container 返回空"
+- "request 表头 = Σ 顶层 cargo node"
 - "py_compile / lxml / XML-RPC 升级通过，日志零 ERROR"
-- "单元测试覆盖层级树、汇总与公式"
+- "单元测试覆盖层级树、约束、汇总与公式"
 
 source:
   type: architecture_upgrade
-  origin_team: 研发 + 业务（Sprint48 v1 评审）
+  origin_team: 研发 + 业务（Sprint48 第二轮评审）
   based_on: INT-TMS-SPRINT48-001
 
 asset_snapshot_profile: development
@@ -68,18 +76,18 @@ validation_strategy:
   required_pass: all
 
 deliverables:
-- "cargo_line 模型升级代码与视图字段"
-- "层级树约束与汇总逻辑"
-- "equivalent_pallets 公式与配置参数"
+- "cargo node 模型升级代码与层级约束"
+- "source 追溯字段与 equivalent_pallets 公式"
 - "单元测试"
 - "decision_note / context_version 更新"
 
 limit_constraints: |
   1. 不修改 odoo/ 官方代码与原生 stock/account 模块
-  2. batch_no 不落 TLMS，未来由 WMS 通过 source_reference/source_module 推送
-  3. pallet/piece 字段统一 pallet_*/piece_* 命名，禁止 unit_* 泛化
-  4. 存量数据迁移由 Sprint48-C 处理，本阶段只改 schema 与逻辑
+  2. packaging_level 固定枚举，禁止新增自由层级
+  3. parent 层级约束强制校验，禁止跨级
+  4. batch_no 不落 TLMS；handling_unit 命名避免 Odoo package 冲突
+  5. equivalent_pallets 仅 package/piece 层级计算
 
 risk_precheck: |
-  - 模型字段变更影响存量记录读取（C 阶段回填）
-  - quote/order 快照引用 cargo line 的字段名需同步检查
+  - 模型字段变更影响存量记录（测试库按决定清空，无历史迁移）
+  - quote/order 快照字段名需在 B 阶段同步检查

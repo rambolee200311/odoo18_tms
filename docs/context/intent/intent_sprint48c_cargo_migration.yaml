@@ -1,6 +1,7 @@
 # ==============================================================
-# Sprint48-C 子契约 — 历史数据迁移与回归
+# Sprint48-C 子契约 v2 — Cargo Model Reset & Regression
 # 父契约：INT-TMS-SPRINT48-001（v2）｜依赖：A + B
+# 第二轮评审修正：2026-08-05｜测试库数据清空，不做历史迁移
 # ==============================================================
 intent_id: INT-TMS-SPRINT48C-001
 parent_intent_id: INT-TMS-SPRINT48-001
@@ -8,27 +9,28 @@ depends_on:
 - INT-TMS-SPRINT48A-001
 - INT-TMS-SPRINT48B-001
 intent_work_type: Maintenance
-intent_change_type: Legacy Migration
-title: Sprint48-C 历史数据迁移与回归
+intent_change_type: Data Correction
+title: Sprint48-C Cargo Model Reset & Regression（测试库清空 + 回归）
 
 target_scope: >
-  完成 cargo line 模型升级后的存量数据迁移：
-  1. cargo_type → packaging_level 映射（container / pallet / piece，package 缺省归入 pallet/piece）
-  2. unit_* 旧字段 → pallet_*/piece_* 新字段映射与回填
-  3. parent_cargo_line_id 关系建立（一柜多托等存量结构人工确认后回填）
-  4. request 2077 等 Scene 3 存量数据按新模型回填
-  5. quote / order 快照字段兼容性检查与修正
-  6. 迁移幂等脚本 + 全量回归验证
+  测试数据库历史数据全部清空（order / plan / inquiry / quote / request 及附属行），
+  不执行 cargo_type → packaging_level 的历史迁移：
+  1. 清空 tlmp.transport.order / pickup.plan / tlmp.transport.quote /
+     tlmp.transport.inquiry / tlmp.transport.request 及 cargo line / fee line /
+     container line / schedule 等附属记录
+  2. 清空后按 Sprint48-A/B 新模型重建业务场景数据
+  3. 回归验证一柜20托、托盘拆件双订单、报价快照冻结
+  4. 若未来接入生产数据，package 映射必须人工确认，禁止自动归入
 
 accept_criteria:
-- "迁移脚本可重复执行（幂等），存量 cargo line 全部映射为新字段"
-- "request 2077 等数据回填后表头 = Σ 顶层 cargo line"
-- "旧 quote / order 可正常打开，金额与货物汇总不变"
-- "全量自动化测试通过，XML-RPC 升级零 ERROR"
-- "迁移结果在新会话 search_count 复核"
+- "order / plan / inquiry / quote / request 相关模型 search_count = 0"
+- "清空操作在新会话复核，附属记录同步为 0"
+- "新模型下三个业务验收场景数据正确创建并验证"
+- "XML-RPC 升级零 ERROR，自动化测试通过"
+- "C 阶段执行记录与验证文档更新"
 
 source:
-  type: legacy_migration
+  type: data_correction
   origin_team: 研发
   based_on:
   - INT-TMS-SPRINT48A-001
@@ -70,17 +72,16 @@ validation_strategy:
   required_pass: all
 
 deliverables:
-- "幂等迁移脚本（cargo_type→packaging_level、unit_*→pallet_*/piece_*、parent 回填）"
-- "存量数据回填结果记录"
-- "回归测试报告"
+- "测试库清空执行记录（模型与数量）"
+- "新模型业务场景数据与回归结果"
 - "验证文档与 result_summary 更新"
 
 limit_constraints: |
   1. 不修改 odoo/ 官方代码与原生 stock/account 模块
-  2. 迁移必须幂等，可重复执行
-  3. 回填后必须新会话 search_count 复核
-  4. 旧订单快照保持可读，不破坏历史金额
+  2. 仅清空测试库，禁止在生产语义下执行
+  3. 清空后必须新会话 search_count 复核
+  4. 未来历史 package 映射人工确认，禁止自动归入 pallet/piece
 
 risk_precheck: |
-  - 存量 pallet 数据语义从“行合计”切换为“每托×数量”，回填需按来源单据判断
-  - quote/order 快照字段兼容性优先于 UI 美化
+  - 清空操作不可逆，执行前确认测试库身份
+  - 序列号不重置（本次不处理）
