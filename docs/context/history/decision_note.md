@@ -1689,3 +1689,24 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
 
 已起草契约 INT-TMS-SPRINT50-001（CREATED），依赖 INT-TMS-SPRINT49-001，
 作为 Sprint50 Workflow Engine 开发基线。
+
+---
+
+## Sprint50 契约 v2 修订：按评审 8 项必改（2026-08-05）
+
+1. Request completed 增加 closed_order_count（settled+cancelled），
+   完成条件 = closed_order_count == total_order_count 且
+   delivered_qty >= fulfilled_target_qty（支持部分取消）；
+2. Rule Engine 集成改为“Business Matrix Snapshot 有效性验证”，Order 阶段不重算全量规则；
+3. Transport Event Ledger 增加 event_category（business / state / integration）；
+4. Quote confirmed 增加 confirmation_source（customer / internal / system），
+   approved 后需 customer_accept 才 confirmed；
+5. Plan allocated 全面统一 reserved，并增加 reservation_type
+   （vehicle / driver / carrier_capacity）；
+6. 增加状态迁移文档 state_migration_plan.md；
+7. 增加事件字典 transport_event_dictionary.md（ORDER_SETTLED / PLAN_RESERVED / POD_RECEIVED）；
+8. pickup_plan.py 统一为 transport_plan.py，避免模型名称漂移。
+
+另补充：submitted→processing 显式守卫 validation_state=passed；
+inquiry close_reason + selected 字段；order exception_recovery；
+destination_type 标记 deprecated/readonly 保留一个版本周期。
