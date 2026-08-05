@@ -1,0 +1,100 @@
+# ==============================================================
+# Sprint49-A Intent 契约 — Business Rule Engine Alignment & Acceptance Closure
+# 前置依赖：INT-TMS-SPRINT49-001（TLMS Business Rule Engine Foundation）
+# 基线：Sprint49 验收差距分析（只读，2026-08-05）
+# ==============================================================
+intent_id: INT-TMS-SPRINT49A-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT49-001
+intent_work_type: Maintenance
+intent_change_type: Architecture Alignment
+title: Sprint49-A — TLMS Business Rule Engine Alignment & Acceptance Closure
+
+target_scope: >
+  基于 Sprint49 验收差距分析，对 Business Rule Engine 实现做契约收敛，
+  不新增业务能力，仅解决：
+  1. Intent 契约与实际实现命名统一（business.matrix.rule /
+     tlmp.business.matrix.evaluate() 与现有实现的映射）
+  2. Rule Engine 服务入口标准化（新增 tlmp.business.matrix 门面服务，
+     evaluate(ctx) 委托现有 BusinessMatrixEngine.validate()）
+  3. Order Snapshot 生命周期校验补强（自动建单时校验快照 exists + valid，
+     不重算全量规则）
+  4. Rule Result 三态验收闭环（PASS / WARNING / BLOCK + WARNING 用例）
+  5. 测试与文档一致性修正（契约、decision note、context_version、测试回归）
+
+accept_criteria:
+- "tlmp.business.matrix AbstractModel 门面服务存在，提供 evaluate(ctx) 返回 {result, violations[]}"
+- "evaluate() 与 BusinessMatrixEngine.validate() 结果一致，全部既有测试回归通过"
+- "tlmp.business.rule 模型与 Configuration UI 保持不变，不重新设计"
+- "Order 自动建单时校验 Business Matrix Snapshot exists + valid，缺失/失效拦截；不重算全量规则"
+- "Rule Result 三态闭环：PASS / WARNING / BLOCK 均有自动化用例（含至少 1 条 WARNING 规则）"
+- "violations[] 统一包含 rule_id / message / timestamp（配置与 fallback 两条路径一致）"
+- "XML-RPC 常驻升级通过，日志零 ERROR"
+- "decision note / context_version / 契约文档同步更新"
+
+source:
+  type: architecture_upgrade
+  origin_team: 研发 + 验收
+  based_on:
+  - "INT-TMS-SPRINT49-001"
+  - "Sprint49 验收差距分析报告（2026-08-05）"
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/business_matrix/rule_engine.py
+  - addons/wd_tlms/business_matrix/rule_definition.py
+  - addons/wd_tlms/services/business_matrix_service.py
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/models/business_rule.py
+  - addons/wd_tlms/tests/test_business_matrix.py
+  - addons/wd_tlms/data/business_matrix_data.xml
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+  - docs/context/intent/intent_sprint49_business_matrix.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "tlmp.business.matrix 门面服务（evaluate(ctx)）"
+- "Order Matrix Snapshot 有效性校验钩子"
+- "WARNING 规则示例 + 三态自动化用例"
+- "violations[] timestamp 统一"
+- "测试回归与文档更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. 不新增业务能力；仅做对齐、校验补强与验收闭环
+  3. tlmp.business.rule 模型与 Configuration UI 保持不变，不重新设计
+  4. Order 阶段只验证 Snapshot exists + valid，不重算全量规则
+  5. 命名收敛以兼容现有实现为先（门面/别名），不破坏已加载数据
+
+risk_precheck: |
+  - 命名收敛需保证既有 tlmp.business.rule 数据与 UI 兼容
+  - Order 快照校验需兼容存量 draft 订单（缺失快照仅警告或按验收策略处理）
+  - 既有 TestBusinessMatrix 9 项需回归通过

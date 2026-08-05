@@ -1709,6 +1709,15 @@ Configuration 下新增两个菜单（wd_tlms 1.0.114）：
 
 ---
 
+## Sprint49-A 契约起草：Business Rule Engine Alignment（2026-08-05）
+
+按 Sprint49 验收差距分析起草 INT-TMS-SPRINT49A-001（CREATED）：
+不新增业务能力，聚焦命名统一（tlmp.business.matrix.evaluate() 门面）、
+Order Snapshot 有效性校验、Rule Result 三态闭环（含 WARNING 用例）、
+violations[] timestamp 统一与文档一致性。
+
+---
+
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
 
 已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：
