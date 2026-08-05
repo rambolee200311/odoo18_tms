@@ -134,8 +134,8 @@
                                         <field name="container_no"/>
                                         <field name="container_type"/>
                                         <field name="bl_number"/>
-                                        <field name="gross_weight"/>
-                                        <field name="volume_m3"/>
+                                        <field name="gross_weight" sum="Total"/>
+                                        <field name="volume_m3" sum="Total"/>
                                     </list>
                                  </field>
                              </group>
@@ -148,11 +148,11 @@
                                         <field name="sequence" optional="show"/>
                                         <field name="description" required="1"/>
                                         <field name="commodity"/>
-                                        <field name="qty"/>
+                                        <field name="qty" sum="Total"/>
                                         <field name="uom"/>
-                                        <field name="packages"/>
-                                        <field name="gross_weight"/>
-                                        <field name="volume_m3"/>
+                                        <field name="packages" sum="Total"/>
+                                        <field name="gross_weight" sum="Total"/>
+                                        <field name="volume_m3" sum="Total"/>
                                     </list>
                                  </field>
                              </group>

@@ -15,12 +15,19 @@ class TransportCargoLine(models.Model):
     sequence = fields.Integer(string='Sequence', default=10)
     description = fields.Char(string='Description', required=True)
     commodity = fields.Char(string='Commodity')
-    qty = fields.Float(string='Quantity', default=1.0)
-    uom = fields.Char(string='UoM')
-    packages = fields.Integer(string='Packages')
-    gross_weight = fields.Float(string='Gross Weight (kg)')
-    net_weight = fields.Float(string='Net Weight (kg)')
-    volume_m3 = fields.Float(string='Volume (m3)')
+    qty = fields.Float(string='Quantity (Units)', default=1.0,
+        help='Number of units in this line, e.g. 10 pallets. '
+             'The request header totals are the sum of all lines.')
+    uom = fields.Char(string='UoM',
+        help='Unit of Measure for Quantity, e.g. pallet, carton, piece.')
+    packages = fields.Integer(string='Packages',
+        help='Inner packages/parcels of this line (total for the line).')
+    gross_weight = fields.Float(string='Gross Weight (kg)',
+        help='Gross weight of this line (total, not per unit).')
+    net_weight = fields.Float(string='Net Weight (kg)',
+        help='Net weight of this line (total, not per unit).')
+    volume_m3 = fields.Float(string='Volume (m3)',
+        help='Volume of this line (total, not per unit).')
     container_no = fields.Char(string='Container No.',
                                help='Transport document snapshot only — does not replace container tracking master data')
 

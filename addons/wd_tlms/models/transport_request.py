@@ -375,6 +375,16 @@ class TransportRequest(models.Model):
                     r.destination_state_id = wh.partner_id.state_id
                     r.destination_country_id = wh.partner_id.country_id
 
+    @api.onchange('cargo_line_ids')
+    def _onchange_cargo_line_totals(self):
+        for r in self:
+            lines = r.cargo_line_ids
+            if r.cargo_type == 'pallet':
+                r.pallet_count = sum(lines.mapped('qty'))
+                r.package_count = sum(lines.mapped('packages'))
+            r.cargo_weight = sum(lines.mapped('gross_weight'))
+            r.cargo_volume = sum(lines.mapped('volume_m3'))
+
     @api.constrains('scene_id', 'destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id', 'destination_street')
     def _check_destination_fields(self):
        for rec in self:

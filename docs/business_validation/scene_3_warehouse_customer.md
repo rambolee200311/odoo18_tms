@@ -31,7 +31,7 @@
 
 | Step | Description | Result | Notes |
 |------|-------------|--------|-------|
-| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | 发现 SD47-S3-001/002：pallet 托件明细 + origin/destination 选择填充，1.0.106 已修复待 UI 复验 |
+| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | 发现 SD47-S3-001/002/003，1.0.108 已修复待 UI 复验 |
 | 3.2-S47 | Start Inquiry | ⏳ PENDING | |
 | 3.3-S47 | Carrier Response & Select Carrier | ⏳ PENDING | |
 | 3.4-S47 | Create Customer Quote | ⏳ PENDING | |
@@ -44,6 +44,7 @@
 |------|------------------|----------|----------|------------|
 | 3.1 | cargo_type=pallet 时 Cargo Lines 仍匹配集装箱字段（container_no/BL），无托件明细；Inquiry/Quote 无托件行；需要柜/托件两套 Cargo Lines 视图动态切换 | blocking | 2026-08-05 | fixed（1.0.106 待 UI 复验） |
 | 3.1 | warehouse_to_customer 的 Origin 无仓库选择/自动填充；Destination 需要可选客户自动填充或手动填写 | blocking | 2026-08-05 | fixed（1.0.106 待 UI 复验） |
+| 3.1 | cargo line 的 qty/packages/gross_weight/volume 与 Request 表头 pallet/package/weight/volume 无关联；UOM 语义不清（10 托时重量体积是行合计还是每托） | blocking | 2026-08-05 | fixed（1.0.108 待 UI 复验） |
 
 
 ## Fix Record
@@ -51,6 +52,7 @@
 |--------|-------|-----------|-----------|--------|-----------------|--------|
 | SD47-S3-001 | S3 | cargo line 只处理集装箱明细，pallet 无对应行，且无柜/托件两套视图 | Cargo Lines 拆为 Container Lines / Pallet Lines 两个动态切换页面；action_start_inquiry / action_create_quote 对 pallet 生成 Pallet x / Package y 行 | 1.0.106 | shell 临时 pallet request→inquiry→quote 验证通过 | fixed |
 | SD47-S3-002 | S3 | warehouse_to_customer 的 Origin 无仓库选择/自动填充 | source_warehouse_id 改为 Origin Warehouse，对 warehouse_to_customer/warehouse_transfer 可见，onchange 自动填充 origin 地址；partner 选择自动填充 destination，地址可手动编辑 | 1.0.106 | shell 临时 request 验证 SPN 仓库自动填充 origin，手动地址保留 | fixed |
+| SD47-S3-003 | S3 | cargo line 明细与 Request 表头汇总无关联；UOM/重量/体积语义不清 | 语义定为：cargo line 的 qty/UOM 为数量+单位，packages 为行内件数，gross_weight/volume 为该行合计（非每托）；表单 onchange 自动把各行汇总到 Request 表头；Pallet/Container Lines 列表加合计列；字段帮助文案已补；2077 已回填 | 1.0.108 | shell 验证 2077 表头=行汇总、onchange 汇总与帮助文案 | fixed |
 
 
 ## Final Result
