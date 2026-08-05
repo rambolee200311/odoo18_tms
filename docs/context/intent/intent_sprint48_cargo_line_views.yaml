@@ -58,9 +58,9 @@ loop_policy:
   - risk_block
 
 execution_plan:
-  sprint48_a_model: "cargo line 模型升级：packaging_level / parent_cargo_line_id / 字段重命名 / 汇总与等效托盘公式"
-  sprint48_b_docs: "request / inquiry / quote / order 单证同步 + 三视图 UI + Cargo Summary 投影"
-  sprint48_c_migration: "历史数据迁移：cargo_type → packaging_level、unit_* → pallet_*/piece_*、parent 关系回填、回归验证"
+  sprint48_a_model: "INT-TMS-SPRINT48A-001：cargo line 模型升级（packaging_level / parent_cargo_line_id / 字段重命名 / 汇总与等效托盘公式）"
+  sprint48_b_docs: "INT-TMS-SPRINT48B-001：request / inquiry / quote / order 单证同步 + 三视图 UI + Cargo Summary 投影"
+  sprint48_c_migration: "INT-TMS-SPRINT48C-001：历史数据迁移（cargo_type → packaging_level、unit_* → pallet_*/piece_*、parent 关系回填、回归验证）"
 
 affected_assets:
   business:

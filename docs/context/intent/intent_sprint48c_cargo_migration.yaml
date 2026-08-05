@@ -1,0 +1,86 @@
+# ==============================================================
+# Sprint48-C 子契约 — 历史数据迁移与回归
+# 父契约：INT-TMS-SPRINT48-001（v2）｜依赖：A + B
+# ==============================================================
+intent_id: INT-TMS-SPRINT48C-001
+parent_intent_id: INT-TMS-SPRINT48-001
+depends_on:
+- INT-TMS-SPRINT48A-001
+- INT-TMS-SPRINT48B-001
+intent_work_type: Maintenance
+intent_change_type: Legacy Migration
+title: Sprint48-C 历史数据迁移与回归
+
+target_scope: >
+  完成 cargo line 模型升级后的存量数据迁移：
+  1. cargo_type → packaging_level 映射（container / pallet / piece，package 缺省归入 pallet/piece）
+  2. unit_* 旧字段 → pallet_*/piece_* 新字段映射与回填
+  3. parent_cargo_line_id 关系建立（一柜多托等存量结构人工确认后回填）
+  4. request 2077 等 Scene 3 存量数据按新模型回填
+  5. quote / order 快照字段兼容性检查与修正
+  6. 迁移幂等脚本 + 全量回归验证
+
+accept_criteria:
+- "迁移脚本可重复执行（幂等），存量 cargo line 全部映射为新字段"
+- "request 2077 等数据回填后表头 = Σ 顶层 cargo line"
+- "旧 quote / order 可正常打开，金额与货物汇总不变"
+- "全量自动化测试通过，XML-RPC 升级零 ERROR"
+- "迁移结果在新会话 search_count 复核"
+
+source:
+  type: legacy_migration
+  origin_team: 研发
+  based_on:
+  - INT-TMS-SPRINT48A-001
+  - INT-TMS-SPRINT48B-001
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/models/transport_cargo_line.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/tests/
+  business:
+  - docs/business_validation/scene_3_warehouse_customer.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/decision_note.md
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "幂等迁移脚本（cargo_type→packaging_level、unit_*→pallet_*/piece_*、parent 回填）"
+- "存量数据回填结果记录"
+- "回归测试报告"
+- "验证文档与 result_summary 更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. 迁移必须幂等，可重复执行
+  3. 回填后必须新会话 search_count 复核
+  4. 旧订单快照保持可读，不破坏历史金额
+
+risk_precheck: |
+  - 存量 pallet 数据语义从“行合计”切换为“每托×数量”，回填需按来源单据判断
+  - quote/order 快照字段兼容性优先于 UI 美化
