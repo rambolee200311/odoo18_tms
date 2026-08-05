@@ -1617,3 +1617,19 @@ wd_tlms 18.0.1.0.112）；业务场景回归 TestBusinessScenarios 3 项全部�
 （一柜20托 / 拆件双订单 / 快照冻结隔离）；执行记录已写入
 `docs/context/intent_records/INT-TMS-SPRINT48C-001/execution_record.md`，
 契约 status=COMPLETED。
+
+---
+
+## Sprint49 起草：六维业务矩阵规则引擎（2026-08-05）
+
+已阅读开发冻结基线 `docs/context/business/bussiness_matrix.md` V1.0，并对照现有代码：
+
+**已具备**：Scene（8）、request_type（B1/B2 近似）、cargo_type C1/C2/C3、
+carrier_type / fleet_operation_mode（D1/D2/D3 近似）、T1/DG 部分字段、
+Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
+
+**缺口**：六维组合编码字段、cargo_category、support_t1/support_dg 承运能力、
+业务矩阵规则服务（RULE-CARGO-001~005 / RULE-CARRIER-001~002）、单一货型后端强制、
+表头按激活货型汇总、Order Business Rules Result 快照、三入口测试。
+
+已起草契约 INT-TMS-SPRINT49-001（CREATED），基线冻结、规则修改需双审批。
