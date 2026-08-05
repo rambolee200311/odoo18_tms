@@ -5,6 +5,7 @@
 # ==============================================================
 intent_id: INT-TMS-SPRINT48C-001
 status: COMPLETED
+execution_record: intent_records/INT-TMS-SPRINT48C-001/execution_record.md
 parent_intent_id: INT-TMS-SPRINT48-001
 depends_on:
 - INT-TMS-SPRINT48A-001

@@ -1607,3 +1607,13 @@ cargo 节点复制（container→pallet）、order 创建前汇总校验；
 
 **遗留说明**: 全量 332 项测试在开发库仍有主数据唯一键等环境冲突（与本次改动无关），
 本 Sprint 以定向测试类验证；后续如需全量绿，需在干净测试库跑。
+
+---
+
+## Sprint48-C 正式启动与执行（2026-08-05）
+
+按用户指示正式启动 Sprint48-C；测试库清空状态复核通过（10 个模型 search_count 均为 0，
+wd_tlms 18.0.1.0.112）；业务场景回归 TestBusinessScenarios 3 项全部通过
+（一柜20托 / 拆件双订单 / 快照冻结隔离）；执行记录已写入
+`docs/context/intent_records/INT-TMS-SPRINT48C-001/execution_record.md`，
+契约 status=COMPLETED。
