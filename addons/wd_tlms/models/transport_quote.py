@@ -45,6 +45,14 @@ class TransportQuote(models.Model):
         string='Fee Lines', copy=False)
     transport_order_id = fields.Many2one('tlmp.transport.order',
         string='Transport Order', readonly=True, copy=False)
+    cargo_source_reference = fields.Char(
+        string='Cargo Source Ref', compute='_compute_cargo_summary',
+        help='Source request reference for Cargo Summary traceability.')
+    cargo_summary = fields.Text(string='Cargo Summary', compute='_compute_cargo_summary')
+    cargo_weight_kg = fields.Float(
+        string='Cargo Weight (kg)', compute='_compute_cargo_summary')
+    cargo_volume_m3 = fields.Float(
+        string='Cargo Volume (m3)', compute='_compute_cargo_summary')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -63,6 +71,21 @@ class TransportQuote(models.Model):
                 r.fee_line_ids.filtered(lambda f: f.party_type == 'customer_charge')
                 .mapped('total_amount'))
             r.total_amount = customer_fee if customer_fee else (r.carrier_cost or 0.0)
+
+    @api.depends('request_id.name', 'request_id.cargo_description',
+                 'request_id.cargo_weight', 'request_id.cargo_volume',
+                 'inquiry_id.cargo_summary')
+    def _compute_cargo_summary(self):
+        for r in self:
+            r.cargo_source_reference = r.request_id.name if r.request_id else False
+            if r.request_id and r.request_id.cargo_description:
+                r.cargo_summary = r.request_id.cargo_description
+            elif r.inquiry_id:
+                r.cargo_summary = r.inquiry_id.cargo_summary
+            else:
+                r.cargo_summary = False
+            r.cargo_weight_kg = r.request_id.cargo_weight if r.request_id else 0.0
+            r.cargo_volume_m3 = r.request_id.cargo_volume if r.request_id else 0.0
 
     @api.depends('total_amount', 'carrier_cost')
     def _compute_margin_amount(self):
@@ -111,6 +134,17 @@ class TransportQuote(models.Model):
 
     def _auto_create_order(self):
         self.ensure_one()
+        request = self.request_id
+        if request and request.cargo_line_ids:
+            pallet_count, package_count, weight, volume = \
+                request._get_cargo_totals()
+            if (request.pallet_count != pallet_count
+                    or request.package_count != package_count
+                    or abs(request.cargo_weight - weight) > 0.005
+                    or abs(request.cargo_volume - volume) > 0.005):
+                raise UserError(
+                    _('Request cargo totals are out of sync with cargo nodes. '
+                      'Reopen the request and save it to recalculate.'))
         order = self.env['tlmp.transport.order'].create({
             'scene_id': self.request_id.scene_id.id if self.request_id and self.request_id.scene_id else False,
             # Sprint44: copy address from request
@@ -134,11 +168,50 @@ class TransportQuote(models.Model):
             'fleet_operation_mode': 'subcontracted',
             'total_customer_charge': self.total_amount,
             'source_amount_customer': self.total_amount,
+            'cargo_description': request.cargo_description or '',
+            'cargo_weight': request.cargo_weight,
+            'cargo_volume': request.cargo_volume,
+            'pallet_count': request.pallet_count,
+            'package_count': request.package_count,
             'carrier_id': (self.inquiry_id.partner_id.id if self.inquiry_id and self.inquiry_id.partner_id else
                            (self.request_id.carrier_id.id if self.request_id and self.request_id.carrier_id else False)),
             'price_source': 'quote',
         })
         self.write({'transport_order_id': order.id})
+        # Copy request cargo nodes as order snapshot, preserving hierarchy.
+        CargoLine = self.env['tlmp.transport.cargo.line']
+        old_to_new = {}
+        for cl in self.request_id.cargo_line_ids:
+            old_to_new[cl.id] = CargoLine.create({
+                'order_id': order.id,
+                'description': cl.description,
+                'commodity': cl.commodity,
+                'qty': cl.qty,
+                'uom': cl.uom,
+                'packages': cl.packages,
+                'gross_weight': cl.gross_weight,
+                'net_weight': cl.net_weight,
+                'volume_m3': cl.volume_m3,
+                'container_no': cl.container_no,
+                'bl_number': cl.bl_number,
+                'container_type': cl.container_type,
+                'seal_no': cl.seal_no,
+                'node_type': cl.node_type,
+                'packaging_level': cl.packaging_level,
+                'pieces_per_pallet': cl.pieces_per_pallet,
+                'pallet_gross_weight_kg': cl.pallet_gross_weight_kg,
+                'pallet_volume_m3': cl.pallet_volume_m3,
+                'piece_gross_weight_kg': cl.piece_gross_weight_kg,
+                'piece_volume_m3': cl.piece_volume_m3,
+                'source_module': cl.source_module,
+                'source_model': cl.source_model,
+                'source_id': cl.source_id,
+                'source_line_id': cl.source_line_id,
+            })
+        for cl in self.request_id.cargo_line_ids:
+            if cl.parent_cargo_line_id:
+                old_to_new[cl.id].parent_cargo_line_id = \
+                    old_to_new[cl.parent_cargo_line_id.id].id
         # Copy quote fee lines onto the order; quote fee lines stay locked after accept.
         FeeLine = self.env['transport.fee.line']
         for fl in self.fee_line_ids:

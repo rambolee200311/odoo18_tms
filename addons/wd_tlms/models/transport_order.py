@@ -9,12 +9,19 @@ class TransportOrder(models.Model):
     ADDRESS_FIELDS = ('origin_street', 'origin_zip', 'origin_city', 'origin_state_id',
                       'origin_country_id', 'destination_street', 'destination_zip',
                       'destination_city', 'destination_state_id', 'destination_country_id')
+    CARGO_SNAPSHOT_FIELDS = (
+        'cargo_description', 'cargo_weight', 'cargo_volume',
+        'pallet_count', 'package_count', 'cargo_line_ids', 'container_ids')
 
     def write(self, vals):
         if any(k in vals for k in self.ADDRESS_FIELDS):
             for rec in self:
                 if rec.state in ('confirmed', 'done', 'cancelled'):
                     raise UserError(_('Address is readonly after order confirmation.'))
+        if any(k in vals for k in self.CARGO_SNAPSHOT_FIELDS):
+            for rec in self:
+                if rec.snapshot_status in ('confirmed', 'locked'):
+                    raise UserError(_('Cargo snapshot is frozen after order confirmation.'))
         return super().write(vals)
     _description = 'Transport Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -93,6 +100,14 @@ class TransportOrder(models.Model):
     pallet_count = fields.Integer(string='Pallets')
     cargo_line_ids = fields.One2many('tlmp.transport.cargo.line', 'order_id', string='Cargo Lines')
     package_count = fields.Integer(string='Packages')
+    cargo_snapshot_version = fields.Integer(
+        string='Cargo Snapshot Version', default=1, readonly=True, copy=False)
+    snapshot_status = fields.Selection([
+        ('draft', 'Draft'),
+        ('confirmed', 'Confirmed'),
+        ('locked', 'Locked'),
+        ('cancelled', 'Cancelled'),
+    ], string='Cargo Snapshot Status', default='draft', copy=False)
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
     container_no_set = fields.Char(string='Container No. Set')
     swap_container = fields.Boolean(string='Swap Container')
@@ -326,7 +341,7 @@ class TransportOrder(models.Model):
 
     # ---- State Transitions ----
     def action_confirm(self):
-        self.write({'state': 'confirmed'})
+        self.write({'state': 'confirmed', 'snapshot_status': 'confirmed'})
         self._sync_upstream_status()
         return True
 

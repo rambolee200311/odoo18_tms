@@ -52,6 +52,12 @@
                             <field name="currency_id"/>
                         </group>
                     </group>
+                    <group string="Cargo Summary" invisible="not cargo_source_reference">
+                        <field name="cargo_source_reference" readonly="1"/>
+                        <field name="cargo_summary" readonly="1"/>
+                        <field name="cargo_weight_kg" readonly="1"/>
+                        <field name="cargo_volume_m3" readonly="1"/>
+                    </group>
                     <notebook>
                         <page string="Cargo Lines" name="lines_page">
                             <field name="line_ids">

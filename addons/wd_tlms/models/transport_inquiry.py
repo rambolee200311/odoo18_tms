@@ -13,6 +13,9 @@ class TransportInquiry(models.Model):
     name = fields.Char(string='Inquiry No.', required=True, copy=False,
                        default=lambda self: _('New'))
     request_id = fields.Many2one('tlmp.transport.request', string='Request')
+    cargo_source_reference = fields.Char(
+        string='Cargo Source Ref', compute='_compute_cargo_source_reference',
+        help='Source request reference for Cargo Summary traceability.')
     partner_id = fields.Many2one('res.partner', string='Carrier')
     from_location_text = fields.Text(string='From (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
     to_location_text = fields.Text(string='To (deprecated, use related address fields)', help='Legacy text field. Structured address is projected from request_id.')
@@ -52,6 +55,11 @@ class TransportInquiry(models.Model):
         ('expired', 'Expired'),
     ], string='Status', default='draft', tracking=True)
     sent_date = fields.Datetime(string='Sent Date')
+
+    @api.depends('request_id.name')
+    def _compute_cargo_source_reference(self):
+        for r in self:
+            r.cargo_source_reference = r.request_id.name if r.request_id else False
 
     @api.model_create_multi
     def create(self, vals_list):

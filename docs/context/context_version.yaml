@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.60
+context_version: 1.0.61
 update_time: 2026-08-05
-adapt_sprint: Sprint48-A
+adapt_sprint: Sprint48-B
 update_author: AI-Engineering-Team
 
 version_log:
@@ -408,3 +408,13 @@ bind_asset_folder:
       - 单元测试 test_transport_cargo_node 6 项通过
     update_type: 架构升级 + 模型重构
     effect_scope: cargo_node_hierarchy + request_rollup
+  1.0.61:
+    update_content: |
+      Sprint48-B Transport Document Projection（wd_tlms 1.0.112）
+      - inquiry/quote Cargo Summary + cargo_source_reference 投影
+      - order cargo_snapshot_version + snapshot_status，confirmed 后冻结
+      - quote 接受自动建单并复制 cargo node 树快照 + 表头汇总
+      - request 表头 rollup 与建单前一致性校验
+      - 自动化测试 9 项通过（TestCargoNode 6 + TestDocumentProjection 3）
+    update_type: 功能开发 + 单证投影
+    effect_scope: inquiry_quote_summary + order_cargo_snapshot

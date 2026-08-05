@@ -384,36 +384,52 @@ class TransportRequest(models.Model):
     @api.onchange('cargo_line_ids')
     def _onchange_cargo_line_totals(self):
         for r in self:
-            pallet_count = 0
-            package_count = 0
-            weight = 0.0
-            volume = 0.0
-            for line in r.cargo_line_ids:
-                level = line.packaging_level or 'piece'
-                if level == 'handling_unit':
-                    line.packages = int(round(
-                        (line.qty or 0.0) * (line.pieces_per_pallet or 0)))
-                    line.gross_weight = (
-                        (line.qty or 0.0) * (line.pallet_gross_weight_kg or 0.0))
-                    line.volume_m3 = (
-                        (line.qty or 0.0) * (line.pallet_volume_m3 or 0.0))
-                    pallet_count += line.qty or 0.0
-                    package_count += line.packages or 0
-                elif level in ('package', 'piece'):
-                    line.packages = int(round(line.qty or 0.0))
-                    line.gross_weight = (
-                        (line.qty or 0.0) * (line.piece_gross_weight_kg or 0.0))
-                    line.volume_m3 = (
-                        (line.qty or 0.0) * (line.piece_volume_m3 or 0.0))
-                    package_count += line.qty or 0.0
-                if line.child_cargo_line_ids:
-                    continue
-                weight += line.gross_weight or 0.0
-                volume += line.volume_m3 or 0.0
-            r.pallet_count = int(round(pallet_count))
-            r.package_count = int(round(package_count))
+            pallet_count, package_count, weight, volume = r._get_cargo_totals(
+                update_lines=True)
+            r.pallet_count = pallet_count
+            r.package_count = package_count
             r.cargo_weight = weight
             r.cargo_volume = volume
+
+    def _get_cargo_totals(self, update_lines=False):
+        """Roll up cargo node totals for the request header."""
+        pallet_count = 0
+        package_count = 0
+        weight = 0.0
+        volume = 0.0
+        for line in self.cargo_line_ids:
+            level = line.packaging_level or 'piece'
+            line_weight = 0.0
+            line_volume = 0.0
+            if level == 'handling_unit':
+                line_packages = int(round(
+                    (line.qty or 0.0) * (line.pieces_per_pallet or 0)))
+                line_weight = (
+                    (line.qty or 0.0) * (line.pallet_gross_weight_kg or 0.0))
+                line_volume = (
+                    (line.qty or 0.0) * (line.pallet_volume_m3 or 0.0))
+                pallet_count += line.qty or 0.0
+                package_count += line_packages
+            elif level in ('package', 'piece'):
+                line_packages = int(round(line.qty or 0.0))
+                line_weight = (
+                    (line.qty or 0.0) * (line.piece_gross_weight_kg or 0.0))
+                line_volume = (
+                    (line.qty or 0.0) * (line.piece_volume_m3 or 0.0))
+                package_count += line.qty or 0.0
+            else:  # container leaf: manual equipment totals
+                line_packages = 0
+                line_weight = line.gross_weight or 0.0
+                line_volume = line.volume_m3 or 0.0
+            if update_lines:
+                line.packages = line_packages
+                line.gross_weight = line_weight
+                line.volume_m3 = line_volume
+            if line.child_cargo_line_ids:
+                continue
+            weight += line_weight
+            volume += line_volume
+        return int(round(pallet_count)), int(round(package_count)), weight, volume
 
     @api.constrains('scene_id', 'destination_type', 'warehouse_id', 'source_warehouse_id', 'partner_id', 'destination_street')
     def _check_destination_fields(self):

@@ -1566,3 +1566,26 @@ Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图�
 （container→2 pallet→piece）通过：pallets=20、packages=500、weight=500、volume=32；
 piece→container 跨级被 ValidationError 拦截；测试数据已清理；
 自动化单元测试 `test_transport_cargo_node` 6 项全部通过（层级树/约束/公式/汇总/source）。
+
+---
+
+## Sprint48-B 启动与完成：Transport Document Projection（2026-08-05）
+
+**决定**: 按用户指示启动 Sprint48-B（INT-TMS-SPRINT48B-001），完成单证投影与订单快照。
+
+**已实现（wd_tlms 1.0.112）**:
+1. inquiry / quote 增加 `cargo_source_reference` 与 Cargo Summary 投影
+   （quote 新增 cargo_summary / cargo_weight_kg / cargo_volume_m3 计算字段）。
+2. order 增加 `cargo_snapshot_version` 与 `snapshot_status`
+   （draft / confirmed / locked / cancelled）；`action_confirm` 后快照冻结，
+   修改 cargo 字段被 UserError 拦截。
+3. quote 接受后自动创建 order，并复制 request cargo node 树（含父子层级）为订单快照，
+   同时复制 request 表头 cargo 汇总。
+4. request 表头 = Σ 顶层 cargo node；onchange 自动重算；
+   order 创建前校验 request 表头与 cargo node 汇总一致，不一致拦截。
+5. 视图：inquiry/quote 显示 Cargo Summary，order Cargo 页显示快照状态/版本与 Cargo Lines 快照。
+
+**验证**: XML-RPC 常驻升级 1.0.112 通过，日志零 ERROR；
+shell 验证：rollup 10/200/300/20、quote 摘要、order 快照 draft→confirmed 冻结、
+cargo 节点复制（container→pallet）、order 创建前汇总校验；
+自动化测试 9 项全部通过（TestCargoNode 6 + TestDocumentProjection 3）。

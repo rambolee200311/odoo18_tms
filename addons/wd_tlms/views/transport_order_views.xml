@@ -105,11 +105,13 @@
                          <page string="Cargo" name="cargo_page">
                              <group>
                                  <group>
-                                     <field name="cargo_description"/>
-                                     <field name="cargo_weight"/>
-                                     <field name="cargo_volume"/>
-                                     <field name="pallet_count"/>
-                                     <field name="package_count"/>
+                                     <field name="snapshot_status" widget="badge" readonly="1"/>
+                                     <field name="cargo_snapshot_version" readonly="1"/>
+                                     <field name="cargo_description" readonly="snapshot_status != 'draft'"/>
+                                     <field name="cargo_weight" readonly="snapshot_status != 'draft'"/>
+                                     <field name="cargo_volume" readonly="snapshot_status != 'draft'"/>
+                                     <field name="pallet_count" readonly="snapshot_status != 'draft'"/>
+                                     <field name="package_count" readonly="snapshot_status != 'draft'"/>
                                  </group>
                                  <group string="Dangerous Goods">
                                      <field name="has_dangerous_goods"/>
@@ -118,6 +120,17 @@
                                      <field name="adr_packing_group" invisible="not has_dangerous_goods"/>
                                      <field name="adr_tunnel_code" invisible="not has_dangerous_goods"/>
                                  </group>
+                             </group>
+                             <group string="Cargo Lines Snapshot">
+                                 <field name="cargo_line_ids" readonly="snapshot_status != 'draft'">
+                                     <list>
+                                         <field name="description"/>
+                                         <field name="packaging_level"/>
+                                         <field name="qty"/>
+                                         <field name="gross_weight"/>
+                                         <field name="volume_m3"/>
+                                     </list>
+                                 </field>
                              </group>
                          </page>
                          <page string="Containers" name="container_page"
