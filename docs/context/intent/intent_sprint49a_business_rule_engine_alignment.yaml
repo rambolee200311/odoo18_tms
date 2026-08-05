@@ -4,7 +4,7 @@
 # 基线：Sprint49 验收差距分析（只读，2026-08-05）
 # ==============================================================
 intent_id: INT-TMS-SPRINT49A-001
-status: CREATED
+status: COMPLETED
 depends_on:
 - INT-TMS-SPRINT49-001
 intent_work_type: Maintenance

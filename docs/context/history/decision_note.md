@@ -1718,6 +1718,19 @@ violations[] timestamp 统一与文档一致性。
 
 ---
 
+## Sprint49-A 完成：Business Rule Engine Alignment（2026-08-05）
+
+已按 INT-TMS-SPRINT49A-001 完成并验证（wd_tlms 1.0.115）：
+- 新增 `tlmp.business.matrix` AbstractModel 门面服务，提供 `evaluate(ctx)`，
+  委托 `BusinessMatrixEngine.validate()`；`tlmp.business.rule` 模型与 UI 未改；
+- Order 自动建单增加 Matrix Snapshot 有效性校验（exists + valid，不重算）；
+- 新增 WARNING 规则 RULE-COMPLIANCE-001（散件危品合规审批），三态闭环；
+- `violations[]` 统一补充 timestamp（配置与 fallback 两条路径一致）；
+- TestBusinessMatrix 11 项全部通过（含 evaluate 服务与 WARNING 用例），
+  XML-RPC 常驻升级 1.0.115 通过，日志零 ERROR。
+
+---
+
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
 
 已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：

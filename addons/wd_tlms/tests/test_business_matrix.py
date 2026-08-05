@@ -105,3 +105,22 @@ class TestBusinessMatrix(TransactionCase):
         msg = str(cm.exception)
         self.assertIn('快递公司无跨境T1报关配套能力', msg)
         self.assertIn('普通快递无危化运输资质', msg)
+
+    def test_10_evaluate_service(self):
+        service = self.env['tlmp.business.matrix']
+        res_block = service.evaluate({
+            'cargo_category': 'container', 'carrier_type': 'courier',
+            't1_attribute': 'normal', 'dg_attribute': 'normal',
+            'carrier_capabilities': set(), 'mixed_roots': False})
+        self.assertEqual(res_block['result'], 'block')
+        res_pass = service.evaluate({
+            'cargo_category': 'container', 'carrier_type': 'truck',
+            't1_attribute': 'normal', 'dg_attribute': 'normal',
+            'carrier_capabilities': set(), 'mixed_roots': False})
+        self.assertEqual(res_pass['result'], 'pass')
+
+    def test_11_warning_rule(self):
+        req = self._make(cargo_type='piece', carrier_type='truck',
+                         dg_attribute='dg', carrier_id=self.carrier_dg.id)
+        self.assertEqual(req.matrix_validation_result, 'warning')
+        self.assertIn('RULE-COMPLIANCE-001', req.matrix_validation_violations)

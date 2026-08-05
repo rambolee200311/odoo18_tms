@@ -93,4 +93,14 @@
         <field name="dg_attribute">dg</field>
         <field name="require_capability">dg</field>
     </record>
+    <record id="business_rule_compliance_001" model="tlmp.business.rule">
+        <field name="code">RULE-COMPLIANCE-001</field>
+        <field name="name">散件危品合规审批</field>
+        <field name="message_cn">散件危品需额外合规审批</field>
+        <field name="result">warning</field>
+        <field name="priority">70</field>
+        <field name="cargo_category">piece</field>
+        <field name="carrier_type">truck</field>
+        <field name="dg_attribute">dg</field>
+    </record>
 </odoo>

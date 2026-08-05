@@ -25,6 +25,8 @@ class BusinessMatrixEngine:
             violations += cargo_rules.check_cargo_rules(dimensions)
             violations += carrier_rules.check_carrier_rules(dimensions)
             violations += compliance_rules.check_compliance_rules(dimensions)
+        for violation in violations:
+            violation.setdefault('timestamp', datetime.utcnow().isoformat())
         if violations:
             result = RESULT_BLOCK if any(
                 v.get('result') == 'block' for v in violations) else RESULT_WARNING

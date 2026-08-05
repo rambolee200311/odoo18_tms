@@ -147,6 +147,11 @@ class TransportQuote(models.Model):
                 raise UserError(
                     _('Request cargo totals are out of sync with cargo nodes. '
                       'Reopen the request and save it to recalculate.'))
+        if request and (not request.matrix_code
+                        or request.matrix_validation_result == 'block'):
+            raise UserError(
+                _('Business Matrix snapshot is missing or invalid. '
+                  'Complete request matrix validation before creating the order.'))
         order = self.env['tlmp.transport.order'].create({
             'scene_id': self.request_id.scene_id.id if self.request_id and self.request_id.scene_id else False,
             # Sprint44: copy address from request

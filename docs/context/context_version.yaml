@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.64
+context_version: 1.0.65
 update_time: 2026-08-05
-adapt_sprint: Sprint49
+adapt_sprint: Sprint49-A
 update_author: AI-Engineering-Team
 
 version_log:
@@ -445,3 +445,13 @@ bind_asset_folder:
       - 列表/表单视图与动作
     update_type: 配置界面完善
     effect_scope: business_matrix_config_menus
+  1.0.65:
+    update_content: |
+      Sprint49-A Business Rule Engine Alignment（wd_tlms 1.0.115）
+      - tlmp.business.matrix 门面服务 evaluate(ctx)
+      - Order Matrix Snapshot 有效性校验
+      - RULE-COMPLIANCE-001 WARNING 规则与三态闭环
+      - violations[] timestamp 统一
+      - TestBusinessMatrix 11 项通过
+    update_type: 架构对齐 + 验收闭环
+    effect_scope: business_matrix_service_alignment
