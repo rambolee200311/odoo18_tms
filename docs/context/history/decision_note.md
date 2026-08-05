@@ -1633,3 +1633,22 @@ Sprint48 的 Cargo Node 三视图、Inquiry/Quote 摘要投影、Order 快照。
 表头按激活货型汇总、Order Business Rules Result 快照、三入口测试。
 
 已起草契约 INT-TMS-SPRINT49-001（CREATED），基线冻结、规则修改需双审批。
+
+---
+
+## Sprint49 契约 v2 修订：按架构评审 7 项必改（2026-08-05）
+
+评审意见已全部纳入，契约标题改为
+`Sprint49 — TLMS Business Rule Engine Foundation`：
+
+1. 六维矩阵字段只放 Transport Request（Business Matrix Snapshot），cargo.line 不重复；
+2. Cargo Category（业务视图）与 Packaging Level（物理树）分层；
+3. RULE-CARGO-005 改为 Root Type 限制（C1 Root 可含 pallet/package 子节点）；
+4. Rule Result 三态 PASS / WARNING / BLOCK + 标准错误码 + 中文；
+5. RULE-SUMMARY-001 按 root cargo_category 汇总，不依赖 active Tab；
+6. Order 保存 Business Matrix Snapshot（scene/driver/cargo_category/carrier_type/
+   t1/dg/matrix_code/validation_result），confirm 后不可变；
+7. Carrier Capability 模型：carrier.capability 主数据 + carrier_capability_ids，
+   Sprint49 落地 T1/DG 校验并预留扩展。
+
+测试口径调整为正向 8 例 + 负向 7 例（三入口）。
