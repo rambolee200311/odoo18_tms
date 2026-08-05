@@ -97,17 +97,28 @@ class TransportInquiry(models.Model):
         charge_item = self.env['world.depot.charge.item'].search(
             [('item_name', '=', 'Transportation Fee')], limit=1) or \
             self.env['world.depot.charge.item'].search([], limit=1)
+        line_ids = []
+        if self.request_id:
+            line_ids = [(0, 0, {
+                'description': ' - '.join(
+                    x for x in (cl.description, cl.container_no, cl.bl_number) if x) or _('Cargo'),
+                'quantity': 1.0,
+                'unit_price': 0.0,
+            }) for cl in self.request_id.cargo_line_ids]
+            if not line_ids and self.request_id.cargo_type == 'pallet':
+                line_ids = [(0, 0, {
+                    'description': _('Pallet %s / Package %s') % (
+                        self.request_id.pallet_count or 0,
+                        self.request_id.package_count or 0),
+                    'quantity': self.request_id.pallet_count or 1.0,
+                    'unit_price': 0.0,
+                })]
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': self.request_id.id if self.request_id else False,
             'inquiry_id': self.id,
             'partner_id': self.request_id.partner_id.id if self.request_id and self.request_id.partner_id else False,
             'carrier_cost': self.total_amount,
-            'line_ids': [(0, 0, {
-                'description': ' - '.join(
-                    x for x in (cl.description, cl.container_no, cl.bl_number) if x) or _('Cargo'),
-                'quantity': 1.0,
-                'unit_price': 0.0,
-            }) for cl in self.request_id.cargo_line_ids] if self.request_id else [],
+            'line_ids': line_ids,
             'fee_line_ids': [(0, 0, {
                 'fee_type_id': charge_item.id if charge_item else False,
                 'party_type': 'customer_charge',

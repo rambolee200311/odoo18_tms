@@ -256,21 +256,32 @@ class TransportRequest(models.Model):
        if self.has_accepted_quote:
            raise UserError(_('This request already has an accepted quote. Start a new inquiry only after the quote is rejected or cancelled.'))
        cargo_summary = self.cargo_description
-       if not cargo_summary and self.cargo_line_ids:
+       cargo_lines = self.cargo_line_ids
+       if not cargo_summary and cargo_lines:
            cargo_summary = '\n'.join(
                ' - '.join(x for x in (cl.description, cl.container_no, cl.bl_number) if x)
-               for cl in self.cargo_line_ids)
+               for cl in cargo_lines)
+       if not cargo_summary and self.cargo_type == 'pallet':
+           cargo_summary = _('Pallet %s / Package %s') % (
+               self.pallet_count or 0, self.package_count or 0)
+       if not cargo_lines and self.cargo_type == 'pallet':
+           inquiry_lines = [(0, 0, {
+               'description': cargo_summary,
+               'quantity': self.pallet_count or 1.0,
+           })]
+       else:
+           inquiry_lines = [(0, 0, {
+               'description': cl.description or cl.container_no or cl.bl_number or _('Cargo'),
+               'quantity': 1.0,
+           }) for cl in cargo_lines]
        inquiry = self.env['tlmp.transport.inquiry'].create({
            'request_id': self.id,
            'partner_id': self.carrier_id.id if self.carrier_id else False,
            'cargo_summary': cargo_summary or '',
-           'weight_kg': self.cargo_weight or sum(cl.gross_weight for cl in self.cargo_line_ids),
-           'volume_m3': self.cargo_volume or sum(cl.volume_m3 for cl in self.cargo_line_ids),
+           'weight_kg': self.cargo_weight or sum(cl.gross_weight for cl in cargo_lines),
+           'volume_m3': self.cargo_volume or sum(cl.volume_m3 for cl in cargo_lines),
            'pickup_date': self.requested_pickup_date,
-           'line_ids': [(0, 0, {
-               'description': cl.description or cl.container_no or cl.bl_number or _('Cargo'),
-               'quantity': 1.0,
-           }) for cl in self.cargo_line_ids],
+           'line_ids': inquiry_lines,
        })
        return {
            'type': 'ir.actions.act_window',

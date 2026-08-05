@@ -31,7 +31,7 @@
 
 | Step | Description | Result | Notes |
 |------|-------------|--------|-------|
-| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | |
+| 3.1-S47 | Create Transport Request（warehouse_to_customer） | ⏳ PENDING | 发现 SD47-S3-001：pallet cargo line 无托件明细，1.0.105 已修复待 UI 复验 |
 | 3.2-S47 | Start Inquiry | ⏳ PENDING | |
 | 3.3-S47 | Carrier Response & Select Carrier | ⏳ PENDING | |
 | 3.4-S47 | Create Customer Quote | ⏳ PENDING | |
@@ -42,13 +42,13 @@
 ## Issues Found
 | Step | Issue Description | Severity | Reported | Fix Status |
 |------|------------------|----------|----------|------------|
-| | _(user fills this)_ | blocking / minor | date | pending / fixed / deferred |
+| 3.1 | cargo_type=pallet 时 Cargo Lines 仍匹配集装箱字段（container_no/BL），无托件明细；Inquiry/Quote 无托件行 | blocking | 2026-08-05 | fixed（1.0.105 待 UI 复验） |
 
 
 ## Fix Record
 | Bug ID | Scene | Root Cause | Fix Scope | Commit | Regression Test | Status |
 |--------|-------|-----------|-----------|--------|-----------------|--------|
-| | | | | | | |
+| SD47-S3-001 | S3 | cargo line 视图/Inquiry/Quote 只处理集装箱明细，pallet 无对应行 | Request Cargo Lines 按 cargo_type 显隐列（pallet 显示 commodity/qty/uom/packages）；action_start_inquiry / action_create_quote 无 cargo line 且 cargo_type=pallet 时生成 Pallet x / Package y 行 | 1.0.105 | shell 临时 pallet request→inquiry→quote 验证通过 | fixed |
 
 
 ## Final Result
