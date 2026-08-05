@@ -1564,4 +1564,5 @@ Sprint47 验证文档与 result_summary 同步维护；后续需求以三视图�
 
 **验证**: XML-RPC 升级 1.0.111 通过，日志零 ERROR；临时 Cargo Node 树验证
 （container→2 pallet→piece）通过：pallets=20、packages=500、weight=500、volume=32；
-piece→container 跨级被 ValidationError 拦截；测试数据已清理。
+piece→container 跨级被 ValidationError 拦截；测试数据已清理；
+自动化单元测试 `test_transport_cargo_node` 6 项全部通过（层级树/约束/公式/汇总/source）。

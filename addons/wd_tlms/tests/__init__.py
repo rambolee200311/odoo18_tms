@@ -53,3 +53,4 @@ from . import test_scene_address
 
 from . import test_snapshot_chain
 from . import test_inquiry_projection
+from . import test_transport_cargo_node

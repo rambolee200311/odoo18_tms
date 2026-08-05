@@ -3,9 +3,9 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.50
-update_time: 2026-07-27
-adapt_sprint: Sprint35-Bug-Fix
+context_version: 1.0.60
+update_time: 2026-08-05
+adapt_sprint: Sprint48-A
 update_author: AI-Engineering-Team
 
 version_log:
@@ -398,3 +398,13 @@ bind_asset_folder:
       - 沉淀 6 条教训至 context/history/decision_note.md
     update_type: Bug修复 + 质量硬化
     effect_scope: sprint38_cleanup + xml_validity + js_compatibility + model_field
+  1.0.60:
+    update_content: |
+      Sprint48-A Cargo Node 层级模型升级（wd_tlms 1.0.111）
+      - cargo line 升级为 Cargo Node：node_type / packaging_level / parent_cargo_line_id 树
+      - 层级约束 container → handling_unit → package → piece
+      - 容器设备字段 + pallet_*/piece_* 每托/每件字段 + source 追溯
+      - equivalent_pallets 公式与 request 表头按顶层节点汇总
+      - 单元测试 test_transport_cargo_node 6 项通过
+    update_type: 架构升级 + 模型重构
+    effect_scope: cargo_node_hierarchy + request_rollup
