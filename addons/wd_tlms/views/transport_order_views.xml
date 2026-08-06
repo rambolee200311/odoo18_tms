@@ -30,20 +30,27 @@
              <form string="Transport Order">
                  <header>
                      <field name="source_type" widget="badge" class="mx-2"/>
-                     <button name="action_confirm" type="object" string="Confirm" invisible="state != 'draft'"
+                    <button name="action_confirm" type="object" string="Confirm" invisible="state != 'draft'"
                              class="btn-primary"/>
-                     <button name="action_assign" type="object" string="Assign Carrier" invisible="state != 'confirmed'"/>
-                     <button name="action_start_transit" type="object" string="Start Transit"
+                    <button name="action_assign" type="object" string="Assign Carrier" invisible="state != 'confirmed'"/>
+                    <button name="action_allocate" type="object" string="Allocate" invisible="state != 'confirmed'"/>
+                    <button name="action_raise_exception" type="object" string="Raise Exception"
+                            invisible="state not in ('allocated', 'in_transit')"/>
+                    <button name="action_recover_exception" type="object" string="Recover"
+                            invisible="state != 'exception'"/>
+                    <button name="action_start_transit" type="object" string="Start Transit"
                              invisible="state != 'assigned'"/>
-                     <button name="action_deliver" type="object" string="Mark Delivered" invisible="state != 'in_transit'"/>
-                     <button name="action_confirm_pod" type="object" string="Confirm POD" invisible="state != 'delivered'"/>
-                     <button name="action_bill" type="object" string="Bill" invisible="state != 'signed'"/>
+                    <button name="action_deliver" type="object" string="Mark Delivered" invisible="state != 'in_transit'"/>
+                    <button name="action_confirm_pod" type="object" string="Confirm POD" invisible="state != 'delivered'"/>
+                    <button name="action_enter_settlement" type="object" string="Enter Settlement"
+                            invisible="state not in ('delivered', 'signed')"/>
+                    <button name="action_bill" type="object" string="Bill" invisible="state != 'signed'"/>
                      <button name="action_settle" type="object" string="Settle" invisible="state != 'billed'"/>
                      <button name="action_close" type="object" string="Close" invisible="state != 'settled'"/>
                      <button name="action_cancel" type="object" string="Cancel"
                              invisible="state not in ('draft', 'confirmed', 'assigned')"/>
-                     <field name="state" widget="statusbar"
-                            statusbar_visible="draft,confirmed,assigned,in_transit,delivered,signed,billed,settled,closed"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,allocated,assigned,in_transit,exception,delivered,signed,settlement_pending,billed,settled,closed"/>
                  </header>
                  <sheet>
                      <group>
@@ -125,6 +132,12 @@
                                  </group>
                                  <group string="Vehicle Requirement Snapshot">
                                      <field name="vehicle_requirement_snapshot" readonly="1"/>
+                                 </group>
+                                 <group string="Workflow">
+                                     <field name="exception_type"/>
+                                     <field name="exception_recovery"/>
+                                     <field name="delivered_qty"/>
+                                     <field name="vehicle_allocation_snapshot" readonly="1"/>
                                  </group>
                              </group>
                              <group string="Cargo Lines Snapshot">

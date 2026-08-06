@@ -25,6 +25,12 @@
                 <header>
                     <button name="action_send" type="object" string="Send to Customer"
                             invisible="state != 'draft'" class="btn-primary"/>
+                    <button name="action_issue" type="object" string="Issue"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Approve"
+                            invisible="state != 'issued'"/>
+                    <button name="action_confirm_customer" type="object" string="Confirm Customer"
+                            invisible="state != 'approved'" class="btn-success"/>
                     <button name="action_accept" type="object" string="Accept Quote"
                             invisible="state != 'sent'" class="btn-success"/>
                     <button name="action_reject" type="object" string="Reject"
@@ -43,6 +49,8 @@
                             <field name="partner_id" options="{'no_create': True}"/>
                             <field name="transport_mode"/>
                             <field name="validity_date"/>
+                            <field name="confirmation_source"/>
+                            <field name="customer_accept"/>
                         </group>
                         <group string="Pricing">
                             <field name="carrier_cost" widget="monetary"/>

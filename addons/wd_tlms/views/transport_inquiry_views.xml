@@ -30,6 +30,8 @@
                             invisible="state != 'responded'" class="btn-primary"/>
                     <button name="action_create_quote" type="object" string="Create Customer Quote"
                             invisible="state != 'accepted'" class="btn-primary"/>
+                    <button name="action_close" type="object" string="Close Inquiry"
+                            invisible="state not in ('sent', 'responded', 'accepted')"/>
                     <button name="action_reject" type="object" string="Reject Quote"
                             invisible="state != 'responded'"/>
                     <field name="state" widget="statusbar"/>
@@ -41,6 +43,9 @@
                             <field name="request_id" options="{'no_open': True, 'no_create': True}"/>
                             <field name="cargo_source_reference" readonly="1"/>
                             <field name="partner_id" options="{'no_create': True}"/>
+                            <field name="close_reason"/>
+                            <field name="selected_carrier_id" options="{'no_create': True}"/>
+                            <field name="selected_quote_id" options="{'no_create': True, 'no_open': True}"/>
                         </group>
                         <group string="Schedule">
                             <field name="pickup_date"/>

@@ -1845,3 +1845,48 @@ destination_type 标记 deprecated/readonly 保留一个版本周期。
 - Odoo shell 复核：active business rule 11 条，RULE-VEHICLE 配置行 0，
   policy 行 3；普通 truck request matrix=PASS；存量 confirmed request
   snapshot 全部回填。
+
+---
+
+## Sprint50 基础件启动（2026-08-06）
+
+启动 Sprint50 Workflow Engine 实施，模块版本 `1.0.120`：
+
+### 契约修订
+- `INT-TMS-SPRINT50-001` 升级为 v3，`depends_on` 纳入
+  `INT-TMS-SPRINT49A-001 / INT-TMS-SPRINT49B-001`；
+  target_scope / accept_criteria / deliverables 补充
+  双快照校验、vehicle_allocation_snapshot、RULE-VEHICLE-003/004/005
+  分配校验、plan 模型统一边界与 inquiry/quote 车辆投影回归。
+
+### 已落地基础件
+- 新增 `tlmp.transport.event.ledger` 五模型通用事件账本
+  （event_category + from/to state + payload）；
+- 新增 `tlmp.workflow.engine` 服务：guard → ledger → state 统一过渡；
+- request 新增 validation_state / fulfillment_status / 履约聚合字段
+  与 submit / process / complete 动作（confirmed 保留为存量兼容）；
+- order 新增 allocated / exception / settlement_pending 状态值、
+  exception_type / exception_recovery / delivered_qty /
+  vehicle_allocation_snapshot，以及 allocate / exception / recovery /
+  enter_settlement 动作；
+- quote 新增 issued / approved / confirmed 与 confirmation_source /
+  customer_accept；inquiry 新增 closed / close_reason / selected 字段；
+- pickup.plan 新增显式 state 状态机与 reservation_type /
+  vehicle_allocation_snapshot；
+- 交付 `state_migration_plan.md` 与 `transport_event_dictionary.md`。
+
+### 验证
+- 新增 `TestWorkflowEngine` 11 项全部通过；
+  `TestVehicleRequirement` 23 项回归通过；
+  `TestPickupPlan.test_07` 已按 Sprint50 状态机更新并通过；
+  全量 383 项中剩余 148 errors / 8 failures 为历史脏数据问题。
+- XML-RPC `button_immediate_upgrade` 18.0.1.0.119 → 18.0.1.0.120 成功，
+  升级日志零 ERROR / CRITICAL / TRACEBACK。
+- Odoo shell 复核：两个新模型、request/order/plan/quote/inquiry 新字段
+  均已建表落地。
+
+### 后续 Sprint50 里程碑（未完成）
+- inquiry/quote/plan/order 完整状态值收敛与存量迁移脚本；
+- pickup.plan 与 container.transport.plan 统一 transport.plan 模型；
+- 五模型全部状态入口接入 Event Ledger 与守卫配置化；
+- RULE-VEHICLE-004 ADR 司机校验与 plan/order 分配上下文全链路。

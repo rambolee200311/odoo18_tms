@@ -219,6 +219,10 @@ access_scene_event_manager,tlmp.scene.event.manager,model_tlmp_transport_scene_e
 access_scene_event_operator,tlmp.scene.event.operator,model_tlmp_transport_scene_event,wd_tlms.group_tlm_operator,1,0,0,0
 access_scene_event_all,tlmp.scene.event.all,model_tlmp_transport_scene_event,base.group_user,1,0,0,0
 
+access_workflow_ledger_manager,tlmp.workflow.ledger.manager,model_tlmp_transport_event_ledger,wd_tlms.group_tlm_manager,1,1,1,1
+access_workflow_ledger_operator,tlmp.workflow.ledger.operator,model_tlmp_transport_event_ledger,wd_tlms.group_tlm_operator,1,1,1,0
+access_workflow_ledger_all,tlmp.workflow.ledger.all,model_tlmp_transport_event_ledger,base.group_user,1,0,0,0
+
 access_flow_type_manager,tlmp.flow.type.manager,model_tlmp_transport_flow_type,wd_tlms.group_tlm_manager,1,1,1,1
 access_flow_type_operator,tlmp.flow.type.operator,model_tlmp_transport_flow_type,wd_tlms.group_tlm_operator,1,0,0,0
 access_flow_type_all,tlmp.flow.type.all,model_tlmp_transport_flow_type,base.group_user,1,0,0,0

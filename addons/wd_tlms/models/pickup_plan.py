@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -150,6 +152,24 @@ class PickupPlan(models.Model):
         'res.company', string='Company',
         default=lambda self: self.env.company)
 
+    # ---- Sprint50: plan workflow state + vehicle reservation ----
+    state = fields.Selection([
+        ('draft', 'Draft'),
+        ('scheduled', 'Scheduled'),
+        ('reserved', 'Reserved'),
+        ('executing', 'Executing'),
+        ('finished', 'Finished'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ], string='Status', default='draft', tracking=True)
+    reservation_type = fields.Selection([
+        ('vehicle', 'Vehicle'),
+        ('driver', 'Driver'),
+        ('carrier_capacity', 'Carrier Capacity'),
+    ], string='Reservation Type', default='vehicle')
+    vehicle_allocation_snapshot = fields.Text(
+        string='Vehicle Allocation Snapshot', copy=False)
+
     @api.depends('transport_request_id.state',
                  'transport_request_id.vehicle_requirement_mode',
                  'transport_request_id.vehicle_requirement_mode_snapshot',
@@ -185,6 +205,79 @@ class PickupPlan(models.Model):
                         req.vehicle_capacity_requirement,
                         req.vehicle_capacity_requirement),
                     dg_labels.get(req.is_dangerous_goods, req.is_dangerous_goods))
+
+    # -----------------------------------------------------------
+    # Sprint50 plan state transitions
+    # -----------------------------------------------------------
+    def action_schedule(self):
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft plans can be scheduled.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'scheduled', 'PLAN_SCHEDULED')
+        return True
+
+    def action_reserve(self, reservation_type='vehicle'):
+        self.ensure_one()
+        if self.state != 'scheduled':
+            raise UserError(_('Only scheduled plans can reserve resources.'))
+        snapshot = {}
+        req = self.transport_request_id
+        if req:
+            snapshot = {
+                'vehicle_requirement_mode': (
+                    req.vehicle_requirement_mode_snapshot
+                    or req.vehicle_requirement_mode),
+                'vehicle_body_type': req.vehicle_body_type,
+                'vehicle_capacity_requirement': req.vehicle_capacity_requirement,
+                'is_dangerous_goods': req.is_dangerous_goods,
+                'reserved_carrier_id': (
+                    self.carrier_id.id if self.carrier_id else False),
+                'reserved_vehicle_plate': self.vehicle_plate or False,
+                'reserved_driver': self.driver_name or False,
+            }
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'reserved', 'PLAN_RESERVED',
+            event_category='business',
+            extra_vals={
+                'reservation_type': reservation_type,
+                'vehicle_allocation_snapshot': json.dumps(
+                    snapshot, ensure_ascii=False),
+            },
+            payload=json.dumps(snapshot, ensure_ascii=False))
+        return True
+
+    def action_execute(self):
+        self.ensure_one()
+        if self.state != 'reserved':
+            raise UserError(_('Only reserved plans can start execution.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'executing', 'PLAN_EXECUTING')
+        return True
+
+    def action_finish(self):
+        self.ensure_one()
+        if self.state != 'executing':
+            raise UserError(_('Only executing plans can be finished.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'finished', 'PLAN_FINISHED')
+        return True
+
+    def action_fail(self):
+        self.ensure_one()
+        if self.state not in ('scheduled', 'reserved', 'executing'):
+            raise UserError(_('Plan cannot fail in current state.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'failed', 'PLAN_FAILED')
+        return True
+
+    def action_cancel_plan(self):
+        self.ensure_one()
+        if self.state in ('finished', 'failed', 'cancelled'):
+            raise UserError(_('Plan is already in a final state.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'cancelled', 'PLAN_CANCELLED')
+        return True
 
     # -----------------------------------------------------------
     # Helpers

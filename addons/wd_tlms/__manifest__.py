@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.119',
+    'version': '1.0.120',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -33,6 +33,7 @@
         'views/transport_container_views.xml',
         'views/surcharge_views.xml',
         'views/transport_tracking_views.xml',
+        'views/transport_workflow_views.xml',
         'views/transport_dashboard_views.xml',
         'views/transport_report_views.xml',
         'views/pod_views.xml',

@@ -75,6 +75,21 @@
 | 存量 request 回填 | confirmed snapshot 100% 回填 |
 | 8089 端口 | 已释放 |
 
+## Sprint50 Workflow Engine 基础件（2026-08-06）
+
+### 验证
+
+| Check | Result |
+|-------|--------|
+| TestWorkflowEngine（11 项） | PASS |
+| TestVehicleRequirement（23 项）回归 | PASS |
+| TestPickupPlan.test_07 状态机更新 | PASS |
+| 全量 383 项测试中历史脏数据错误 | 148 errors / 8 failures（与本改动无关） |
+| XML-RPC button_immediate_upgrade | 18.0.1.0.119 → 18.0.1.0.120 PASS |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| 新模型 tlmp.transport.event.ledger / tlmp.workflow.engine | 已建表 |
+| 8089 端口 | 已释放 |
+
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*

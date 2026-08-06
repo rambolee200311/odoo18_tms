@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
@@ -126,6 +128,9 @@ class TransportOrder(models.Model):
     vehicle_requirement_snapshot = fields.Text(
         string='Vehicle Requirement Snapshot', readonly=True, copy=False,
         help='JSON snapshot of vehicle requirement at order creation. Frozen after confirm.')
+    vehicle_allocation_snapshot = fields.Text(
+        string='Vehicle Allocation Snapshot', copy=False,
+        help='Sprint50: actual vehicle/driver allocation frozen at ORDER_ALLOCATED.')
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
     container_no_set = fields.Char(string='Container No. Set')
     swap_container = fields.Boolean(string='Swap Container')
@@ -225,14 +230,31 @@ class TransportOrder(models.Model):
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed'),
         ('assigned', 'Assigned'),
+        ('allocated', 'Allocated'),
         ('in_transit', 'In Transit'),
+        ('exception', 'Exception'),
         ('delivered', 'Delivered'),
         ('signed', 'Signed'),
         ('billed', 'Billed'),
+        ('settlement_pending', 'Settlement Pending'),
         ('settled', 'Settled'),
         ('closed', 'Closed'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', tracking=True)
+    exception_type = fields.Selection([
+        ('delay', 'Delay'),
+        ('damage', 'Damage'),
+        ('customer_refuse', 'Customer Refuse'),
+        ('document_issue', 'Document Issue'),
+        ('customs_hold', 'Customs Hold'),
+        ('vehicle_failure', 'Vehicle Failure'),
+    ], string='Exception Type')
+    exception_recovery = fields.Selection([
+        ('in_transit', 'In Transit'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    ], string='Recovery Target')
+    delivered_qty = fields.Float(string='Delivered Qty')
     has_dangerous_goods = fields.Boolean(string='DG', default=False)
     adr_un_number = fields.Char(string='UN No.')
     adr_class = fields.Char(string='ADR Class')
@@ -359,7 +381,13 @@ class TransportOrder(models.Model):
 
     # ---- State Transitions ----
     def action_confirm(self):
-        self.write({'state': 'confirmed', 'snapshot_status': 'confirmed'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError(_('Only draft orders can be confirmed.'))
+            engine.transition(
+                rec, 'confirmed', 'ORDER_CONFIRMED',
+                extra_vals={'snapshot_status': 'confirmed'})
         self._sync_upstream_status()
         return True
 
@@ -367,12 +395,73 @@ class TransportOrder(models.Model):
         self.write({'state': 'assigned'})
         return True
 
+    def action_allocate(self):
+        self.ensure_one()
+        if self.state != 'confirmed':
+            raise UserError(_('Only confirmed orders can be allocated.'))
+        snapshot = {}
+        req = self.request_id
+        if req:
+            snapshot = {
+                'vehicle_requirement_mode': (
+                    req.vehicle_requirement_mode_snapshot
+                    or req.vehicle_requirement_mode),
+                'vehicle_body_type': req.vehicle_body_type,
+                'vehicle_capacity_requirement': req.vehicle_capacity_requirement,
+                'is_dangerous_goods': req.is_dangerous_goods,
+                'assigned_carrier_id': (
+                    self.carrier_id.id if self.carrier_id else False),
+                'assigned_vehicle_plate': self.vehicle_plate or False,
+                'assigned_driver': self.driver_name or False,
+            }
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'allocated', 'ORDER_ALLOCATED',
+            extra_vals={'vehicle_allocation_snapshot': json.dumps(
+                snapshot, ensure_ascii=False)},
+            payload=json.dumps(snapshot, ensure_ascii=False))
+        return True
+
+    def action_raise_exception(self, exception_type='delay',
+                               recovery='in_transit'):
+        self.ensure_one()
+        if self.state not in ('allocated', 'in_transit'):
+            raise UserError(
+                _('Only allocated/in_transit orders can enter exception.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'exception', 'ORDER_EXCEPTION',
+            extra_vals={
+                'exception_type': exception_type,
+                'exception_recovery': recovery,
+            })
+        return True
+
+    def action_recover_exception(self):
+        self.ensure_one()
+        if self.state != 'exception' or not self.exception_recovery:
+            raise UserError(
+                _('Recovery target is required to leave exception state.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, self.exception_recovery, 'ORDER_EXCEPTION_RECOVERED')
+        return True
+
+    def action_enter_settlement(self):
+        self.ensure_one()
+        if self.state not in ('delivered', 'signed'):
+            raise UserError(_('Only delivered orders can enter settlement.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'settlement_pending', 'ORDER_SETTLEMENT_PENDING')
+        return True
+
     def action_start_transit(self):
-        self.write({'state': 'in_transit', 'actual_pickup_date': fields.Datetime.now()})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'in_transit', 'ORDER_IN_TRANSIT',
+            extra_vals={'actual_pickup_date': fields.Datetime.now()})
         return True
 
     def action_deliver(self):
-        self.write({'state': 'delivered', 'actual_delivery_date': fields.Datetime.now()})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'delivered', 'ORDER_DELIVERED',
+            extra_vals={'actual_delivery_date': fields.Datetime.now()})
         return True
 
     def action_confirm_pod(self):
@@ -423,7 +512,11 @@ class TransportOrder(models.Model):
         return True
 
     def action_cancel(self, reason=None):
-        self.write({'state': 'cancelled'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(
+                rec, 'cancelled', 'ORDER_CANCELLED',
+                payload=reason or False)
         return True
 
     def action_reject(self, reason=None):

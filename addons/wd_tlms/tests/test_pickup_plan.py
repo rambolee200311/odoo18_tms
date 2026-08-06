@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """pickup.plan — 计划链路子单据 单元测试
-核心规则: 无 state 字段, 生命周期由下游单据派生
+核心规则: Sprint50 起显式 state 状态机（draft→scheduled→reserved→executing→finished）
 """
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
@@ -95,22 +95,22 @@ class TestPickupPlan(TransactionCase):
         with self.assertRaises(UserError):
             self._mk_plan(destination_type='self_pickup', partner_id=False)
 
-    # ---- test_07: 无 state 字段, 生命周期由下游单据标识 ----
+    # ---- test_07: Sprint50 state 状态机 + 下游订单派生 ----
     def test_07_lifecycle_by_downstream(self):
         plan = self._mk_plan()
-        # 验证无独立 state 字段
-        self.assertFalse(hasattr(plan, 'state'), 'pickup.plan has no state field')
-        # scheduled_date 有值 = 已排期
+        self.assertTrue(hasattr(plan, 'state'))
+        self.assertEqual(plan.state, 'draft')
+        plan.action_schedule()
+        self.assertEqual(plan.state, 'scheduled')
         plan.scheduled_date = '2026-08-01 08:00:00'
         self.assertTrue(plan.scheduled_date)
-        # transport_order_id 有值 = 已生成运输订单
-        # (通过 action_create_transport_order 模拟)
+        transport_type = self.env['tlmp.transport.type'].search([], limit=1)
         order = self.env['tlmp.transport.order'].create({
             'carrier_id': self.carrier.id,
             'partner_id': self.carrier.id,
-            'transport_type': 'port_to_warehouse',
+            'transport_type_id': transport_type.id,
             'fleet_operation_mode': 'subcontracted',
-            'plan_id': plan.id,
+            'pickup_plan_id': plan.id,
         })
         plan.transport_order_id = order.id
         self.assertTrue(plan.transport_order_id)

@@ -98,6 +98,21 @@
                              <field name="vehicle_requirement_snapshot_status" readonly="1"/>
                          </group>
                      </group>
+                     <group string="Workflow">
+                         <group>
+                             <field name="validation_state" widget="badge" readonly="1"/>
+                             <field name="fulfillment_status" widget="badge" readonly="1"/>
+                             <field name="requested_qty"/>
+                             <field name="planned_qty"/>
+                         </group>
+                         <group>
+                             <field name="ordered_qty" readonly="1"/>
+                             <field name="delivered_qty" readonly="1"/>
+                             <field name="total_order_count" readonly="1"/>
+                             <field name="settled_order_count" readonly="1"/>
+                             <field name="closed_order_count" readonly="1"/>
+                         </group>
+                     </group>
                      <group string="Scene Details">
                          <group>
                              <field name="terminal_id"

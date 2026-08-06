@@ -31,6 +31,16 @@
                     <button name="action_open_schedule" type="object" string="Go to Schedule"
                             class="btn-primary"
                             invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
+                    <button name="action_schedule" type="object" string="Schedule"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reserve" type="object" string="Reserve"
+                            invisible="state != 'scheduled'"/>
+                    <button name="action_execute" type="object" string="Execute"
+                            invisible="state != 'reserved'"/>
+                    <button name="action_finish" type="object" string="Finish"
+                            invisible="state != 'executing'"/>
+                    <button name="action_cancel_plan" type="object" string="Cancel Plan"
+                            invisible="state in ('finished', 'failed', 'cancelled')"/>
                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
                             class="btn-primary"
                             invisible="destination_type not in ('warehouse', 'warehouse_transfer')"/>
@@ -121,6 +131,11 @@
                             </group>
                         </page>
                         <page string="Scheduling" name="scheduling_tab">
+                            <group>
+                                <field name="state" widget="badge" readonly="1"/>
+                                <field name="reservation_type"/>
+                                <field name="vehicle_allocation_snapshot" readonly="1"/>
+                            </group>
                             <group string="Vehicle Requirement"
                                    invisible="not vehicle_requirement_mode">
                                 <group>

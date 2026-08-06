@@ -29,11 +29,20 @@ class TransportQuote(models.Model):
     state = fields.Selection([
         ('draft', 'Draft'),
         ('sent', 'Sent'),
+        ('issued', 'Issued'),
+        ('approved', 'Approved'),
+        ('confirmed', 'Confirmed'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled'),
         ('expired', 'Expired'),
     ], string='Status', default='draft', tracking=True)
+    confirmation_source = fields.Selection([
+        ('customer', 'Customer'),
+        ('internal', 'Internal'),
+        ('system', 'System'),
+    ], string='Confirmation Source')
+    customer_accept = fields.Boolean(string='Customer Accepted')
     notes = fields.Text(string='Notes')
 
     carrier_cost = fields.Monetary(string='Carrier Cost',
@@ -162,6 +171,35 @@ class TransportQuote(models.Model):
         self.write({'state': 'sent'})
         return True
 
+    def action_issue(self):
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft quotes can be issued.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'issued', 'QUOTE_ISSUED')
+        return True
+
+    def action_approve(self):
+        self.ensure_one()
+        if self.state != 'issued':
+            raise UserError(_('Only issued quotes can be approved.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'approved', 'QUOTE_APPROVED')
+        return True
+
+    def action_confirm_customer(self, source='customer'):
+        self.ensure_one()
+        if self.state != 'approved':
+            raise UserError(_('Only approved quotes can be confirmed.'))
+        if not self.customer_accept:
+            raise UserError(
+                _('Customer acceptance is required before confirmation.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'confirmed', 'QUOTE_CONFIRMED',
+            extra_vals={'confirmation_source': source})
+        self._auto_create_order()
+        return True
+
     def action_accept_from_portal(self):
         self.ensure_one()
         if self.state != 'sent':
@@ -202,6 +240,11 @@ class TransportQuote(models.Model):
             raise UserError(
                 _('Business Matrix snapshot is missing or invalid. '
                   'Complete request matrix validation before creating the order.'))
+        if (request and request.vehicle_requirement_mode_snapshot == 'required'
+                and not request.vehicle_requirement_snapshot):
+            raise UserError(
+                _('Vehicle requirement snapshot is missing. '
+                  'Submit/confirm the request before creating the order.'))
         order = self.env['tlmp.transport.order'].create({
             'scene_id': self.request_id.scene_id.id if self.request_id and self.request_id.scene_id else False,
             # Sprint44: copy address from request

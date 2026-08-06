@@ -51,9 +51,19 @@ class TransportInquiry(models.Model):
         ('sent', 'Sent'),
         ('responded', 'Responded'),
         ('accepted', 'Accepted'),
+        ('closed', 'Closed'),
         ('rejected', 'Rejected'),
         ('expired', 'Expired'),
     ], string='Status', default='draft', tracking=True)
+    close_reason = fields.Selection([
+        ('carrier_selected', 'Carrier Selected'),
+        ('customer_cancelled', 'Customer Cancelled'),
+        ('expired', 'Expired'),
+    ], string='Close Reason')
+    selected_carrier_id = fields.Many2one(
+        'res.partner', string='Selected Carrier')
+    selected_quote_id = fields.Many2one(
+        'tlmp.transport.quote', string='Selected Quote')
     sent_date = fields.Datetime(string='Sent Date')
 
     # Sprint49-B: vehicle requirement display (read-only projection from request)
@@ -136,6 +146,17 @@ class TransportInquiry(models.Model):
         if self.state != 'responded':
             raise UserError(_('Only responded carrier inquiries can be selected.'))
         self.write({'state': 'accepted'})
+        return True
+
+    def action_close(self, reason='carrier_selected', carrier_id=False):
+        self.ensure_one()
+        if self.state not in ('sent', 'responded', 'accepted'):
+            raise UserError(_('Only open inquiries can be closed.'))
+        vals = {'close_reason': reason}
+        if carrier_id:
+            vals['selected_carrier_id'] = carrier_id
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'closed', 'INQUIRY_CLOSED', extra_vals=vals)
         return True
 
     def action_create_quote(self):

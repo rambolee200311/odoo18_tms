@@ -227,6 +227,8 @@ class TransportRequest(models.Model):
                                   string='Inquiries', copy=False)
     quote_ids = fields.One2many('tlmp.transport.quote', 'request_id',
                                 string='Quotes', copy=False)
+    order_ids = fields.One2many('tlmp.transport.order', 'request_id',
+                                string='Orders', copy=False)
     has_accepted_quote = fields.Boolean(
         string='Has Accepted Quote', compute='_compute_has_accepted_quote', store=True,
         help='Whether the commercial flow already has an accepted quote.')
@@ -235,6 +237,46 @@ class TransportRequest(models.Model):
     def _compute_has_accepted_quote(self):
         for r in self:
             r.has_accepted_quote = any(q.state == 'accepted' for q in r.quote_ids)
+
+    # ---- Sprint50: validation state + partial fulfillment ----
+    validation_state = fields.Selection([
+        ('pending', 'Pending'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    ], string='Validation State', default='pending', tracking=True)
+    fulfillment_status = fields.Selection([
+        ('pending', 'Pending'),
+        ('partial', 'Partial'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ], string='Fulfillment Status', default='pending')
+    requested_qty = fields.Float(string='Requested Qty')
+    planned_qty = fields.Float(string='Planned Qty')
+    ordered_qty = fields.Float(
+        string='Ordered Qty', compute='_compute_fulfillment_counts', store=True)
+    delivered_qty = fields.Float(
+        string='Delivered Qty', compute='_compute_fulfillment_counts', store=True)
+    total_order_count = fields.Integer(
+        string='Total Orders', compute='_compute_fulfillment_counts', store=True)
+    settled_order_count = fields.Integer(
+        string='Settled Orders', compute='_compute_fulfillment_counts', store=True)
+    closed_order_count = fields.Integer(
+        string='Closed Orders', compute='_compute_fulfillment_counts', store=True)
+
+    @api.depends('order_ids.state', 'order_ids.delivered_qty',
+                 'order_ids.cargo_weight')
+    def _compute_fulfillment_counts(self):
+        for r in self:
+            orders = r.order_ids
+            r.total_order_count = len(orders)
+            r.settled_order_count = len(orders.filtered(
+                lambda o: o.state in ('settled', 'closed')))
+            r.closed_order_count = len(orders.filtered(
+                lambda o: o.state in ('settled', 'closed', 'cancelled')))
+            r.ordered_qty = sum(orders.mapped('cargo_weight')) if orders \
+                else (r.requested_qty or 0.0)
+            r.delivered_qty = sum(orders.mapped('delivered_qty')) if orders \
+                else 0.0
 
     # ---- Misc ----
     special_requirements = fields.Text(string='Special Requirements')
@@ -245,7 +287,10 @@ class TransportRequest(models.Model):
     # ---- Status ----
     state = fields.Selection([
        ('draft', 'Draft'),
+       ('submitted', 'Submitted'),
        ('confirmed', 'Confirmed'),
+       ('processing', 'Processing'),
+       ('completed', 'Completed'),
        ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', tracking=True)
 
@@ -528,15 +573,67 @@ class TransportRequest(models.Model):
             raise UserError(_('Only draft requests can be confirmed.'))
         self.write({'vehicle_requirement_mode_snapshot': self.vehicle_requirement_mode})
         self._freeze_vehicle_requirement_snapshot()
-        self.write({
-            'state': 'confirmed',
-            'matrix_snapshot_status': 'frozen',
-        })
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'confirmed', 'REQUEST_CONFIRMED',
+            extra_vals={
+                'matrix_snapshot_status': 'frozen',
+                'validation_state': 'passed',
+            })
+        return True
+
+    def action_submit(self):
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft requests can be submitted.'))
+        if self.matrix_validation_result == 'block':
+            raise UserError(_('Cannot submit: Business Matrix BLOCK.'))
+        if self.vehicle_requirement_validation_result == 'block':
+            raise UserError(_('Cannot submit: Vehicle Requirement BLOCK.'))
+        self.write({'vehicle_requirement_mode_snapshot': self.vehicle_requirement_mode})
+        self._freeze_vehicle_requirement_snapshot()
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'submitted', 'REQUEST_SUBMITTED',
+            extra_vals={
+                'matrix_snapshot_status': 'frozen',
+                'validation_state': 'passed',
+            })
+        return True
+
+    def action_process(self):
+        self.ensure_one()
+        if self.state != 'submitted':
+            raise UserError(_('Only submitted requests can be processed.'))
+        if self.validation_state != 'passed':
+            raise UserError(
+                _('Request validation_state must be passed before processing.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'processing', 'REQUEST_PROCESSING')
+        return True
+
+    def action_complete(self):
+        self.ensure_one()
+        if self.state != 'processing':
+            raise UserError(_('Only processing requests can be completed.'))
+        if self.total_order_count and self.closed_order_count < self.total_order_count:
+            raise UserError(
+                _('All orders must be closed before request completion.'))
+        fulfillment = ('partial'
+                       if self.ordered_qty and self.delivered_qty < self.ordered_qty
+                       else 'completed')
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'completed', 'REQUEST_COMPLETED',
+            extra_vals={'fulfillment_status': fulfillment})
         return True
 
     def action_cancel(self):
-       self.write({'state': 'cancelled'})
-       return True
+        engine = self.env['tlmp.workflow.engine']
+        for r in self:
+            if r.state in ('completed', 'cancelled'):
+                raise UserError(_('Request is already in a final state.'))
+            engine.transition(
+                r, 'cancelled', 'REQUEST_CANCELLED',
+                extra_vals={'fulfillment_status': 'cancelled'})
+        return True
 
     # -----------------------------------------------------------
     # Plan-Driven flow: Schedule

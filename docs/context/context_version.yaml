@@ -3,12 +3,23 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.66
+context_version: 1.0.67
 update_time: 2026-08-06
-adapt_sprint: Sprint49-B
+adapt_sprint: Sprint50
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.67:
+    update_content: |
+      Sprint50 Workflow Engine 基础件启动（wd_tlms 1.0.120）：
+      - 契约升级 v3，纳入 Sprint49-A/49-B 依赖与双快照/车辆分配范围
+      - 新增 Transport Event Ledger + Workflow Engine 服务
+      - request validation_state/fulfillment_status；order allocated/
+        exception/settlement_pending；quote/inquiry/plan 状态扩展
+      - 新增 state_migration_plan.md + transport_event_dictionary.md
+      - TestWorkflowEngine 11 项通过，XML-RPC 升级 1.0.120 成功
+    update_type: 架构升级启动（Milestone 1）
+    effect_scope: 五模型状态机基础件 + 事件账本
   1.0.66:
     update_content: |
       Sprint49-B 评审修复完成（wd_tlms 1.0.119）：

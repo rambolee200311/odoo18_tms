@@ -3,11 +3,14 @@
 # 基线：docs/context/business/workflow_engine.md V1.0
 # 前置依赖：INT-TMS-SPRINT49-001（Business Rule Engine Foundation）
 # 修订：2026-08-05 Sprint50 评审（8 项必改全部纳入）
+# 修订：2026-08-06 v3 — 纳入 Sprint49-A / Sprint49-B 交付物
 # ==============================================================
 intent_id: INT-TMS-SPRINT50-001
 status: CREATED
 depends_on:
 - INT-TMS-SPRINT49-001
+- INT-TMS-SPRINT49A-001
+- INT-TMS-SPRINT49B-001
 intent_work_type: Development
 intent_change_type: Architecture Upgrade
 title: Sprint50 — TLMS Workflow Engine（五模型状态机收敛 + Transport Event Ledger）
@@ -44,6 +47,20 @@ target_scope: >
   10. 命名统一：pickup_plan.py → transport_plan.py，避免模型名称漂移
   11. 新增交付物：state_migration_plan.md（old→new 映射）、
       transport_event_dictionary.md（事件编码字典）
+  12. 49-B 快照层接入：request submitted 时同时冻结
+      Business Matrix Snapshot 与 vehicle_requirement_snapshot；
+      确认后一律读取 snapshot，不受 policy 变更影响
+  13. Order 快照有效性从 matrix 单快照扩展为
+      matrix_snapshot + vehicle_requirement_snapshot 双快照 exists+valid
+  14. 车辆分配落地：plan reserved / order allocated 阶段执行
+      RULE-VEHICLE-003/005（assigned_vehicle 上下文）与
+      RULE-VEHICLE-004（ADR 司机资质），order 固化
+      vehicle_allocation_snapshot（49-B 推迟项）
+  15. inquiry/quote 状态机改造必须保留 49-B 车辆约束投影与豁免标记，
+      投影在 request 确认后读取 snapshot
+  16. plan 模型统一需同时迁移 pickup.plan（request 链路计划）与
+      container.transport.plan（集装箱排期），并保留 49-B
+      车辆需求投影字段
 
 accept_criteria:
 - "五模型状态机按 workflow_engine.md 收敛，旧状态值迁移兼容"
@@ -61,6 +78,10 @@ accept_criteria:
 - "前端/API/Excel/自动建单共用同一套状态守卫与矩阵校验"
 - "自动化测试覆盖状态机、守卫、事件账本、迁移、部分履约与快照有效性"
 - "XML-RPC 常驻升级通过，日志零 ERROR；决策/版本/验证文档同步更新"
+- "request submitted 冻结 matrix + vehicle 双快照，policy 变更不影响已提交快照"
+- "Order 双快照（matrix + vehicle requirement）exists/valid 校验拦截"
+- "plan reserved / order allocated 执行 RULE-VEHICLE-003/004/005 并固化 vehicle_allocation_snapshot"
+- "inquiry/quote 车辆约束投影在确认后读取 snapshot，豁免标记展示不回归"
 
 source:
   type: regular_audit
@@ -101,9 +122,12 @@ affected_assets:
   - addons/wd_tlms/models/transport_inquiry.py
   - addons/wd_tlms/models/transport_quote.py
   - addons/wd_tlms/models/transport_plan.py
+  - addons/wd_tlms/models/pickup_plan.py
   - addons/wd_tlms/models/transport_order.py
   - addons/wd_tlms/models/transport_event_ledger.py
   - addons/wd_tlms/services/workflow_engine.py
+  - addons/wd_tlms/services/business_matrix_service.py
+  - addons/wd_tlms/business_matrix/rules/vehicle_rules.py
   - addons/wd_tlms/views/transport_request_views.xml
   - addons/wd_tlms/views/transport_inquiry_views.xml
   - addons/wd_tlms/views/transport_quote_views.xml
@@ -137,6 +161,8 @@ deliverables:
 - "plan reserved + reservation_type"
 - "order exception_type + exception_recovery"
 - "Business Matrix Snapshot 有效性验证（不重算全量规则）"
+- "matrix + vehicle requirement 双快照有效性验证"
+- "vehicle_allocation_snapshot 固化 + RULE-VEHICLE-003/004/005 分配校验"
 - "destination_type deprecated/readonly 保留"
 - "pickup_plan.py → transport_plan.py 重命名"
 - "state_migration_plan.md + transport_event_dictionary.md"
@@ -159,3 +185,7 @@ risk_precheck: |
   - destination_type 下线前兼容期验证
   - Transport Event Ledger 写入顺序与事务一致性
   - Sprint49 未完成前，Business Matrix Snapshot 字段依赖其交付
+  - 49-B 已交付 vehicle_requirement_snapshot 冻结；request 状态迁移
+    （confirmed→submitted）不得破坏既有冻结快照
+  - plan 统一命名需同时覆盖 pickup.plan 与 container.transport.plan，
+    避免 49-B 车辆投影字段在重命名中丢失
