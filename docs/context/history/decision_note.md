@@ -1741,6 +1741,25 @@ INT-TMS-SPRINT49B-001（CREATED）：
 - RULE-VEHICLE-000~005 规则与优先级（分流 > ADR > 载重 > 车型）；
 - 快递完全豁免、陆运全量校验，链路 request→inquiry→quote→plan→order 透传。
 
+### Sprint49-B 执行结论（2026-08-06）
+
+已按当前仓库实际状态实现并完成验证：
+- request 侧新增 vehicle requirement 模式、字段、验证结果和冻结快照；
+- confirm 后将 vehicle_requirement_mode 写入 snapshot，并在 order 侧保留快照；
+- 规则评估逻辑由 `addons/wd_tlms/business_matrix/rules/vehicle_rules.py` 提供；
+- 视图层已暴露 request/order 的 vehicle requirement 字段与快照；
+- 自动化测试 `TestVehicleRequirement` 已通过；
+- 采用运行中的 Odoo 服务 + XML-RPC `button_immediate_upgrade` 的升级路径完成模块验证，
+  该路径比 `-u ... --stop-after-init` 更贴近用户实际操作。
+
+### 验证约束更新
+
+后续任何 Odoo 自定义模块升级验证，必须优先使用以下流程：
+1. 启动常驻 Odoo 服务；
+2. 用 XML-RPC 登录并调用 `button_immediate_upgrade`；
+3. 读取日志与数据库状态，确认无关键错误；
+4. 用 Odoo shell 进行字段/数据回查。
+
 ---
 
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）

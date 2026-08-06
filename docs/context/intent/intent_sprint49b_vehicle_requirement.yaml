@@ -4,7 +4,7 @@
 # 前置依赖：INT-TMS-SPRINT49-001 / INT-TMS-SPRINT49A-001
 # ==============================================================
 intent_id: INT-TMS-SPRINT49B-001
-status: CREATED
+status: COMPLETED
 depends_on:
 - INT-TMS-SPRINT49-001
 - INT-TMS-SPRINT49A-001
