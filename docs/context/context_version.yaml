@@ -3,12 +3,23 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.65
-update_time: 2026-08-05
-adapt_sprint: Sprint49-A
+context_version: 1.0.66
+update_time: 2026-08-06
+adapt_sprint: Sprint49-B
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.66:
+    update_content: |
+      Sprint49-B 评审修复完成（wd_tlms 1.0.119）：
+      - 修复 policy/RULE-VEHICLE 配置导致普通 request 全量 BLOCK 的回归
+      - 恢复 BLOCK 拦截、is_dangerous_goods compute 推导与 ADR 详情必填校验
+      - 规则编号对齐 intent（001分流/002危品/003载重/005车型）
+      - request 快照 confirm 后不可变，inquiry/quote/plan 展示与快照链路补齐
+      - TestVehicleRequirement 23 项 + TestBusinessMatrix 通过
+      - XML-RPC button_immediate_upgrade 18.0.1.0.118→18.0.1.0.119 成功
+    update_type: Bug修复 + 契约对齐
+    effect_scope: 车辆需求规则引擎 + request/quote/order 快照链路
   1.0.0: {update_content: 初始化四层上下文资产 + 意图契约体系落地, update_type: 全量新建, effect_scope: 全局}
   1.0.1: {update_content: Sprint1 pickup.plan 提货需求模型与视图, update_type: 迭代更新, effect_scope: 提货需求基座}
   1.0.2: {update_content: 新增认知控制工程资产 + Sprint2 排期日历契约, update_type: 资产新增, effect_scope: 双控体系激活}

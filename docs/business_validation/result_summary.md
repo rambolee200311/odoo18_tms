@@ -50,6 +50,31 @@
 | SD47-S3-002 | S3 | Origin 无仓库选择/自动填充 | fixed（1.0.106 数据复验通过） |
 | SD47-S3-003 | S3 | cargo line 与 Request 表头汇总无关联、UOM 语义不清 | fixed（1.0.109 数据复验通过） |
 
+## Sprint49-B 车辆需求规则修复（2026-08-06）
+
+### 缺陷汇总
+
+| Bug ID | Description | Status |
+|--------|-------------|--------|
+| SD49B-001 | VEHICLE-POLICY / RULE-VEHICLE 配置导致所有 request 全量 BLOCK | fixed（1.0.119） |
+| SD49B-002 | BLOCK 结果未拦截 confirm / order 履约 | fixed（1.0.119） |
+| SD49B-003 | is_dangerous_goods 未从货物危险品推导，ADR 详情缺失 | fixed（1.0.119） |
+| SD49B-004 | carrier_type_vehicle_policy 硬编码，courier 配置不生效 | fixed（1.0.119） |
+| SD49B-005 | RULE-VEHICLE 编号与 intent 冲突 | fixed（1.0.119 契约对齐） |
+| SD49B-006 | request 快照可改、inquiry/quote/plan 展示策略缺失 | fixed（1.0.119） |
+
+### 验证
+
+| Check | Result |
+|-------|--------|
+| TestVehicleRequirement（23 项） | PASS |
+| TestBusinessMatrix（11 项） | PASS |
+| 全量 372 项测试中历史脏数据错误 | 149 errors / 8 failures（与本修复无关，均为重复唯一键/旧字段名） |
+| XML-RPC button_immediate_upgrade | 18.0.1.0.118 → 18.0.1.0.119 PASS |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| 存量 request 回填 | confirmed snapshot 100% 回填 |
+| 8089 端口 | 已释放 |
+
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*

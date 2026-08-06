@@ -1,5 +1,6 @@
 # ==============================================================
 # Sprint49-B Intent 契约 — TLMS Vehicle Requirement Rule Foundation
+# 2026-08-06 评审修复：wd_tlms 1.0.119 验证通过（decision_note 有完整记录）
 # 基线：docs/context/business/vehicle_requirement.md V1.0（Development Baseline）
 # 前置依赖：INT-TMS-SPRINT49-001 / INT-TMS-SPRINT49A-001
 # ==============================================================

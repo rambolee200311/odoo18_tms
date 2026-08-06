@@ -133,37 +133,8 @@
         <field name="vehicle_policy_mode">exempted</field>
     </record>
 
-    <!-- Sprint49-B: RULE-VEHICLE -->
-    <record id="business_rule_vehicle_001" model="tlmp.business.rule">
-        <field name="code">RULE-VEHICLE-001</field>
-        <field name="name">车型装卸能力匹配</field>
-        <field name="message_cn">车辆装卸类型不满足运输需求</field>
-        <field name="result">block</field>
-        <field name="priority">80</field>
-    </record>
-    <record id="business_rule_vehicle_002" model="tlmp.business.rule">
-        <field name="code">RULE-VEHICLE-002</field>
-        <field name="name">ADR危险品承运资质</field>
-        <field name="message_cn">承运商缺少ADR危险品运输资质</field>
-        <field name="result">block</field>
-        <field name="priority">75</field>
-        <field name="dg_attribute">dg</field>
-        <field name="require_capability">adr</field>
-    </record>
-    <record id="business_rule_vehicle_003" model="tlmp.business.rule">
-        <field name="code">RULE-VEHICLE-003</field>
-        <field name="name">车辆载重下限匹配</field>
-        <field name="message_cn">车辆额定载重不满足运输需求下限</field>
-        <field name="result">warning</field>
-        <field name="priority">85</field>
-    </record>
-    <record id="business_rule_vehicle_005" model="tlmp.business.rule">
-        <field name="code">RULE-VEHICLE-005</field>
-        <field name="name">危化/普通运力互斥</field>
-        <field name="message_cn">快递承运商禁止承运ADR危险品</field>
-        <field name="result">block</field>
-        <field name="priority">78</field>
-        <field name="carrier_type">courier</field>
-        <field name="dg_attribute">dg</field>
-    </record>
+    <!-- Sprint49-B: RULE-VEHICLE-000~005 are executed as static handlers by
+         Business Matrix Rule Engine. Only the carrier_type_vehicle_policy
+         rows above are data-configured; they control vehicle_requirement_mode
+         and are skipped by matrix violation evaluation (see rule_engine.py). -->
 </odoo>

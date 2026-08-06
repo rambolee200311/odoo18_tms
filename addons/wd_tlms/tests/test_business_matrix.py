@@ -12,6 +12,7 @@ class TestBusinessMatrix(TransactionCase):
         Capability = self.env['tlmp.carrier.capability']
         self.cap_t1 = Capability.create({'code': 't1', 'name': 'T1'})
         self.cap_dg = Capability.create({'code': 'dg', 'name': 'DG'})
+        self.cap_adr = Capability.create({'code': 'adr', 'name': 'ADR'})
         self.carrier_truck = self.env['res.partner'].create({
             'name': 'Truck', 'is_carrier': True,
             'carrier_type': 'subcontracted'})
@@ -25,7 +26,8 @@ class TestBusinessMatrix(TransactionCase):
             'carrier_capability_ids': [(6, 0, [self.cap_t1.id])]})
         self.carrier_dg = self.env['res.partner'].create({
             'name': 'DGCarrier', 'is_carrier': True,
-            'carrier_capability_ids': [(6, 0, [self.cap_dg.id])]})
+            'carrier_capability_ids': [
+                (6, 0, [self.cap_dg.id, self.cap_adr.id])]})
 
     def _make(self, **kw):
         vals = {
@@ -58,7 +60,8 @@ class TestBusinessMatrix(TransactionCase):
              'carrier_id': self.carrier_t1.id},
             {'cargo_type': 'pallet', 'business_driver': 'plan_driven',
              'carrier_type': 'own_fleet', 'dg_attribute': 'dg',
-             'carrier_id': self.carrier_dg.id},
+             'carrier_id': self.carrier_dg.id,
+             'dg_adr_class': '3', 'dg_un_code': 'UN1203'},
         ]
         for combo in combos:
             req = self._make(**combo)
@@ -121,6 +124,7 @@ class TestBusinessMatrix(TransactionCase):
 
     def test_11_warning_rule(self):
         req = self._make(cargo_type='piece', carrier_type='truck',
-                         dg_attribute='dg', carrier_id=self.carrier_dg.id)
+                         dg_attribute='dg', carrier_id=self.carrier_dg.id,
+                         dg_adr_class='3', dg_un_code='UN1203')
         self.assertEqual(req.matrix_validation_result, 'warning')
         self.assertIn('RULE-COMPLIANCE-001', req.matrix_validation_violations)

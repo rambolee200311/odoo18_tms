@@ -75,6 +75,17 @@
                             <field name="carrier_notes"/>
                         </group>
                     </group>
+                    <group string="Vehicle Requirement" invisible="not vehicle_requirement_mode">
+                        <group>
+                            <field name="vehicle_requirement_display" readonly="1"/>
+                            <field name="vehicle_requirement_mode" readonly="1"/>
+                        </group>
+                        <group invisible="vehicle_requirement_mode == 'exempted'">
+                            <field name="vehicle_body_type" readonly="1"/>
+                            <field name="vehicle_capacity_requirement" readonly="1"/>
+                            <field name="is_dangerous_goods" readonly="1"/>
+                        </group>
+                    </group>
                     <notebook>
                         <page string="Cargo Lines" name="lines_page">
                             <field name="line_ids">

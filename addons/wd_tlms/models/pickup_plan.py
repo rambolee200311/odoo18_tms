@@ -99,6 +99,28 @@ class PickupPlan(models.Model):
     transport_request_id = fields.Many2one(
         'tlmp.transport.request', string='Transport Request',
         readonly=True, copy=False)
+
+    # Sprint49-B: vehicle requirement projection from transport request
+    vehicle_requirement_mode = fields.Selection(
+        [('required', 'Required'), ('exempted', 'Exempted')],
+        string='Vehicle Req. Mode', readonly=True,
+        compute='_compute_vehicle_requirement_projection')
+    vehicle_requirement_display = fields.Char(
+        string='Vehicle Requirement', readonly=True,
+        compute='_compute_vehicle_requirement_projection')
+    vehicle_body_type = fields.Selection(
+        related='transport_request_id.vehicle_body_type',
+        string='Vehicle Body Type', readonly=True)
+    vehicle_capacity_requirement = fields.Selection(
+        related='transport_request_id.vehicle_capacity_requirement',
+        string='Vehicle Capacity', readonly=True)
+    is_dangerous_goods = fields.Selection(
+        related='transport_request_id.is_dangerous_goods',
+        string='DG Vehicle Req.', readonly=True)
+    vehicle_requirement_validation_result = fields.Selection(
+        related='transport_request_id.vehicle_requirement_validation_result',
+        string='Vehicle Requirement Result', readonly=True)
+
     inquiry_id = fields.Many2one(
         'tlmp.transport.inquiry', string='Inquiry', readonly=True, copy=False)
     transport_order_id = fields.Many2one(
@@ -127,6 +149,42 @@ class PickupPlan(models.Model):
     company_id = fields.Many2one(
         'res.company', string='Company',
         default=lambda self: self.env.company)
+
+    @api.depends('transport_request_id.state',
+                 'transport_request_id.vehicle_requirement_mode',
+                 'transport_request_id.vehicle_requirement_mode_snapshot',
+                 'transport_request_id.vehicle_body_type',
+                 'transport_request_id.vehicle_capacity_requirement',
+                 'transport_request_id.is_dangerous_goods')
+    def _compute_vehicle_requirement_projection(self):
+        body_labels = {
+            'no_requirement': '无要求', 'rear_only': '仅车尾', 'side_loading': '侧面装卸',
+            'side_rear_both': '侧尾双向', 'top_loading': '顶部吊装', 'tail_lift': '液压尾板',
+            'open_flatbed': '平板车', 'reefer_refrigerated': '冷藏车', 'tanker': '罐车',
+        }
+        capacity_labels = {
+            'no_limit': '无限制', 'below_40t': '< 40t',
+            '40t_44t': '40t-44t', 'over_44t': '> 44t',
+        }
+        dg_labels = {'normal': '普通', 'adr_dangerous': 'ADR危险品'}
+        for r in self:
+            req = r.transport_request_id
+            if not req:
+                r.vehicle_requirement_mode = False
+                r.vehicle_requirement_display = False
+                continue
+            r.vehicle_requirement_mode = (
+                req.vehicle_requirement_mode_snapshot
+                or req.vehicle_requirement_mode)
+            if r.vehicle_requirement_mode == 'exempted':
+                r.vehicle_requirement_display = '车辆要求：豁免'
+            else:
+                r.vehicle_requirement_display = '车型：%s；载重：%s；危险品：%s' % (
+                    body_labels.get(req.vehicle_body_type, req.vehicle_body_type),
+                    capacity_labels.get(
+                        req.vehicle_capacity_requirement,
+                        req.vehicle_capacity_requirement),
+                    dg_labels.get(req.is_dangerous_goods, req.is_dangerous_goods))
 
     # -----------------------------------------------------------
     # Helpers

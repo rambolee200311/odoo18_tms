@@ -82,13 +82,18 @@
                          <group>
                              <field name="vehicle_requirement_mode" readonly="1"/>
                              <field name="vehicle_requirement_mode_snapshot" readonly="1"/>
-                             <field name="vehicle_body_type"/>
-                             <field name="vehicle_capacity_requirement"/>
+                             <field name="vehicle_body_type"
+                                    invisible="vehicle_requirement_mode == 'exempted'"/>
+                             <field name="vehicle_capacity_requirement"
+                                    invisible="vehicle_requirement_mode == 'exempted'"/>
                          </group>
                          <group>
-                             <field name="is_dangerous_goods"/>
-                             <field name="dg_adr_class" invisible="is_dangerous_goods != 'adr_dangerous'"/>
-                             <field name="dg_un_code" invisible="is_dangerous_goods != 'adr_dangerous'"/>
+                             <field name="is_dangerous_goods" readonly="1"
+                                    invisible="vehicle_requirement_mode == 'exempted'"/>
+                             <field name="dg_adr_class"
+                                    invisible="is_dangerous_goods != 'adr_dangerous' or vehicle_requirement_mode == 'exempted'"/>
+                             <field name="dg_un_code"
+                                    invisible="is_dangerous_goods != 'adr_dangerous' or vehicle_requirement_mode == 'exempted'"/>
                              <field name="vehicle_requirement_validation_result" widget="badge" readonly="1"/>
                              <field name="vehicle_requirement_snapshot_status" readonly="1"/>
                          </group>

@@ -1815,3 +1815,33 @@ INT-TMS-SPRINT49B-001（CREATED）：
 另补充：submitted→processing 显式守卫 validation_state=passed；
 inquiry close_reason + selected 字段；order exception_recovery；
 destination_type 标记 deprecated/readonly 保留一个版本周期。
+
+---
+
+## Sprint49-B 评审修复（2026-08-06）
+
+针对 Sprint49-B 首轮代码评审结论修复并重新验证，模块版本 `1.0.119`：
+
+### 修复项
+- **P0**：VEHICLE-POLICY / RULE-VEHICLE 配置行不再导致普通 request 全量 BLOCK；
+  policy 行从 violation 评估中排除，RULE-VEHICLE-000~005 改为经
+  Business Matrix Rule Engine 调用的静态处理器，删除无维度过滤的旧配置数据，
+  并用迁移停用存量 RULE-VEHICLE 配置行。
+- **P1**：恢复 `_raise_if_matrix_block_vals` 的 BLOCK 拦截（create/write），
+  confirm 前校验矩阵与车辆结果，阻断非法履约；`is_dangerous_goods` 改为
+  compute 从货物危险品推导，ADR 详情必填校验落地。
+- **P1**：`carrier_type_vehicle_policy` 不再硬编码 carrier_type，
+  courier 策略行实际参与 compute，管理员可维护。
+- **P2**：规则编号对齐 INT-TMS-SPRINT49B-001（001 分流 / 002 危品 /
+  003 载重 / 005 车型），capacity/body 在分配车辆上下文下产生 BLOCK；
+  request 快照 confirm 后不可变；inquiry/quote/plan 读取 snapshot 并展示
+  “车辆要求：豁免”标记；order 快照链路保持。
+
+### 验证
+- `TestVehicleRequirement`（23 项）+ `TestBusinessMatrix` 定向通过；
+  全量 372 项测试中历史脏数据导致的 149 errors / 8 failures 与本修复无关。
+- XML-RPC `button_immediate_upgrade` 升级 `18.0.1.0.118 → 18.0.1.0.119` 成功；
+  升级窗口日志零 ERROR / CRITICAL / TRACEBACK。
+- Odoo shell 复核：active business rule 11 条，RULE-VEHICLE 配置行 0，
+  policy 行 3；普通 truck request matrix=PASS；存量 confirmed request
+  snapshot 全部回填。

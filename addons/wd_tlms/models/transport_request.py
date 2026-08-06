@@ -19,6 +19,16 @@ class TransportRequest(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc, id desc'
     _rec_name = 'name'
+    _VEHICLE_FROZEN_FIELDS = (
+        'vehicle_requirement_mode_snapshot',
+        'vehicle_requirement_snapshot',
+        'vehicle_requirement_snapshot_status',
+        'vehicle_body_type',
+        'vehicle_capacity_requirement',
+        'is_dangerous_goods',
+        'dg_adr_class',
+        'dg_un_code',
+    )
         # ---- Identity ----
     name = fields.Char(string='Request No.', required=True, copy=False,
                       default=lambda self: _('New'))
@@ -198,6 +208,7 @@ class TransportRequest(models.Model):
         ('normal', 'Normal'),
         ('adr_dangerous', 'ADR Dangerous'),
     ], string='DG Vehicle Requirement', default='normal',
+        compute='_compute_is_dangerous_goods',
         help='Whether an ADR-certified vehicle is required. '
              'Derived from cargo dangerous goods profile.')
     dg_adr_class = fields.Char(string='ADR Class',
@@ -247,6 +258,8 @@ class TransportRequest(models.Model):
     # -----------------------------------------------------------
     @api.model_create_multi
     def create(self, vals_list):
+        if self.env.context.get('skip_vehicle_requirement_validation'):
+            return super().create(vals_list)
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.request.seq') or _('New')
@@ -259,6 +272,13 @@ class TransportRequest(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        if self.env.context.get('skip_vehicle_requirement_validation'):
+            return super().write(vals)
+        if any(k in vals for k in self._VEHICLE_FROZEN_FIELDS):
+            for r in self:
+                if r.state == 'confirmed' or r.vehicle_requirement_snapshot_status == 'frozen':
+                    raise UserError(
+                        _('Vehicle requirement fields are frozen after request confirmation.'))
         for r in self:
             self._prepare_vehicle_requirement_vals(vals, record=r)
             self._raise_if_matrix_block_vals(vals, record=r)
@@ -281,7 +301,14 @@ class TransportRequest(models.Model):
         current_mode = vals.get('vehicle_requirement_mode', request.vehicle_requirement_mode if request else False)
         current_body_type = vals.get('vehicle_body_type', request.vehicle_body_type if request else 'no_requirement')
         current_capacity = vals.get('vehicle_capacity_requirement', request.vehicle_capacity_requirement if request else 'no_limit')
-        current_is_dg = vals.get('is_dangerous_goods', request.is_dangerous_goods if request else 'normal')
+        current_is_dg = vals.get('is_dangerous_goods')
+        if not current_is_dg:
+            if record:
+                current_is_dg = record.is_dangerous_goods
+            else:
+                current_is_dg = ('adr_dangerous'
+                                 if vals.get('dg_attribute') == 'dg'
+                                 or vals.get('has_dangerous_goods') else 'normal')
         cargo_lines = record.cargo_line_ids if record else self.env['tlmp.transport.cargo.line']
         if record is None and vals.get('id'):
             record = self.browse(vals['id'])
@@ -299,32 +326,39 @@ class TransportRequest(models.Model):
             'vehicle_body_type': current_body_type,
             'vehicle_capacity_requirement': current_capacity,
             'is_dangerous_goods': current_is_dg,
+            'dg_adr_class': vals.get('dg_adr_class', record.dg_adr_class if record else False),
+            'dg_un_code': vals.get('dg_un_code', record.dg_un_code if record else False),
             'carrier_type': current_carrier_type,
             'carrier_capabilities': set(
                 self.env['res.partner'].browse(vals.get('carrier_id', record.carrier_id.id if record and record.carrier_id else False)).carrier_capability_ids.mapped('code')
             ) if vals.get('carrier_id', record.carrier_id.id if record and record.carrier_id else False) else set(),
             'has_dangerous_goods': bool(vals.get('has_dangerous_goods', record.has_dangerous_goods if record else False)),
+            'assigned_vehicle_capacity': vals.get('assigned_vehicle_capacity'),
+            'assigned_vehicle_body_type': vals.get('assigned_vehicle_body_type'),
+            'assigned_vehicle_adr': vals.get('assigned_vehicle_adr'),
             'dangerous_goods_lines': dangerous_lines,
             'cargo_lines': cargo_lines,
         }
 
+    def _get_vehicle_policy_rule(self, carrier_type):
+        if not carrier_type:
+            return self.env['tlmp.business.rule']
+        return self.env['tlmp.business.rule'].sudo().search([
+            ('active', '=', True),
+            ('carrier_type', '=', carrier_type),
+            ('vehicle_policy_mode', '!=', False),
+        ], order='priority', limit=1)
+
     def _get_vehicle_policy_mode(self, carrier_type):
-        if carrier_type in ('own_fleet', 'truck'):
-            policy_rule = self.env['tlmp.business.rule'].sudo().search([
-                ('active', '=', True),
-                ('carrier_type', '=', carrier_type),
-                ('vehicle_policy_mode', '!=', False),
-            ], order='priority', limit=1)
-            if policy_rule:
-                return policy_rule.vehicle_policy_mode
-            return 'required'
-        if carrier_type == 'courier':
-            return 'exempted'
-        return 'required'
+        policy_rule = self._get_vehicle_policy_rule(carrier_type)
+        return policy_rule.vehicle_policy_mode if policy_rule else 'required'
 
     def _raise_if_matrix_block_vals(self, vals, record=None):
         ctx = self._matrix_vals_context(vals, record)
-        BusinessMatrixEngine.validate(self.env, ctx)
+        res = BusinessMatrixEngine.validate(self.env, ctx)
+        if res['result'] == 'block':
+            msgs = '; '.join(v.get('message', '') for v in res['violations'])
+            raise UserError(_('Business Matrix BLOCK: %s') % msgs)
 
     def _matrix_vals_context(self, vals, record=None):
         scene_id = vals.get('scene_id', record.scene_id.id if record else False)
@@ -356,6 +390,31 @@ class TransportRequest(models.Model):
                 'dg_attribute', record.dg_attribute if record else 'normal'),
             'carrier_capabilities': capabilities,
             'mixed_roots': len(categories) > 1,
+            'vehicle_requirement_mode': (
+                vals.get('vehicle_requirement_mode')
+                or self._get_vehicle_policy_mode(vals.get(
+                    'carrier_type', record.carrier_type if record else 'truck'))),
+            'vehicle_body_type': vals.get(
+                'vehicle_body_type', record.vehicle_body_type if record else 'no_requirement'),
+            'vehicle_capacity_requirement': vals.get(
+                'vehicle_capacity_requirement',
+                record.vehicle_capacity_requirement if record else 'no_limit'),
+            'is_dangerous_goods': (
+                vals.get('is_dangerous_goods')
+                or (record.is_dangerous_goods if record
+                    else ('adr_dangerous'
+                          if vals.get('dg_attribute') == 'dg'
+                          or vals.get('has_dangerous_goods') else 'normal'))),
+            'has_dangerous_goods': bool(
+                vals.get('has_dangerous_goods',
+                         record.has_dangerous_goods if record else False)),
+            'dg_adr_class': vals.get(
+                'dg_adr_class', record.dg_adr_class if record else False),
+            'dg_un_code': vals.get(
+                'dg_un_code', record.dg_un_code if record else False),
+            'assigned_vehicle_capacity': vals.get('assigned_vehicle_capacity'),
+            'assigned_vehicle_body_type': vals.get('assigned_vehicle_body_type'),
+            'assigned_vehicle_adr': vals.get('assigned_vehicle_adr'),
         }
 
     @api.depends('cargo_type')
@@ -365,30 +424,30 @@ class TransportRequest(models.Model):
 
     @api.depends('carrier_type')
     def _compute_vehicle_requirement_mode(self):
-        """Derive vehicle_requirement_mode from carrier_type via policy config.
-        Look up the highest-priority active rule matching this carrier_type
-        that has a vehicle_policy_mode set."""
+        """Derive vehicle_requirement_mode from carrier_type via policy config."""
         for r in self:
-            mode = 'exempted'  # default safe: courier → exempted
-            if r.carrier_type in ('own_fleet', 'truck'):
-                policy_rule = self.env['tlmp.business.rule'].sudo().search([
-                    ('active', '=', True),
-                    ('carrier_type', '=', r.carrier_type),
-                    ('vehicle_policy_mode', '!=', False),
-                ], order='priority', limit=1)
-                if policy_rule:
-                    mode = policy_rule.vehicle_policy_mode
-                else:
-                    mode = 'required'  # road haulage defaults to required
-            r.vehicle_requirement_mode = mode
+            r.vehicle_requirement_mode = self._get_vehicle_policy_mode(r.carrier_type)
 
-    @api.depends('has_dangerous_goods', 'dg_attribute')
+    @api.depends('has_dangerous_goods', 'dg_attribute',
+                 'cargo_line_ids.has_dangerous_goods')
     def _compute_is_dangerous_goods(self):
         for r in self:
-            if r.dg_attribute == 'dg' or r.has_dangerous_goods:
-                r.is_dangerous_goods = 'adr_dangerous'
-            else:
-                r.is_dangerous_goods = 'normal'
+            dangerous = (r.dg_attribute == 'dg' or r.has_dangerous_goods
+                         or any(line.has_dangerous_goods
+                                for line in r.cargo_line_ids))
+            r.is_dangerous_goods = 'adr_dangerous' if dangerous else 'normal'
+
+    @api.constrains('is_dangerous_goods', 'dg_adr_class', 'dg_un_code')
+    def _check_dangerous_goods_details(self):
+        for r in self:
+            if (r.is_dangerous_goods == 'adr_dangerous'
+                    and not (r.dg_adr_class and r.dg_un_code)):
+                raise ValidationError(
+                    _('ADR 危险品需求必须填写 ADR Class 和 UN Code。'))
+            if (r.is_dangerous_goods == 'normal'
+                    and (r.dg_adr_class or r.dg_un_code)):
+                raise ValidationError(
+                    _('普通货物不允许填写 ADR Class / UN Code。'))
 
     @api.depends('scene_id.code', 'business_driver', 'cargo_category',
                  'carrier_type', 't1_attribute', 'dg_attribute')
@@ -417,12 +476,22 @@ class TransportRequest(models.Model):
             'dg_attribute': self.dg_attribute,
             'carrier_capabilities': capabilities,
             'mixed_roots': len(categories) > 1,
+            'vehicle_requirement_mode': self.vehicle_requirement_mode,
+            'vehicle_body_type': self.vehicle_body_type,
+            'vehicle_capacity_requirement': self.vehicle_capacity_requirement,
+            'is_dangerous_goods': self.is_dangerous_goods,
+            'has_dangerous_goods': self.has_dangerous_goods,
+            'dg_adr_class': self.dg_adr_class,
+            'dg_un_code': self.dg_un_code,
         }
 
     @api.depends('scene_id.code', 'business_driver', 'cargo_category',
                  'carrier_type', 't1_attribute', 'dg_attribute',
                  'carrier_id.carrier_capability_ids',
-                 'cargo_line_ids.cargo_category')
+                 'cargo_line_ids.cargo_category',
+                 'vehicle_requirement_mode', 'vehicle_body_type',
+                 'vehicle_capacity_requirement', 'is_dangerous_goods',
+                 'has_dangerous_goods', 'dg_adr_class', 'dg_un_code')
     def _compute_matrix_validation(self):
         for r in self:
             res = BusinessMatrixEngine.validate(self.env, r._matrix_context())
@@ -454,6 +523,9 @@ class TransportRequest(models.Model):
     # State transitions
     # -----------------------------------------------------------
     def action_confirm(self):
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft requests can be confirmed.'))
         self.write({'vehicle_requirement_mode_snapshot': self.vehicle_requirement_mode})
         self._freeze_vehicle_requirement_snapshot()
         self.write({

@@ -72,12 +72,21 @@
 5. `transport.order`：陆运持久化`vehicle_requirement_snapshot + vehicle_allocation_snapshot`；快递仅留存运输服务类型与豁免标识用于审计。
 
 ## 四、业务校验规则清单
-- **RULE‑VEHICLE‑000 运输服务类型分流规则（最高优先级）**：依据`transport_service_type`绑定`mode`，决定是否启用车辆校验体系；
-- **RULE‑VEHICLE‑001 车型装卸能力匹配规则**：实际分配车辆装卸形式必须匹配下单约束；`no_requirement`放行全部车型；
-- **RULE‑VEHICLE‑002 车辆载重下限匹配规则**：实际分配车辆额定载重必须满足Request设置的车辆能力下限区间；
-- **RULE‑VEHICLE‑003 ADR车辆资质匹配规则**：当`require_adr_vehicle=true`时，仅允许分配有效ADR认证车辆；
-- **RULE‑VEHICLE‑004 ADR司机资质匹配规则**：ADR危险品订单上岗司机必须持有有效ADR从业证书；
-- **RULE‑VEHICLE‑005 危化/普通运力互斥规则**：普通运力禁止承运ADR危险品；危化运力是否兼容普通货物按业务参数配置执行。
+- **RULE‑VEHICLE‑000 车辆校验总开关（最高优先级）**：`vehicle_requirement_mode=exempted` 时跳过全部车辆校验；
+- **RULE‑VEHICLE‑001 服务类型分流规则**：依据 `carrier_type + carrier_type_vehicle_policy` 绑定 `vehicle_requirement_mode`，决定是否启用车辆校验体系；
+- **RULE‑VEHICLE‑002 危险品规则**：ADR 承运能力 → ADR 车辆能力 → 普通/危化运力互斥，任一环节不满足即 BLOCK；
+- **RULE‑VEHICLE‑003 车辆载重下限匹配规则**：实际分配车辆额定载重必须满足 Request 设置的车辆能力下限区间；
+- **RULE‑VEHICLE‑004 ADR司机资质匹配规则**：ADR危险品订单上岗司机必须持有有效ADR从业证书（归入 Sprint50）；
+- **RULE‑VEHICLE‑005 车型装卸能力匹配规则**：实际分配车辆装卸形式必须匹配下单约束；`no_requirement`放行全部车型。
+
+> **Sprint49-B 落地说明（2026-08-06）**：本 sprint 按
+> `INT-TMS-SPRINT49B-001` 实现，复用 `carrier_type`（不引入
+> `transport_service_type`），request 侧危险品车辆需求采用结构化字段
+> `{is_dangerous_goods, dg_adr_class, dg_un_code}`（不引入
+> `require_adr_vehicle`）。请求阶段 capacity/body 规则输出 WARNING 约束；
+> 提供分配车辆上下文（`assigned_vehicle_capacity` /
+> `assigned_vehicle_body_type` / `assigned_vehicle_adr`）时，
+> 不满足约束输出 BLOCK。规则编号以本清单为准。
 
 ## 五、校验优先级顺序
 运输服务类型分流判定 ＞ ADR全维度合规校验 ＞ 车辆载重下限校验 ＞ 装卸车型匹配校验

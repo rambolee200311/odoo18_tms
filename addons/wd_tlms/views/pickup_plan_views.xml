@@ -121,6 +121,20 @@
                             </group>
                         </page>
                         <page string="Scheduling" name="scheduling_tab">
+                            <group string="Vehicle Requirement"
+                                   invisible="not vehicle_requirement_mode">
+                                <group>
+                                    <field name="vehicle_requirement_display" readonly="1"/>
+                                    <field name="vehicle_requirement_mode" readonly="1"/>
+                                    <field name="vehicle_requirement_validation_result"
+                                           widget="badge" readonly="1"/>
+                                </group>
+                                <group invisible="vehicle_requirement_mode == 'exempted'">
+                                    <field name="vehicle_body_type" readonly="1"/>
+                                    <field name="vehicle_capacity_requirement" readonly="1"/>
+                                    <field name="is_dangerous_goods" readonly="1"/>
+                                </group>
+                            </group>
                             <group>
                                 <field name="carrier_id"
                                        options="{'no_create': True, 'no_open': True}"/>

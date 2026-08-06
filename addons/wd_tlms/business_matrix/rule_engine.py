@@ -14,6 +14,10 @@ class BusinessMatrixEngine:
         violations = []
         if rules:
             for rule in rules:
+                # carrier_type_vehicle_policy rows only configure applicability;
+                # they must not be treated as matrix violations.
+                if rule.vehicle_policy_mode:
+                    continue
                 if BusinessMatrixEngine._rule_matches(rule, dimensions):
                     violations.append({
                         'rule_id': rule.code,
@@ -25,7 +29,9 @@ class BusinessMatrixEngine:
             violations += cargo_rules.check_cargo_rules(dimensions)
             violations += carrier_rules.check_carrier_rules(dimensions)
             violations += compliance_rules.check_compliance_rules(dimensions)
-            violations += vehicle_rules.check_vehicle_rules(dimensions)
+        # Static vehicle handlers stay active even when configured matrix
+        # rules exist (Sprint49-B request-stage vehicle requirement rules).
+        violations += vehicle_rules.check_vehicle_rules(dimensions)
         for violation in violations:
             violation.setdefault('timestamp', datetime.utcnow().isoformat())
         if violations:
