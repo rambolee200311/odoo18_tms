@@ -14,10 +14,20 @@ class WorkflowEngine(models.AbstractModel):
     def write_event(self, record, event_type, event_category='state',
                     from_state=False, to_state=False, payload=None,
                     source='manual'):
+        code = self.env['tlmp.transport.event.code'].sudo().search([
+            ('code', '=', event_type),
+            ('active', '=', True),
+        ], limit=1)
+        if not code:
+            raise UserError(_(
+                'Event code %s is not in the transport event dictionary.') %
+                event_type)
         self.env['tlmp.transport.event.ledger'].create({
             'res_model': record._name,
             'res_id': record.id,
-            'event_type': event_type,
+            'event_code_id': code.id,
+            'event_type': code.code,
+            'event_code_status': 'validated',
             'event_category': event_category,
             'from_state': from_state or False,
             'to_state': to_state or False,
@@ -67,6 +77,10 @@ class WorkflowEngine(models.AbstractModel):
                     if not exists else None)
         if code == 'assignment_context_required':
             context = getattr(record, 'assignment_context', False)
+            req = (record.transport_request_id
+                   if 'transport_request_id' in record._fields else False)
+            if req and req.vehicle_requirement_mode_snapshot == 'exempted':
+                return None
             return (_('Assignment context is required before resource reservation.')
                     if not context else None)
         return (_('Unknown workflow guard code: %s.') % code)

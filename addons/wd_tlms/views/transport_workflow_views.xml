@@ -26,6 +26,8 @@
                     <group>
                         <group>
                             <field name="event_type" readonly="1"/>
+                            <field name="event_code_id" readonly="1"/>
+                            <field name="event_code_status" widget="badge" readonly="1"/>
                             <field name="event_category" readonly="1"/>
                             <field name="create_date" readonly="1"/>
                             <field name="create_uid" readonly="1"/>
@@ -73,6 +75,54 @@
     <menuitem id="menu_tlmp_workflow_ledger" name="Workflow Ledger"
               parent="menu_tlmp_tracking_group"
               action="action_tlmp_workflow_ledger" sequence="25"/>
+
+    <record id="view_tlmp_transport_event_code_tree" model="ir.ui.view">
+        <field name="name">tlmp.transport.event.code.tree</field>
+        <field name="model">tlmp.transport.event.code</field>
+        <field name="arch" type="xml">
+            <list string="Event Codes">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category" widget="badge"/>
+                <field name="version"/>
+                <field name="active"/>
+                <field name="deprecated_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_tlmp_transport_event_code_form" model="ir.ui.view">
+        <field name="name">tlmp.transport.event.code.form</field>
+        <field name="model">tlmp.transport.event.code</field>
+        <field name="arch" type="xml">
+            <form string="Transport Event Code">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="version"/>
+                            <field name="active"/>
+                            <field name="deprecated_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_tlmp_transport_event_code" model="ir.actions.act_window">
+        <field name="name">Transport Event Codes</field>
+        <field name="res_model">tlmp.transport.event.code</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_tlmp_transport_event_code" name="Transport Event Codes"
+              parent="menu_tlmp_config"
+              action="action_tlmp_transport_event_code" sequence="54"/>
 
     <record id="view_tlmp_workflow_guard_tree" model="ir.ui.view">
         <field name="name">tlmp.workflow.guard.tree</field>
@@ -161,6 +211,11 @@
                     </group>
                     <group string="Vehicle Allocation Snapshot">
                         <field name="vehicle_allocation_snapshot" readonly="1"/>
+                    </group>
+                    <group string="Allocation Candidate">
+                        <field name="assignment_context"/>
+                        <field name="allocation_candidate_valid" readonly="1"/>
+                        <field name="allocation_candidate" readonly="1"/>
                     </group>
                 </sheet>
             </form>

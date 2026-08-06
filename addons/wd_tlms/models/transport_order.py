@@ -4,8 +4,6 @@ import json
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
-from ..business_matrix.rule_engine import BusinessMatrixEngine
-
 
 class TransportOrder(models.Model):
     _name = 'tlmp.transport.order'
@@ -403,64 +401,53 @@ class TransportOrder(models.Model):
         self.ensure_one()
         if self.state != 'confirmed':
             raise UserError(_('Only confirmed orders can be allocated.'))
-        snapshot = {}
         req = self.request_id
-        assignment = {}
         plan = self.pickup_plan_id
-        if plan and plan.assignment_context:
-            assignment = json.loads(plan.assignment_context)
-        if req:
+        abstract = plan.transport_plan_id if plan else (
+            self.trip_id.transport_plan_id if self.trip_id else False)
+        if req and req.vehicle_requirement_mode_snapshot == 'exempted':
+            self.env['tlmp.workflow.engine'].transition(
+                self, 'allocated', 'ORDER_ALLOCATED')
+            return True
+        snapshot = {}
+        if req and req.vehicle_requirement_mode_snapshot == 'required':
+            req_snapshot = json.loads(req.vehicle_requirement_snapshot or '{}')
+            if not req.vehicle_requirement_snapshot or \
+                    req_snapshot.get('vehicle_requirement_validation_result') \
+                    == 'block':
+                raise UserError(_(
+                    'Vehicle requirement snapshot is missing or invalid.'))
+            if not abstract or not abstract.allocation_candidate_valid \
+                    or not abstract.allocation_candidate:
+                raise UserError(_(
+                    'Allocation candidate is missing; '
+                    'plan.reserve must be completed first.'))
+            candidate = json.loads(abstract.allocation_candidate)
+            if self.carrier_id and candidate.get('reserved_carrier_id') \
+                    and candidate['reserved_carrier_id'] != self.carrier_id.id:
+                raise UserError(_(
+                    'Assigned carrier changed since plan reservation.'))
+            if self.vehicle_plate and candidate.get('reserved_vehicle_plate') \
+                    and candidate['reserved_vehicle_plate'] != self.vehicle_plate:
+                raise UserError(_(
+                    'Assigned vehicle changed since plan reservation.'))
+            if self.driver_name and candidate.get('reserved_driver') \
+                    and candidate['reserved_driver'] != self.driver_name:
+                raise UserError(_(
+                    'Assigned driver changed since plan reservation.'))
             snapshot = {
-                'vehicle_requirement_mode': (
-                    req.vehicle_requirement_mode_snapshot
-                    or req.vehicle_requirement_mode),
+                'valid': True,
+                'vehicle_requirement_mode': req.vehicle_requirement_mode_snapshot,
                 'vehicle_body_type': req.vehicle_body_type,
-                'vehicle_capacity_requirement': req.vehicle_capacity_requirement,
+                'vehicle_capacity_requirement':
+                    req.vehicle_capacity_requirement,
                 'is_dangerous_goods': req.is_dangerous_goods,
                 'assigned_carrier_id': (
                     self.carrier_id.id if self.carrier_id else False),
                 'assigned_vehicle_plate': self.vehicle_plate or False,
                 'assigned_driver': self.driver_name or False,
+                'assignment_context': candidate.get('assignment_context'),
             }
-        if assignment:
-            snapshot['assignment_context'] = assignment
-        ctx = {
-            'scene_code': req.scene_id.code if req and req.scene_id else False,
-            'business_driver': req.business_driver if req else 'plan_driven',
-            'cargo_category': req.cargo_category if req else 'container',
-            'carrier_type': req.carrier_type if req else 'truck',
-            't1_attribute': req.t1_attribute if req else 'normal',
-            'dg_attribute': req.dg_attribute if req else 'normal',
-            'carrier_capabilities': set(
-                self.carrier_id.carrier_capability_ids.mapped('code')
-            ) if self.carrier_id else set(),
-            'mixed_roots': False,
-            'vehicle_requirement_mode': (
-                req.vehicle_requirement_mode_snapshot
-                or req.vehicle_requirement_mode) if req else 'required',
-            'vehicle_body_type': (
-                req.vehicle_body_type if req else 'no_requirement'),
-            'vehicle_capacity_requirement': (
-                req.vehicle_capacity_requirement if req else 'no_limit'),
-            'is_dangerous_goods': (
-                req.is_dangerous_goods if req else 'normal'),
-            'has_dangerous_goods': (
-                req.has_dangerous_goods if req else False),
-            'dg_adr_class': req.dg_adr_class if req else False,
-            'dg_un_code': req.dg_un_code if req else False,
-            'assigned_vehicle_capacity': None,
-            'assigned_vehicle_body_type': None,
-            'assigned_vehicle_adr': None,
-            'driver_id': assignment.get('driver_id'),
-            'driver_adr_valid': assignment.get('driver_adr_valid'),
-            'driver_adr_expiry_date': assignment.get('expiry_date'),
-            'assignment_context_required': bool(
-                req and req.is_dangerous_goods == 'adr_dangerous'),
-        }
-        res = BusinessMatrixEngine.validate(self.env, ctx)
-        if res['result'] == 'block':
-            msgs = '; '.join(v.get('message', '') for v in res['violations'])
-            raise UserError(_('Vehicle Allocation BLOCK: %s') % msgs)
         self.env['tlmp.workflow.engine'].transition(
             self, 'allocated', 'ORDER_ALLOCATED',
             extra_vals={'vehicle_allocation_snapshot': json.dumps(

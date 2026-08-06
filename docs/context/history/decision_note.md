@@ -1959,3 +1959,97 @@ Sprint50-A 契约按架构评审修订为 v1.1，评级通过（建议小幅收�
   升级日志零 ERROR / CRITICAL / TRACEBACK；
 - Odoo shell 复核：新模型建表、守卫种子 13 条、存量 confirmed request
   已迁移为 submitted（0 条遗留 confirmed）。
+
+## Sprint50-B 契约起草（2026-08-06）
+
+起草 `INT-TMS-SPRINT50B-001`（CREATED），定位为 Sprint50 最后一个子迭代：
+- **Plan 外键最终收敛**：默认方案 A（transport.plan 统一抽象 +
+  pickup/container 业务明细关联），方案 B（物理迁移）仅作评估且需双审批；
+- **Vehicle Allocation 完整执行闭环**：分配侧 Vehicle / Driver 主数据 +
+  assignment_context → RULE-VEHICLE-003/004/005 →
+  vehicle_allocation_snapshot → order.allocated；
+- **Order Allocation 守卫补齐**：snapshot exists + valid 双条件，缺失 BLOCK；
+- **Event Dictionary 最终化**：事件编码字典化，Ledger 禁止自由文本；
+- **五模型业务链路最终测试**：正常陆运 / ADR BLOCK / 快递豁免。
+
+明确不做：新业务场景、新 request 车辆字段、新状态、新规则维度、
+Carrier Settlement、OCR。
+
+契约文件：
+`docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`
+
+## Sprint50-B 开发实施（wd_tlms 1.0.122，2026-08-06）
+
+按 Sprint50-B 契约 v1.2 完成开发与验证：
+- **Event Code 字典 + Ledger 强绑定**：新增 `tlmp.transport.event.code`
+  （code/name/category/version/active/deprecated_at），种子编码 41 条；
+  `tlmp.transport.event.ledger` 新增 `event_code_id`（required）与
+  `event_code_status`，engine 写入必须先命中字典；
+- **TransportPlan 唯一状态归属**：pickup.plan / container.transport.plan
+  的 state / reservation_type / vehicle_allocation_snapshot 改为
+  `transport_plan_id` related 投影，detail 不再维护独立状态机；
+- **allocation_candidate**：transport.plan 上的 JSON draft，
+  plan.reserve 校验生成，非独立业务模型；
+- **plan.reserve = Validation / order.allocated = Verification**：
+  plan 执行 RULE-VEHICLE 校验并生成 candidate；order 只验证
+  requirement snapshot + candidate + assignment unchanged；
+- **快递豁免**：courier 不生成 allocation_candidate /
+  vehicle_allocation_snapshot；
+- **迁移 1.0.122**：Ledger 存量 event_type 回填 event_code_id
+  （LEGACY_* / validated），pickup/container plan 回填 transport_plan_id。
+
+### 验证
+- `TestWorkflowEngine` 20 项全部通过（含 event code binding、
+  snapshot_invalid、courier 豁免）；
+- 全量 392 项中剩余 148 errors / 8 failures 为历史脏库/旧测试问题；
+- XML-RPC `button_immediate_upgrade` 18.0.1.0.121 → 18.0.1.0.122 成功，
+  升级日志零 ERROR / CRITICAL / TRACEBACK；
+- Odoo shell 复核：event code 模型与 41 条种子、Ledger 绑定字段、
+  plan 抽象字段均已落地。
+
+## Sprint50-B 契约 v1.2 修订（2026-08-06）
+
+Sprint50-B 契约按第二轮评审升级为 v1.2，7 项 P1/P2 修改全部纳入：
+1. **TransportPlan 唯一 Workflow 状态归属**：owns scheduled/reserved/
+   executing/finished/failed/cancelled；detail models 不维护 state；
+2. **allocation_candidate 冻结**：JSON snapshot draft，存放于
+   transport.plan，临时校验结果，不建独立业务模型；
+3. **snapshot_flow 生命周期**：vehicle_requirement_snapshot →
+   allocation_candidate → vehicle_allocation_snapshot；
+4. **Event Ledger 强绑定**：event_code_id required，
+   event_type 为 readonly related，禁止直接写；
+5. **freeze_policy 版本化**：workflow_version /
+   event_dictionary_version / vehicle_rule_version 均 1.0；
+6. **snapshot_invalid_test**：失效/过期 requirement snapshot
+   → order.allocate BLOCK；
+7. **Sprint51 test_baseline**：冻结 workflow states / event codes /
+   vehicle snapshots / allocation reference fields。
+
+文字微调：Vehicle / Driver 统一为 Allocation Resource Reference；
+目标描述改为“事件驱动运输执行闭环”。
+
+契约文件：
+`docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`
+
+## Sprint50-B 契约评审修订（2026-08-06）
+
+Sprint50-B 契约按评审升级为 v1.1，7 项收敛修改全部纳入：
+1. Vehicle / Driver 仅定义 **Allocation Reference Model**
+   （Vehicle：vehicle_id/capacity/body_type/adr_valid；
+   Driver：driver_id/adr_valid/adr_expiry_date），不建设 Fleet Management；
+2. **plan.reserve = Validation**（执行规则，生成 allocation_candidate）；
+   **order.allocated = Verification**（仅验证 snapshot exists + valid +
+   assignment unchanged，不重算规则）；
+3. **transport_event_code 版本化**：code/name/category/version/active/
+   deprecated_at，编码不可删除只能废弃；
+4. **Event Ledger 历史不篡改**：新增 event_code_status
+   （validated/legacy/deprecated），存量自由文本映射为 LEGACY_* 并标记 legacy；
+5. **TransportPlan 父子聚合**：TransportPlan 为父对象，
+   PickupPlanDetail / ContainerTransportDetail 仅含业务操作明细；
+6. **快递豁免三断言**：vehicle_allocation_snapshot IS NULL、
+   vehicle validation NOT executed、ADR rule NOT executed；
+7. **freeze_policy 正式化**：Sprint50-B 后冻结 workflow states 与 event codes，
+   修改需业务 + 架构双审批。
+
+契约文件：
+`docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`

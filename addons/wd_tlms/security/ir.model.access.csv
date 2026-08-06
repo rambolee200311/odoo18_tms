@@ -231,6 +231,10 @@ access_transport_plan_abstract_manager,tlmp.transport.plan.abstract.manager,mode
 access_transport_plan_abstract_operator,tlmp.transport.plan.abstract.operator,model_tlmp_transport_plan,wd_tlms.group_tlm_operator,1,1,1,0
 access_transport_plan_abstract_all,tlmp.transport.plan.abstract.all,model_tlmp_transport_plan,base.group_user,1,0,0,0
 
+access_event_code_manager,tlmp.event.code.manager,model_tlmp_transport_event_code,wd_tlms.group_tlm_manager,1,1,1,1
+access_event_code_operator,tlmp.event.code.operator,model_tlmp_transport_event_code,wd_tlms.group_tlm_operator,1,0,0,0
+access_event_code_all,tlmp.event.code.all,model_tlmp_transport_event_code,base.group_user,1,0,0,0
+
 access_flow_type_manager,tlmp.flow.type.manager,model_tlmp_transport_flow_type,wd_tlms.group_tlm_manager,1,1,1,1
 access_flow_type_operator,tlmp.flow.type.operator,model_tlmp_transport_flow_type,wd_tlms.group_tlm_operator,1,0,0,0
 access_flow_type_all,tlmp.flow.type.all,model_tlmp_transport_flow_type,base.group_user,1,0,0,0

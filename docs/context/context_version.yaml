@@ -3,12 +3,56 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.70
+context_version: 1.0.74
 update_time: 2026-08-06
 adapt_sprint: Sprint50-A
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.74:
+    update_content: |
+      Sprint50-B 开发实施（wd_tlms 1.0.122）：
+      - transport_event_code 字典 + Ledger event_code_id/status 强绑定
+      - TransportPlan 唯一状态归属（detail related 投影）
+      - allocation_candidate JSON draft + plan/order 校验分离
+      - 快递豁免无 allocation 数据
+      - 1.0.122 迁移回填 Ledger 编码与 plan 抽象关联
+      - TestWorkflowEngine 20 项通过，XML-RPC 升级 1.0.122 成功
+    update_type: 架构升级实施（Sprint50-B）
+    effect_scope: Operational Workflow Completion
+  1.0.73:
+    update_content: |
+      Sprint50-B 契约 v1.2 第二轮评审修订：
+      - TransportPlan 唯一 Workflow 状态归属
+      - allocation_candidate = JSON draft（不建独立模型）
+      - snapshot_flow 三件套生命周期
+      - Event Ledger event_code_id 强绑定
+      - freeze_policy 增加版本号
+      - snapshot_invalid_test + Sprint51 test_baseline
+      - Vehicle/Driver 统一为 Allocation Resource Reference
+    update_type: 意图契约评审修订
+    effect_scope: Sprint50 Execution Closure
+  1.0.72:
+    update_content: |
+      Sprint50-B 契约 v1.1 评审修订（INT-TMS-SPRINT50B-001）：
+      - Vehicle/Driver 收敛为 Allocation Reference Model（不建 Fleet）
+      - plan.reserve=Validation / order.allocated=Verification
+      - transport_event_code 版本化 + Ledger event_code_status
+      - TransportPlan 父子聚合关系明确
+      - 快递豁免三断言测试边界
+      - freeze_policy 正式化（states + event codes）
+    update_type: 意图契约评审修订
+    effect_scope: Sprint50 Execution Closure
+  1.0.71:
+    update_content: |
+      Sprint50-B 契约起草 INT-TMS-SPRINT50B-001（CREATED）：
+      - Plan 外键收敛方案 A（默认）与方案 B（双审批备选）
+      - Vehicle/Driver 分配侧主数据 + RULE-VEHICLE-003/004/005 闭环
+      - order.allocated 双条件守卫（snapshot exists + valid）
+      - Event Dictionary 最终化与 Ledger 编码校验
+      - 五模型业务链路最终测试（正常陆运/ADR BLOCK/快递豁免）
+    update_type: 意图契约起草
+    effect_scope: Sprint50 Execution Closure
   1.0.70:
     update_content: |
       Sprint50-A 开发实施（wd_tlms 1.0.121）：

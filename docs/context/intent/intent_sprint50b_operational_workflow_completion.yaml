@@ -1,0 +1,215 @@
+# ==============================================================
+# Sprint50-B Intent 契约 v1.2（第二轮评审修订）
+# — TLMS Operational Workflow Completion
+# 基线：docs/context/business/workflow_engine.md V1.0
+# 前置依赖：INT-TMS-SPRINT50-001 / INT-TMS-SPRINT50A-001
+#          INT-TMS-SPRINT49A-001 / INT-TMS-SPRINT49B-001
+# 起草：2026-08-06
+# 修订：2026-08-06 v1.1（7 项收敛）；v1.2（7 项 P1/P2 修改 + 文字微调）
+# ==============================================================
+intent_id: INT-TMS-SPRINT50B-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT50-001
+- INT-TMS-SPRINT50A-001
+- INT-TMS-SPRINT49A-001
+- INT-TMS-SPRINT49B-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: TLMS Operational Workflow Completion
+
+target_scope: >
+  完成 Workflow Engine 从“状态转换能力”收敛为“事件驱动运输执行闭环”，
+  冻结 Sprint49-B / Sprint50 / Sprint50-A 的车辆规则与事件模型，
+  为 Sprint51 全量回归提供稳定测试基线。评审后范围：
+  1. TransportPlan 唯一 Workflow 状态归属：
+     - TransportPlan owns：scheduled / reserved / executing /
+       finished / failed / cancelled；
+     - Detail models（PickupPlanDetail / ContainerTransportDetail）
+       do_not_own_workflow_state，只存业务操作属性；
+     - 禁止出现 transport.plan.state / pickup_plan.state /
+       container_plan.state 三状态并存
+  2. Plan 聚合模型：
+     - TransportPlan 为父对象（workflow lifecycle / reservation /
+       allocation reference）；
+     - PickupPlanDetail / ContainerTransportDetail 为业务明细子对象，
+       仅含业务操作明细；默认方案 A（不物理删除），方案 B 需双审批
+  3. Allocation Resource Reference（原 Vehicle / Driver）：
+     - 仅定义执行校验所需字段：
+       Vehicle Resource：vehicle_id / capacity / body_type / adr_valid；
+       Driver Resource：driver_id / adr_valid / adr_expiry_date；
+     - 不建设 Fleet Management；不新增 trailer / warehouse_slot /
+       crane 等资源域，但命名保留扩展空间
+  4. allocation_candidate 生命周期冻结：
+     - type：JSON snapshot draft；
+     - location：transport.plan；
+     - purpose：plan.reserve 的临时校验结果；
+     - NOT：独立业务对象 / 资源池对象；
+     - 不新增 candidate / allocation / assignment / reservation
+       四层对象
+  5. snapshot_flow 生命周期：
+     Request：vehicle_requirement_snapshot
+         ↓
+     Plan：allocation_candidate（JSON draft）
+         ↓
+     Order：vehicle_allocation_snapshot（固化）
+     - plan.reserve = Validation（执行规则，生成 allocation_candidate）；
+     - order.allocated = Verification（仅验证 snapshot exists + valid +
+       assignment unchanged，不重算规则）
+  6. Event Dictionary 版本化 + Ledger 强绑定：
+     - transport_event_code：code / name / category / version /
+       active / deprecated_at；编码不可删除只能废弃；
+     - transport.event.ledger.event_code_id required；
+       event_type 为 readonly related field，禁止直接写 event_type；
+     - Ledger event_code_status：validated / legacy / deprecated，
+       历史事件不篡改，存量自由文本映射 LEGACY_*
+  7. 五模型业务链路最终测试：
+     - 正常陆运全链路 PASS；
+     - ADR 异常（ADR 货物 + 无 ADR 司机）→ BLOCK；
+     - 快递豁免断言：vehicle_allocation_snapshot IS NULL、
+       vehicle validation NOT executed、ADR rule NOT executed；
+     - snapshot_invalid_test：已过期/失效的 vehicle_requirement_snapshot
+       → order.allocate BLOCK（验证已确认业务不受规则变化影响）
+  8. Sprint51 test_baseline 输出：
+     - freeze：workflow states / event codes / vehicle snapshots /
+       allocation reference fields；
+     - used_by：Sprint51 regression
+
+freeze_policy:
+  after_sprint: Sprint50-B
+  freeze:
+  - workflow states
+  - event codes
+  - vehicle snapshots
+  - allocation reference fields
+  freeze_version:
+    workflow_version: "1.0"
+    event_dictionary_version: "1.0"
+    vehicle_rule_version: "1.0"
+  change_requires:
+  - business_owner_approval
+  - architect_approval
+
+snapshot_flow:
+  request:
+    artifact: vehicle_requirement_snapshot
+    lifecycle: submitted 后冻结
+  plan:
+    artifact: allocation_candidate
+    lifecycle: plan.reserve 临时校验结果（JSON draft，非业务对象）
+  order:
+    artifact: vehicle_allocation_snapshot
+    lifecycle: order.allocated 固化，不可变
+
+allocation_candidate:
+  type: JSON snapshot draft
+  location: transport.plan
+  purpose: temporary validation result
+  independent_business_object: false
+
+accept_criteria:
+- "TransportPlan 唯一 Workflow 状态归属落地，detail models 不再维护 state"
+- "Allocation Resource Reference 字段冻结，无 Fleet Management 扩展"
+- "allocation_candidate 为 transport.plan 上的 JSON draft，未新增独立模型"
+- "snapshot_flow 三件套生命周期清晰：requirement → candidate → allocation"
+- "plan.reserve 执行规则并生成 allocation_candidate；order.allocated 仅验证快照"
+- "Event Ledger event_code_id required + event_type readonly related，禁止直接写"
+- "transport_event_code 版本化，编码不可删除只能废弃"
+- "快递豁免三断言 + snapshot_invalid_test 自动化用例通过"
+- "test_baseline 输出冻结清单供 Sprint51 regression 使用"
+- "XML-RPC 常驻升级通过，日志零 ERROR；决策/版本/验证文档同步更新"
+
+source:
+  type: regular_audit
+  origin_team: 业务 + 研发 + 架构
+  based_on:
+  - "Sprint50-B Intent 契约 v1.1 评审（2026-08-06）"
+  - "INT-TMS-SPRINT50A-001 v1.1"
+  - "docs/context/business/transport_event_dictionary.md"
+  - "docs/context/business/state_migration_plan.md"
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/models/transport_plan.py
+  - addons/wd_tlms/models/pickup_plan.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_event_ledger.py
+  - addons/wd_tlms/models/transport_event_code.py
+  - addons/wd_tlms/models/transport_allocation_reference.py
+  - addons/wd_tlms/models/schedule_plan.py
+  - addons/wd_tlms/services/workflow_engine.py
+  - addons/wd_tlms/services/business_matrix_service.py
+  - addons/wd_tlms/business_matrix/rules/vehicle_rules.py
+  - addons/wd_tlms/data/workflow_guard_data.xml
+  - addons/wd_tlms/data/transport_event_code_data.xml
+  - addons/wd_tlms/views/transport_plan_views.xml
+  - addons/wd_tlms/views/pickup_plan_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  - addons/wd_tlms/views/transport_workflow_views.xml
+  - addons/wd_tlms/security/ir.model.access.csv
+  - addons/wd_tlms/tests/
+  business:
+  - docs/context/business/workflow_engine.md
+  - docs/context/business/vehicle_requirement.md
+  - docs/context/business/transport_event_dictionary.md
+  - docs/context/business/state_migration_plan.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "TransportPlan 唯一状态归属 + 父子聚合（PickupPlanDetail / ContainerTransportDetail）"
+- "Allocation Resource Reference（Vehicle / Driver 冻结字段）"
+- "allocation_candidate JSON draft（transport.plan）"
+- "snapshot_flow 三件套生命周期说明"
+- "transport_event_code 版本化 + Ledger event_code_id 强绑定"
+- "快递豁免三断言 + snapshot_invalid_test"
+- "Sprint51 test_baseline 冻结清单"
+- "freeze_policy（含版本号）与决策/版本/验证文档更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. 不新增业务场景、不新增 request 车辆需求字段、不新增状态、不新增规则维度
+  3. 不建设 Carrier Settlement / OCR / Fleet Management；
+     不新增 trailer / warehouse_slot / crane 资源域
+  4. allocation_candidate 不建独立模型，不引入四层对象
+  5. plan 物理迁移（方案 B）需业务 + 架构双审批，默认执行方案 A
+  6. order.allocated 只验证快照，不重算规则；事件仅记录事实
+  7. Event Ledger event_type 禁止直接写，必须经 event_code_id
+  8. 49-B vehicle_requirement_snapshot 与已冻结规则保持不变
+
+risk_precheck: |
+  - TransportPlan 状态迁移需从 detail models 收敛，避免三状态并存
+  - 外键切换涉及 schedule / order / request / 视图 / 安全 / 测试，
+    先依赖梳理再分批切换，兼容周期内旧外键保留
+  - order.allocated 快照验证需兼容存量 allocated 订单（补 snapshot）
+  - Event Ledger 强绑定上线前，存量自由文本映射 LEGACY_* 并标记 legacy
+  - snapshot_invalid_test 需真实构造失效快照，防止规则变更影响已确认业务
+  - 快递豁免断言需防止空 JSON snapshot 被误判为有效分配
+  - 业务链路测试依赖真实场景数据，测试库需先稳定（Sprint51 前）

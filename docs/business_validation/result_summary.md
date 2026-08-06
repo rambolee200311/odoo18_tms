@@ -108,6 +108,24 @@
 | 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
 | 8089 端口 | 已释放 |
 
+## Sprint50-B Operational Workflow Completion（2026-08-06）
+
+### 验证
+
+| Check | Result |
+|-------|--------|
+| TestWorkflowEngine（20 项） | PASS |
+| transport_event_code 种子 | 41 条 |
+| Ledger event_code_id / event_code_status | 已建字段并强绑定 |
+| TransportPlan 唯一状态归属 | PASS（detail 为 related 投影） |
+| allocation_candidate JSON draft | PASS（不建独立模型） |
+| plan.reserve Validation / order.allocated Verification | PASS |
+| 快递豁免无 allocation | PASS（snapshot NULL） |
+| 全量 392 项测试中历史脏数据错误 | 148 errors / 8 failures（与本次无关） |
+| XML-RPC button_immediate_upgrade | 18.0.1.0.121 → 18.0.1.0.122 PASS |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| 8089 端口 | 已释放 |
+
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*

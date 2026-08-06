@@ -112,4 +112,21 @@
         <field name="message">assignment_context is required for reservation</field>
         <field name="sequence">20</field>
     </record>
+    <record id="guard_transport_plan_general" model="tlmp.workflow.guard">
+        <field name="name">Transport Plan General Guard</field>
+        <field name="res_model">tlmp.transport.plan</field>
+        <field name="from_state">*</field>
+        <field name="to_state">*</field>
+        <field name="guard_code">general</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="guard_transport_plan_reserve" model="tlmp.workflow.guard">
+        <field name="name">Transport Plan Scheduled->Reserved Guard</field>
+        <field name="res_model">tlmp.transport.plan</field>
+        <field name="from_state">scheduled</field>
+        <field name="to_state">reserved</field>
+        <field name="guard_code">assignment_context_required</field>
+        <field name="message">assignment_context is required for reservation (except exempted)</field>
+        <field name="sequence">20</field>
+    </record>
 </odoo>

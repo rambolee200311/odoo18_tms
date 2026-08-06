@@ -62,9 +62,25 @@ class TestWorkflowEngine(TransactionCase):
             'request_id': req.id,
             'transport_type_id': self.transport_type.id,
             'state': kwargs.get('state', 'draft'),
+            'pickup_plan_id': kwargs.get('pickup_plan_id', False),
             'cargo_weight': kwargs.get('cargo_weight', 100.0),
             'delivered_qty': kwargs.get('delivered_qty', 0.0),
         })
+
+    def _reserve_plan(self, req, assignment=None):
+        plan = self.env['pickup.plan'].create({
+            'name': 'WF-PLAN',
+            'transport_request_id': req.id,
+            'scene_id': self.scene.id,
+            'cargo_type': 'container',
+            'destination_type': 'warehouse',
+            'warehouse_id': self.wh.id,
+        })
+        plan.action_schedule()
+        if assignment is not None:
+            plan.assignment_context = json.dumps(assignment)
+        plan.action_reserve()
+        return plan
 
     def _ledger(self, req, event_type):
         return self.env['tlmp.transport.event.ledger'].search([
@@ -131,8 +147,13 @@ class TestWorkflowEngine(TransactionCase):
             vehicle_body_type='reefer_refrigerated',
             vehicle_capacity_requirement='below_40t')
         req.action_confirm()
-        order = self._order(req, state='confirmed')
-        order.action_allocate()
+        plan = self._reserve_plan(req, {
+            'driver_id': 1,
+            'driver_adr_valid': True,
+            'expiry_date': '2030-01-01',
+        })
+        order = self._order(req, state='confirmed', pickup_plan_id=plan.id)
+        order.transition_to_allocated()
         self.assertEqual(order.state, 'allocated')
         snapshot = json.loads(order.vehicle_allocation_snapshot)
         self.assertEqual(
@@ -148,8 +169,13 @@ class TestWorkflowEngine(TransactionCase):
     def test_07_order_exception_recovery(self):
         req = self._request()
         req.action_confirm()
-        order = self._order(req, state='confirmed')
-        order.action_allocate()
+        plan = self._reserve_plan(req, {
+            'driver_id': 1,
+            'driver_adr_valid': True,
+            'expiry_date': '2030-01-01',
+        })
+        order = self._order(req, state='confirmed', pickup_plan_id=plan.id)
+        order.transition_to_allocated()
         order.action_raise_exception(
             exception_type='delay', recovery='in_transit')
         self.assertEqual(order.state, 'exception')
@@ -201,30 +227,19 @@ class TestWorkflowEngine(TransactionCase):
 
     def test_10_plan_reserve(self):
         req = self._request()
-        plan = self.env['pickup.plan'].create({
-            'name': 'WF-PLAN',
-            'transport_request_id': req.id,
-            'scene_id': self.scene.id,
-            'cargo_type': 'container',
-            'destination_type': 'warehouse',
-            'warehouse_id': self.wh.id,
-        })
-        plan.action_schedule()
-        self.assertEqual(plan.state, 'scheduled')
-        self.assertTrue(plan.transport_plan_id)
-        plan.assignment_context = json.dumps({
+        plan = self._reserve_plan(req, {
             'driver_id': 1,
             'driver_adr_valid': True,
             'expiry_date': '2030-01-01',
         })
-        plan.action_reserve(reservation_type='vehicle')
+        self.assertTrue(plan.transport_plan_id)
         self.assertEqual(plan.state, 'reserved')
         self.assertEqual(plan.reservation_type, 'vehicle')
-        self.assertTrue(plan.vehicle_allocation_snapshot)
         self.assertEqual(plan.transport_plan_id.state, 'reserved')
+        self.assertTrue(plan.transport_plan_id.allocation_candidate_valid)
         self.assertTrue(self.env['tlmp.transport.event.ledger'].search([
-            ('res_model', '=', 'pickup.plan'),
-            ('res_id', '=', plan.id),
+            ('res_model', '=', 'tlmp.transport.plan'),
+            ('res_id', '=', plan.transport_plan_id.id),
             ('event_type', '=', 'PLAN_RESERVED'),
         ], limit=1))
 
@@ -248,17 +263,18 @@ class TestWorkflowEngine(TransactionCase):
     def test_13_pod_guard_blocks_delivery(self):
         req = self._request()
         req.action_confirm()
-        order = self._order(req, state='confirmed')
-        order.action_allocate()
+        plan = self._reserve_plan(req, {
+            'driver_id': 1,
+            'driver_adr_valid': True,
+            'expiry_date': '2030-01-01',
+        })
+        order = self._order(req, state='confirmed', pickup_plan_id=plan.id)
+        order.transition_to_allocated()
         order.action_start_transit()
         with self.assertRaises(UserError):
             order.action_deliver()
-        self.env['tlmp.transport.event.ledger'].create({
-            'res_model': 'tlmp.transport.order',
-            'res_id': order.id,
-            'event_type': 'POD_RECEIVED',
-            'event_category': 'business',
-        })
+        self.env['tlmp.workflow.engine'].write_event(
+            order, 'POD_RECEIVED', 'business')
         order.action_deliver()
         self.assertEqual(order.state, 'delivered')
 
@@ -291,7 +307,7 @@ class TestWorkflowEngine(TransactionCase):
         self.assertEqual(inquiry.state, 'accepted')
         self.assertEqual(quote.state, 'sent')
         self.assertEqual(order.state, 'assigned')
-        self.assertEqual(plan.state, 'confirmed')
+        self.assertEqual(plan.state, 'reserved')
         migration.run(dry_run=False)
         self.assertEqual(req.state, 'submitted')
         self.assertEqual(req.validation_state, 'passed')
@@ -351,6 +367,69 @@ class TestWorkflowEngine(TransactionCase):
             dg_adr_class='3',
             dg_un_code='UN1203')
         req.action_confirm()
+        plan = self.env['pickup.plan'].create({
+            'name': 'ADR-PLAN',
+            'transport_request_id': req.id,
+            'scene_id': self.scene.id,
+            'cargo_type': 'container',
+            'destination_type': 'warehouse',
+            'warehouse_id': self.wh.id,
+        })
+        plan.action_schedule()
+        with self.assertRaises(UserError):
+            plan.action_reserve()
         order = self._order(req, state='confirmed')
         with self.assertRaises(UserError):
             order.transition_to_allocated()
+
+    def test_18_event_code_binding(self):
+        req = self._request()
+        engine = self.env['tlmp.workflow.engine']
+        with self.assertRaises(UserError):
+            engine.write_event(req, 'NOT_A_REAL_CODE', 'state')
+        engine.write_event(req, 'REQUEST_SUBMITTED', 'state')
+        event = self.env['tlmp.transport.event.ledger'].search([
+            ('res_model', '=', 'tlmp.transport.request'),
+            ('res_id', '=', req.id),
+            ('event_type', '=', 'REQUEST_SUBMITTED'),
+        ], limit=1)
+        self.assertTrue(event.event_code_id)
+        self.assertEqual(event.event_code_status, 'validated')
+
+    def test_19_snapshot_invalid_blocks_allocation(self):
+        req = self._request()
+        req.action_confirm()
+        req.with_context(
+            skip_vehicle_requirement_validation=True).write({
+                'vehicle_requirement_snapshot': json.dumps({
+                    'vehicle_requirement_validation_result': 'block',
+                }),
+            })
+        plan = self._reserve_plan(req, {
+            'driver_id': 1,
+            'driver_adr_valid': True,
+            'expiry_date': '2030-01-01',
+        })
+        order = self._order(req, state='confirmed', pickup_plan_id=plan.id)
+        with self.assertRaises(UserError):
+            order.transition_to_allocated()
+
+    def test_20_courier_exemption_no_allocation(self):
+        req = self._request(carrier_type='courier', cargo_type='piece')
+        req.action_confirm()
+        plan = self.env['pickup.plan'].create({
+            'name': 'EXP-PLAN',
+            'transport_request_id': req.id,
+            'scene_id': self.scene.id,
+            'cargo_type': 'piece',
+            'destination_type': 'warehouse',
+            'warehouse_id': self.wh.id,
+        })
+        plan.action_schedule()
+        plan.action_reserve()
+        self.assertEqual(plan.transport_plan_id.state, 'reserved')
+        self.assertFalse(plan.transport_plan_id.allocation_candidate)
+        order = self._order(req, state='confirmed', pickup_plan_id=plan.id)
+        order.transition_to_allocated()
+        self.assertEqual(order.state, 'allocated')
+        self.assertFalse(order.vehicle_allocation_snapshot)
