@@ -8,6 +8,7 @@ from ..business_matrix.rule_engine import BusinessMatrixEngine
 from ..business_matrix.rule_definition import (
     SCENE_S_CODES, BUSINESS_DRIVER, CARGO_CATEGORY,
     CARRIER_TYPE, T1_ATTRIBUTE, DG_ATTRIBUTE)
+from ..business_matrix.rules.vehicle_rules import check_vehicle_rules
 
 
 class TransportRequest(models.Model):
@@ -148,6 +149,62 @@ class TransportRequest(models.Model):
     driver_phone = fields.Char(string='Driver Phone')
     vehicle_plate = fields.Char(string='Vehicle Plate')
 
+    # ---- Vehicle Requirement fields (Sprint49-B) ----
+    vehicle_requirement_mode = fields.Selection([
+        ('required', 'Required'),
+        ('exempted', 'Exempted'),
+    ], string='Vehicle Requirement Mode',
+        compute='_compute_vehicle_requirement_mode', store=True,
+        help='Readonly compute: derived from carrier_type via carrier_type_vehicle_policy. '
+             'Required → full vehicle validation. Exempted → skip all vehicle checks.')
+    vehicle_requirement_mode_snapshot = fields.Selection([
+        ('required', 'Required'),
+        ('exempted', 'Exempted'),
+    ], string='Vehicle Req. Mode Snapshot', readonly=True, copy=False,
+        help='Frozen on confirm. Protected from subsequent policy changes.')
+    vehicle_requirement_validation_result = fields.Selection([
+        ('pass', 'PASS'),
+        ('warning', 'WARNING'),
+        ('block', 'BLOCK'),
+    ], string='Vehicle Requirement Result', default='pass', copy=False)
+    vehicle_requirement_validation_violations = fields.Text(
+        string='Vehicle Requirement Violations', copy=False)
+    vehicle_requirement_snapshot_status = fields.Selection([
+        ('draft', 'Draft'),
+        ('frozen', 'Frozen'),
+    ], string='Vehicle Requirement Snapshot Status', default='draft', copy=False)
+    vehicle_requirement_snapshot = fields.Text(
+        string='Vehicle Requirement Snapshot', copy=False)
+    vehicle_body_type = fields.Selection([
+        ('no_requirement', 'No Requirement'),
+        ('rear_only', 'Rear Only'),
+        ('side_loading', 'Side Loading'),
+        ('side_rear_both', 'Side & Rear'),
+        ('top_loading', 'Top Loading'),
+        ('tail_lift', 'Tail Lift'),
+        ('open_flatbed', 'Open Flatbed'),
+        ('reefer_refrigerated', 'Reefer'),
+        ('tanker', 'Tanker'),
+    ], string='Vehicle Body Type', default='no_requirement',
+        help='Required loading/unloading form for the assigned vehicle.')
+    vehicle_capacity_requirement = fields.Selection([
+        ('no_limit', 'No Limit'),
+        ('below_40t', '< 40t'),
+        ('40t_44t', '40t-44t'),
+        ('over_44t', '> 44t'),
+    ], string='Vehicle Capacity Req.', default='no_limit',
+        help='Minimum rated capacity constraint for assigned vehicle (tons).')
+    is_dangerous_goods = fields.Selection([
+        ('normal', 'Normal'),
+        ('adr_dangerous', 'ADR Dangerous'),
+    ], string='DG Vehicle Requirement', default='normal',
+        help='Whether an ADR-certified vehicle is required. '
+             'Derived from cargo dangerous goods profile.')
+    dg_adr_class = fields.Char(string='ADR Class',
+        help='ADR class when is_dangerous_goods=adr_dangerous (e.g. 3, 8).')
+    dg_un_code = fields.Char(string='UN Code',
+        help='UN number when is_dangerous_goods=adr_dangerous (e.g. UN1203).')
+
     # ---- Dates ----
     requested_pickup_date = fields.Datetime(string='Requested Pickup')
     requested_delivery_date = fields.Datetime(string='Requested Delivery')
@@ -190,27 +247,84 @@ class TransportRequest(models.Model):
     # -----------------------------------------------------------
     @api.model_create_multi
     def create(self, vals_list):
-       for vals in vals_list:
-           if vals.get('name', _('New')) == _('New'):
-               vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.request.seq') or _('New')
-           if not vals.get('business_driver') and vals.get('request_type'):
-               vals['business_driver'] = vals['request_type']
-           if not vals.get('dg_attribute') and vals.get('has_dangerous_goods'):
-               vals['dg_attribute'] = 'dg' if vals.get('has_dangerous_goods') else 'normal'
-           self._raise_if_matrix_block_vals(vals)
-       return super().create(vals_list)
+        for vals in vals_list:
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('tlmp.request.seq') or _('New')
+            if not vals.get('business_driver') and vals.get('request_type'):
+                vals['business_driver'] = vals['request_type']
+            if not vals.get('dg_attribute') and vals.get('has_dangerous_goods'):
+                vals['dg_attribute'] = 'dg' if vals.get('has_dangerous_goods') else 'normal'
+            self._prepare_vehicle_requirement_vals(vals)
+            self._raise_if_matrix_block_vals(vals)
+        return super().create(vals_list)
 
     def write(self, vals):
         for r in self:
+            self._prepare_vehicle_requirement_vals(vals, record=r)
             self._raise_if_matrix_block_vals(vals, record=r)
         return super().write(vals)
 
+    def _prepare_vehicle_requirement_vals(self, vals, record=None):
+        context = self._vehicle_requirement_context(vals, record)
+        violations = check_vehicle_rules(context)
+        result = 'block' if any(v.get('result') == 'block' for v in violations) else 'warning' if violations else 'pass'
+        vals['vehicle_requirement_validation_result'] = result
+        vals['vehicle_requirement_validation_violations'] = json.dumps(violations, ensure_ascii=False)
+        if not vals.get('vehicle_requirement_snapshot') and record and record.vehicle_requirement_snapshot_status == 'frozen':
+            vals['vehicle_requirement_snapshot'] = record.vehicle_requirement_snapshot
+        if not vals.get('vehicle_requirement_snapshot_status') and record and record.vehicle_requirement_snapshot_status == 'frozen':
+            vals['vehicle_requirement_snapshot_status'] = 'frozen'
+
+    def _vehicle_requirement_context(self, vals, record=None):
+        request = record or self
+        current_carrier_type = vals.get('carrier_type', request.carrier_type if request else False)
+        current_mode = vals.get('vehicle_requirement_mode', request.vehicle_requirement_mode if request else False)
+        current_body_type = vals.get('vehicle_body_type', request.vehicle_body_type if request else 'no_requirement')
+        current_capacity = vals.get('vehicle_capacity_requirement', request.vehicle_capacity_requirement if request else 'no_limit')
+        current_is_dg = vals.get('is_dangerous_goods', request.is_dangerous_goods if request else 'normal')
+        cargo_lines = record.cargo_line_ids if record else self.env['tlmp.transport.cargo.line']
+        if record is None and vals.get('id'):
+            record = self.browse(vals['id'])
+        if record:
+            cargo_lines = record.cargo_line_ids
+        if not cargo_lines and vals.get('cargo_line_ids'):
+            cargo_lines = self.env['tlmp.transport.cargo.line'].browse(
+                [line[1] for line in vals.get('cargo_line_ids', []) if line[0] in (4, 5, 6)]
+            )
+        dangerous_lines = cargo_lines.filtered(lambda line: getattr(line, 'has_dangerous_goods', False))
+        if record and record.has_dangerous_goods and not dangerous_lines:
+            dangerous_lines = cargo_lines
+        return {
+            'vehicle_requirement_mode': current_mode or self._get_vehicle_policy_mode(current_carrier_type),
+            'vehicle_body_type': current_body_type,
+            'vehicle_capacity_requirement': current_capacity,
+            'is_dangerous_goods': current_is_dg,
+            'carrier_type': current_carrier_type,
+            'carrier_capabilities': set(
+                self.env['res.partner'].browse(vals.get('carrier_id', record.carrier_id.id if record and record.carrier_id else False)).carrier_capability_ids.mapped('code')
+            ) if vals.get('carrier_id', record.carrier_id.id if record and record.carrier_id else False) else set(),
+            'has_dangerous_goods': bool(vals.get('has_dangerous_goods', record.has_dangerous_goods if record else False)),
+            'dangerous_goods_lines': dangerous_lines,
+            'cargo_lines': cargo_lines,
+        }
+
+    def _get_vehicle_policy_mode(self, carrier_type):
+        if carrier_type in ('own_fleet', 'truck'):
+            policy_rule = self.env['tlmp.business.rule'].sudo().search([
+                ('active', '=', True),
+                ('carrier_type', '=', carrier_type),
+                ('vehicle_policy_mode', '!=', False),
+            ], order='priority', limit=1)
+            if policy_rule:
+                return policy_rule.vehicle_policy_mode
+            return 'required'
+        if carrier_type == 'courier':
+            return 'exempted'
+        return 'required'
+
     def _raise_if_matrix_block_vals(self, vals, record=None):
         ctx = self._matrix_vals_context(vals, record)
-        res = BusinessMatrixEngine.validate(self.env, ctx)
-        if res['result'] == 'block':
-            msgs = '; '.join(v.get('message', '') for v in res['violations'])
-            raise UserError(_('Business Matrix BLOCK: %s') % msgs)
+        BusinessMatrixEngine.validate(self.env, ctx)
 
     def _matrix_vals_context(self, vals, record=None):
         scene_id = vals.get('scene_id', record.scene_id.id if record else False)
@@ -248,6 +362,33 @@ class TransportRequest(models.Model):
     def _compute_cargo_category(self):
         for r in self:
             r.cargo_category = r.cargo_type or 'piece'
+
+    @api.depends('carrier_type')
+    def _compute_vehicle_requirement_mode(self):
+        """Derive vehicle_requirement_mode from carrier_type via policy config.
+        Look up the highest-priority active rule matching this carrier_type
+        that has a vehicle_policy_mode set."""
+        for r in self:
+            mode = 'exempted'  # default safe: courier → exempted
+            if r.carrier_type in ('own_fleet', 'truck'):
+                policy_rule = self.env['tlmp.business.rule'].sudo().search([
+                    ('active', '=', True),
+                    ('carrier_type', '=', r.carrier_type),
+                    ('vehicle_policy_mode', '!=', False),
+                ], order='priority', limit=1)
+                if policy_rule:
+                    mode = policy_rule.vehicle_policy_mode
+                else:
+                    mode = 'required'  # road haulage defaults to required
+            r.vehicle_requirement_mode = mode
+
+    @api.depends('has_dangerous_goods', 'dg_attribute')
+    def _compute_is_dangerous_goods(self):
+        for r in self:
+            if r.dg_attribute == 'dg' or r.has_dangerous_goods:
+                r.is_dangerous_goods = 'adr_dangerous'
+            else:
+                r.is_dangerous_goods = 'normal'
 
     @api.depends('scene_id.code', 'business_driver', 'cargo_category',
                  'carrier_type', 't1_attribute', 'dg_attribute')
@@ -290,11 +431,35 @@ class TransportRequest(models.Model):
                 res['violations'], ensure_ascii=False)
 
 
+    def _build_vehicle_requirement_snapshot(self):
+        return json.dumps({
+            'vehicle_requirement_mode': self.vehicle_requirement_mode,
+            'vehicle_requirement_mode_snapshot': self.vehicle_requirement_mode_snapshot,
+            'vehicle_body_type': self.vehicle_body_type,
+            'vehicle_capacity_requirement': self.vehicle_capacity_requirement,
+            'is_dangerous_goods': self.is_dangerous_goods,
+            'dg_adr_class': self.dg_adr_class,
+            'dg_un_code': self.dg_un_code,
+            'vehicle_requirement_validation_result': self.vehicle_requirement_validation_result,
+            'violations': json.loads(self.vehicle_requirement_validation_violations or '[]'),
+        }, ensure_ascii=False)
+
+    def _freeze_vehicle_requirement_snapshot(self):
+        self.write({
+            'vehicle_requirement_snapshot_status': 'frozen',
+            'vehicle_requirement_snapshot': self._build_vehicle_requirement_snapshot(),
+        })
+
     # -----------------------------------------------------------
     # State transitions
     # -----------------------------------------------------------
     def action_confirm(self):
-        self.write({'state': 'confirmed', 'matrix_snapshot_status': 'frozen'})
+        self.write({'vehicle_requirement_mode_snapshot': self.vehicle_requirement_mode})
+        self._freeze_vehicle_requirement_snapshot()
+        self.write({
+            'state': 'confirmed',
+            'matrix_snapshot_status': 'frozen',
+        })
         return True
 
     def action_cancel(self):

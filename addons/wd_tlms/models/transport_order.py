@@ -24,6 +24,10 @@ class TransportOrder(models.Model):
             for rec in self:
                 if rec.snapshot_status in ('confirmed', 'locked'):
                     raise UserError(_('Cargo snapshot is frozen after order confirmation.'))
+        if 'vehicle_requirement_snapshot' in vals:
+            for rec in self:
+                if rec.state in ('confirmed', 'done', 'cancelled'):
+                    raise UserError(_('Vehicle requirement snapshot is frozen after order confirmation.'))
         return super().write(vals)
     _description = 'Transport Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -119,6 +123,9 @@ class TransportOrder(models.Model):
         ('block', 'BLOCK'),
     ], string='Matrix Result', readonly=True)
     matrix_snapshot = fields.Text(string='Matrix Snapshot', readonly=True)
+    vehicle_requirement_snapshot = fields.Text(
+        string='Vehicle Requirement Snapshot', readonly=True, copy=False,
+        help='JSON snapshot of vehicle requirement at order creation. Frozen after confirm.')
     container_ids = fields.One2many('tlmp.transport.container', 'order_id', string='Containers')
     container_no_set = fields.Char(string='Container No. Set')
     swap_container = fields.Boolean(string='Swap Container')

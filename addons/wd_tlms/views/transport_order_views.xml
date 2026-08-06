@@ -123,6 +123,9 @@
                                      <field name="adr_packing_group" invisible="not has_dangerous_goods"/>
                                      <field name="adr_tunnel_code" invisible="not has_dangerous_goods"/>
                                  </group>
+                                 <group string="Vehicle Requirement Snapshot">
+                                     <field name="vehicle_requirement_snapshot" readonly="1"/>
+                                 </group>
                              </group>
                              <group string="Cargo Lines Snapshot">
                                  <field name="cargo_line_ids" readonly="snapshot_status != 'draft'">

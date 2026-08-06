@@ -1731,6 +1731,18 @@ violations[] timestamp 统一与文档一致性。
 
 ---
 
+## Sprint49-B 契约起草：Vehicle Requirement & Allocation Rules（2026-08-05）
+
+已阅读 `vehicle_requirement.md` V1.0（Development Baseline）并起草
+INT-TMS-SPRINT49B-001（CREATED）：
+- transport_service_type 分流（road_haulage / express_courier）；
+- request 车辆需求三态（pending/confirmed/failed）+ required/exempted 模式；
+- order 双快照（vehicle_requirement_snapshot / vehicle_allocation_snapshot）；
+- RULE-VEHICLE-000~005 规则与优先级（分流 > ADR > 载重 > 车型）；
+- 快递完全豁免、陆运全量校验，链路 request→inquiry→quote→plan→order 透传。
+
+---
+
 ## Sprint50 契约起草：TLMS Workflow Engine（2026-08-05）
 
 已阅读 `docs/context/business/workflow_engine.md` V1.0（五模型状态机 + Event Ledger）：

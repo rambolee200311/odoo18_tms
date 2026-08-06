@@ -1,0 +1,198 @@
+# ==============================================================
+# Sprint49-B Intent 契约 — TLMS Vehicle Requirement Rule Foundation
+# 基线：docs/context/business/vehicle_requirement.md V1.0（Development Baseline）
+# 前置依赖：INT-TMS-SPRINT49-001 / INT-TMS-SPRINT49A-001
+# ==============================================================
+intent_id: INT-TMS-SPRINT49B-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT49-001
+- INT-TMS-SPRINT49A-001
+intent_work_type: Development
+intent_change_type: New Feature
+title: Sprint49-B — TLMS Vehicle Requirement Rule Foundation
+
+target_scope: >
+  按 vehicle_requirement.md V1.0 落地车辆需求规则，归属业务规则引擎，
+  不新增 Workflow 主状态：
+  1. transport.request 新增 vehicle_requirement_mode
+     （required / exempted），用于判断是否需要车辆能力；
+     vehicle_requirement_mode 为实时计算字段（readonly compute,
+     基于 carrier_type + carrier_type_vehicle_policy 配置推导），
+     禁止业务人员手工修改；
+     新增 vehicle_requirement_mode_snapshot 冻结字段，
+     request submitted 后将当前 vehicle_requirement_mode 值写入 snapshot，
+     snapshot 写入后不可变，不受后续 carrier_type_vehicle_policy 配置变更影响；
+     确认前：读取实时 vehicle_requirement_mode（compute），
+     确认后：读取 vehicle_requirement_mode_snapshot（frozen）
+  2. 新增 carrier_type_vehicle_policy 配置：
+     复用 tlmp.business.rule 模型（不新建独立 model），
+     通过 Business Matrix Rule Engine 管理 carrier_type → vehicle_requirement_mode 映射，
+     管理员可维护；
+     carrier_type_vehicle_policy 仅控制车辆规则适用性（是否需要车辆校验），
+     不决定具体车辆能力要求（车辆能力来自 request.vehicle_body_type /
+     vehicle_capacity_requirement / dangerous_goods_requirement）
+  3. request 车辆需求结构：
+     vehicle_requirement_mode（required/exempted, readonly compute）、
+     vehicle_requirement_mode_snapshot（frozen after submit）、
+     vehicle_body_type、vehicle_capacity_requirement、
+     dangerous_goods_requirement：
+     { is_dangerous_goods: normal | adr_dangerous,
+       adr_class: 可为空（normal 时 NULL）,
+       un_code: 可为空（normal 时 NULL） }；
+     ADR 车辆需求由 dangerous_goods_requirement.is_dangerous_goods 推导，
+     不引入独立的 require_adr_vehicle 字段；
+     需求结果通过 Sprint49-A Rule Result（PASS/WARNING/BLOCK）表达，
+     不新增 vehicle_requirement_state
+  4. 默认初始化：根据 carrier_type_vehicle_policy 配置计算
+     vehicle_requirement_mode；
+     vehicle_requirement_mode=required →
+     默认 vehicle_body_type=no_requirement,
+     vehicle_capacity_requirement=no_limit,
+     dangerous_goods_requirement 根据货物危险品等级推导；
+     vehicle_requirement_mode=exempted →
+     跳过全部车辆校验
+  5. transport.order 保存 vehicle_requirement_snapshot，
+     confirm 后不可变；vehicle_allocation_snapshot 由 Sprint50 实现
+  6. transport.plan 读取 Vehicle Requirement Result，
+     在资源匹配阶段调用规则校验；不在此 Sprint 实现 Vehicle Allocation
+  7. RULE-VEHICLE-000~003 & 005 配置化规则，通过 Business Matrix Rule Engine 执行：
+     RULE-VEHICLE-001 — 服务类型分流（carrier_type_vehicle_policy 适用性判断）
+     RULE-VEHICLE-002 — 危险品规则（ADR 承运能力 → ADR 车辆能力 → ADR/普通货互斥）
+     RULE-VEHICLE-003 — 载重能力（vehicle_capacity_requirement 校验）
+     RULE-VEHICLE-005 — 车型匹配（vehicle_body_type 校验）
+     （RULE-VEHICLE-004 ADR 司机资质规则归入 Sprint50 Vehicle Allocation，
+     Sprint49-B 仅校验 Carrier capability + Vehicle capability，不校验 Driver ADR）
+  8. 链路透传与展示策略：
+     request（实时 compute + submitted 后 snapshot 冻结）
+     → inquiry（required: 展示车辆约束摘要,
+       exempted: 展示"车辆要求：豁免"标记，不展示车型/载重编辑）
+     → quote（required: 运力匹配报价含车辆约束摘要,
+       exempted: 展示"车辆要求：豁免"标记）
+     → plan（读取 Vehicle Requirement Result，使用 snapshot）
+     → order（vehicle_requirement_snapshot 固化）
+
+accept_criteria:
+- "carrier_type_vehicle_policy 配置映射正确，carrier_type 配置为 exempted 的完全豁免车辆校验"
+- "vehicle_requirement_mode 为 readonly compute 字段，禁止业务人员手工编辑"
+- "vehicle_requirement_mode_snapshot 在 request submitted 后冻结，不受后续 policy 配置变更影响"
+- "carrier_type_vehicle_policy 修改后，已 confirm 的 request/order snapshot 不发生变化"
+- "request 车辆需求字段落地，dangerous_goods_requirement 由货物危险品等级推导，需求结果通过 Sprint49-A Rule Result（PASS/WARNING/BLOCK）表达"
+- "carrier_type_vehicle_policy 默认初始化规则生效，存量 request 回填"
+- "RULE-VEHICLE-000~003 & 005 通过 Business Matrix Rule Engine 执行，BLOCK 结果拦截履约"
+- "校验优先级：服务类型分流 > 危险品规则（ADR承运/ADR车辆/互斥） > 载重能力 > 车型匹配"
+- "order vehicle_requirement_snapshot 固化且 confirm 后不可变"
+- "plan 可以读取 vehicle requirement constraint"
+- "inquiry/quote 按展示策略：required→展示车辆约束摘要，exempted→展示'车辆要求：豁免'标记"
+- "carrier_type 切换后 vehicle_requirement_mode 自动重新计算（confirm 前），snapshot 不受影响"
+- "自动化测试覆盖：默认初始化、carrier_type 切换重算、分流隔离、
+  policy 变更不影响历史 snapshot、capacity/body/ADR 正负用例、BLOCK 拦截、
+  关键场景：D1+普通货+普通车→PASS, D1+ADR+无ADR车→BLOCK,
+  D1+超载车辆→BLOCK, D1+车型不匹配→BLOCK, D3快递+无车辆信息→PASS"
+- "XML-RPC 常驻升级通过，日志零 ERROR；decision/version/验证文档同步更新"
+
+source:
+  type: customer_demand
+  origin_team: 业务 + 研发
+  based_on:
+  - "docs/context/business/vehicle_requirement.md V1.0（Development Baseline）"
+  - "docs/context/business/business_matrix.md V1.0"
+  - "INT-TMS-SPRINT49-001 / INT-TMS-SPRINT49A-001"
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/models/transport_inquiry.py
+  - addons/wd_tlms/views/transport_request_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  - addons/wd_tlms/views/transport_quote_views.xml
+  - addons/wd_tlms/views/transport_inquiry_views.xml
+  - addons/wd_tlms/business_matrix/rule_engine.py
+  - addons/wd_tlms/data/business_matrix_data.xml
+  - addons/wd_tlms/tests/test_vehicle_requirement.py
+  business:
+  - docs/context/business/vehicle_requirement.md
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "vehicle_requirement_mode 实时计算逻辑（readonly compute）+
+  vehicle_requirement_mode_snapshot 冻结机制（submitted 后不可变）"
+- "carrier_type_vehicle_policy 配置映射（复用 tlmp.business.rule 模型），
+  仅控制车辆规则适用性，管理员可维护"
+- "request 车辆需求结构，dangerous_goods_requirement 含结构化定义
+  {is_dangerous_goods, adr_class, un_code}，需求结果通过 Rule Result 表达"
+- "RULE-VEHICLE-000~003 & 005 配置化规则，语义层级：
+  分流 > 危险品 > 载重 > 车型（ADR 司机资质归入 Sprint50）"
+- "order vehicle_requirement_snapshot 与不可变校验"
+- "plan 读取 Vehicle Requirement Result，在资源匹配阶段调用规则校验"
+- "inquiry/quote 车辆维度展示策略：
+  required→车辆约束摘要, exempted→'车辆要求：豁免'标记"
+- "自动化测试（含 carrier_type 切换重算、policy 变更不影响历史 snapshot）
+  与决策/版本文档更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. vehicle_requirement.md V1.0 为开发冻结基线；不再新增车辆维度字段，
+     后续仅规则参数微调
+  3. 不新增 Workflow 主状态；Rule Result 独立于 Workflow 状态，
+     不新增车辆生命周期状态
+  4. carrier_type → vehicle_requirement_mode 映射通过 carrier_type_vehicle_policy
+     配置实现（复用 tlmp.business.rule 模型），不新建独立 model，不硬编码；
+     carrier_type_vehicle_policy 仅控制车辆规则适用性，不决定车辆能力要求
+  5. order vehicle_requirement_snapshot confirm 后不可变；
+     vehicle_allocation_snapshot 归入 Sprint50
+  6. 规则通过 Business Matrix Rule Engine 执行，不硬编码在流程层，
+     不指定内部 API 名称
+  7. 复用 carrier_type 表达运输提供方类型，不新增 transport_service_type
+  8. vehicle_requirement_mode 为 readonly compute 字段，
+     业务人员不可编辑，仅管理员可维护 carrier_type_vehicle_policy 配置；
+     confirm 后使用 vehicle_requirement_mode_snapshot，不受 policy 变更影响
+  9. ADR 司机资质（Driver ADR qualification）不在 Sprint49-B 范围，
+     归入 Sprint50 Vehicle Allocation
+  10. 不引入 require_adr_vehicle 字段，
+      ADR 车辆需求由 dangerous_goods_requirement.is_dangerous_goods + 规则推导
+  11. dangerous_goods_requirement 结构化定义：
+      is_dangerous_goods: normal 时 adr_class/un_code 均为 NULL，
+      adr_dangerous 时 adr_class/un_code 必填
+
+risk_precheck: |
+  - carrier_type_vehicle_policy 配置需兼容存量数据回填
+  - 存量 request 需默认 vehicle_requirement_mode 回填
+    （根据 carrier_type 查询 policy 配置计算），
+    已 confirm 的 request 同时回填 vehicle_requirement_mode_snapshot
+  - vehicle_requirement_mode_snapshot 与实时 vehicle_requirement_mode
+    在 confirm 时刻必须一致，conflict 时报 BLOCK
+  - carrier_type_vehicle_policy 修改不影响已 confirm 的 request/order snapshot
+  - history/audit 需保留报价时可查看 vehicle_requirement_mode_snapshot 历史值
+  - vehicle_requirement_mode 为 compute 字段，人为修改 carrier_type 后自动重算
+    （confirm 前）; confirm 后使用 snapshot
+  - plan 只读取 Requirement Result，不在此 Sprint 实现 Vehicle Allocation
+  - 豁免场景需同时覆盖字段计算、校验跳过、inquiry/quote "豁免"标记展示与 order 快照

@@ -78,6 +78,21 @@
                              <field name="matrix_validation_result" widget="badge" readonly="1"/>
                          </group>
                      </group>
+                     <group string="Vehicle Requirement">
+                         <group>
+                             <field name="vehicle_requirement_mode" readonly="1"/>
+                             <field name="vehicle_requirement_mode_snapshot" readonly="1"/>
+                             <field name="vehicle_body_type"/>
+                             <field name="vehicle_capacity_requirement"/>
+                         </group>
+                         <group>
+                             <field name="is_dangerous_goods"/>
+                             <field name="dg_adr_class" invisible="is_dangerous_goods != 'adr_dangerous'"/>
+                             <field name="dg_un_code" invisible="is_dangerous_goods != 'adr_dangerous'"/>
+                             <field name="vehicle_requirement_validation_result" widget="badge" readonly="1"/>
+                             <field name="vehicle_requirement_snapshot_status" readonly="1"/>
+                         </group>
+                     </group>
                      <group string="Scene Details">
                          <group>
                              <field name="terminal_id"

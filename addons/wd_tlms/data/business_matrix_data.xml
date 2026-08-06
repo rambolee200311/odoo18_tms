@@ -103,4 +103,67 @@
         <field name="carrier_type">truck</field>
         <field name="dg_attribute">dg</field>
     </record>
+
+    <!-- Sprint49-B: carrier_type_vehicle_policy -->
+    <record id="vehicle_policy_own_fleet" model="tlmp.business.rule">
+        <field name="code">VEHICLE-POLICY-001</field>
+        <field name="name">自有车队车辆需求策略</field>
+        <field name="message_cn">自有车队默认启用车辆需求校验</field>
+        <field name="result">block</field>
+        <field name="priority">1</field>
+        <field name="carrier_type">own_fleet</field>
+        <field name="vehicle_policy_mode">required</field>
+    </record>
+    <record id="vehicle_policy_truck" model="tlmp.business.rule">
+        <field name="code">VEHICLE-POLICY-002</field>
+        <field name="name">第三方卡车车辆需求策略</field>
+        <field name="message_cn">第三方卡车默认启用车辆需求校验</field>
+        <field name="result">block</field>
+        <field name="priority">2</field>
+        <field name="carrier_type">truck</field>
+        <field name="vehicle_policy_mode">required</field>
+    </record>
+    <record id="vehicle_policy_courier" model="tlmp.business.rule">
+        <field name="code">VEHICLE-POLICY-003</field>
+        <field name="name">快递车辆需求豁免策略</field>
+        <field name="message_cn">快递运输豁免车辆需求校验</field>
+        <field name="result">block</field>
+        <field name="priority">3</field>
+        <field name="carrier_type">courier</field>
+        <field name="vehicle_policy_mode">exempted</field>
+    </record>
+
+    <!-- Sprint49-B: RULE-VEHICLE -->
+    <record id="business_rule_vehicle_001" model="tlmp.business.rule">
+        <field name="code">RULE-VEHICLE-001</field>
+        <field name="name">车型装卸能力匹配</field>
+        <field name="message_cn">车辆装卸类型不满足运输需求</field>
+        <field name="result">block</field>
+        <field name="priority">80</field>
+    </record>
+    <record id="business_rule_vehicle_002" model="tlmp.business.rule">
+        <field name="code">RULE-VEHICLE-002</field>
+        <field name="name">ADR危险品承运资质</field>
+        <field name="message_cn">承运商缺少ADR危险品运输资质</field>
+        <field name="result">block</field>
+        <field name="priority">75</field>
+        <field name="dg_attribute">dg</field>
+        <field name="require_capability">adr</field>
+    </record>
+    <record id="business_rule_vehicle_003" model="tlmp.business.rule">
+        <field name="code">RULE-VEHICLE-003</field>
+        <field name="name">车辆载重下限匹配</field>
+        <field name="message_cn">车辆额定载重不满足运输需求下限</field>
+        <field name="result">warning</field>
+        <field name="priority">85</field>
+    </record>
+    <record id="business_rule_vehicle_005" model="tlmp.business.rule">
+        <field name="code">RULE-VEHICLE-005</field>
+        <field name="name">危化/普通运力互斥</field>
+        <field name="message_cn">快递承运商禁止承运ADR危险品</field>
+        <field name="result">block</field>
+        <field name="priority">78</field>
+        <field name="carrier_type">courier</field>
+        <field name="dg_attribute">dg</field>
+    </record>
 </odoo>

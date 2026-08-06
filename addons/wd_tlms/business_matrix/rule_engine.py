@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from .rule_definition import RESULT_BLOCK, RESULT_WARNING, RESULT_PASS
-from .rules import cargo_rules, carrier_rules, compliance_rules
+from .rules import cargo_rules, carrier_rules, compliance_rules, vehicle_rules
 
 
 class BusinessMatrixEngine:
@@ -25,6 +25,7 @@ class BusinessMatrixEngine:
             violations += cargo_rules.check_cargo_rules(dimensions)
             violations += carrier_rules.check_carrier_rules(dimensions)
             violations += compliance_rules.check_compliance_rules(dimensions)
+            violations += vehicle_rules.check_vehicle_rules(dimensions)
         for violation in violations:
             violation.setdefault('timestamp', datetime.utcnow().isoformat())
         if violations:

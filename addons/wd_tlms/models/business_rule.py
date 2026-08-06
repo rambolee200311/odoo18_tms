@@ -40,4 +40,28 @@ class BusinessRule(models.Model):
     apply_mixed_root = fields.Boolean(
         string='Block Mixed Cargo Roots',
         help='RULE-CARGO-005: single request must have a single Cargo Category root.')
+    vehicle_policy_mode = fields.Selection([
+        ('required', 'Required'),
+        ('exempted', 'Exempted'),
+    ], string='Vehicle Policy Mode',
+        help='carrier_type_vehicle_policy: whether vehicle requirement rules apply for this carrier_type.')
+    vehicle_body_type = fields.Selection([
+        ('no_requirement', 'No Requirement'),
+        ('rear_only', 'Rear Only'),
+        ('side_loading', 'Side Loading'),
+        ('side_rear_both', 'Side & Rear'),
+        ('top_loading', 'Top Loading'),
+        ('tail_lift', 'Tail Lift'),
+        ('open_flatbed', 'Open Flatbed'),
+        ('reefer_refrigerated', 'Reefer'),
+        ('tanker', 'Tanker'),
+    ], string='Vehicle Body Type Constraint',
+        help='Vehicle body type required by this rule (RULE-VEHICLE-005).')
+    vehicle_capacity_requirement = fields.Selection([
+        ('no_limit', 'No Limit'),
+        ('below_40t', '< 40t'),
+        ('40t_44t', '40t-44t'),
+        ('over_44t', '> 44t'),
+    ], string='Vehicle Capacity Requirement',
+        help='Minimum vehicle capacity required by this rule (RULE-VEHICLE-003).')
     active = fields.Boolean(string='Active', default=True)

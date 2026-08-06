@@ -56,6 +56,16 @@ class TransportQuote(models.Model):
     cargo_volume_m3 = fields.Float(
         string='Cargo Volume (m3)', compute='_compute_cargo_summary')
 
+    # Sprint49-B: vehicle requirement display (read-only projection from request)
+    vehicle_requirement_mode = fields.Selection(
+        related='request_id.vehicle_requirement_mode', string='Vehicle Req. Mode', readonly=True)
+    vehicle_body_type = fields.Selection(
+        related='request_id.vehicle_body_type', string='Vehicle Body Type', readonly=True)
+    vehicle_capacity_requirement = fields.Selection(
+        related='request_id.vehicle_capacity_requirement', string='Vehicle Capacity', readonly=True)
+    is_dangerous_goods = fields.Selection(
+        related='request_id.is_dangerous_goods', string='DG Vehicle Req.', readonly=True)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -197,6 +207,15 @@ class TransportQuote(models.Model):
             'carrier_id': (self.inquiry_id.partner_id.id if self.inquiry_id and self.inquiry_id.partner_id else
                            (self.request_id.carrier_id.id if self.request_id and self.request_id.carrier_id else False)),
             'price_source': 'quote',
+            'vehicle_requirement_snapshot': json.dumps({
+                'vehicle_requirement_mode': request.vehicle_requirement_mode,
+                'vehicle_requirement_mode_snapshot': request.vehicle_requirement_mode_snapshot,
+                'vehicle_body_type': request.vehicle_body_type,
+                'vehicle_capacity_requirement': request.vehicle_capacity_requirement,
+                'is_dangerous_goods': request.is_dangerous_goods,
+                'dg_adr_class': request.dg_adr_class,
+                'dg_un_code': request.dg_un_code,
+            }, ensure_ascii=False),
         })
         self.write({'transport_order_id': order.id})
         # Copy request cargo nodes as order snapshot, preserving hierarchy.

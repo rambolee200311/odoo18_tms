@@ -56,6 +56,16 @@ class TransportInquiry(models.Model):
     ], string='Status', default='draft', tracking=True)
     sent_date = fields.Datetime(string='Sent Date')
 
+    # Sprint49-B: vehicle requirement display (read-only projection from request)
+    vehicle_requirement_mode = fields.Selection(
+        related='request_id.vehicle_requirement_mode', string='Vehicle Req. Mode', readonly=True)
+    vehicle_body_type = fields.Selection(
+        related='request_id.vehicle_body_type', string='Vehicle Body Type', readonly=True)
+    vehicle_capacity_requirement = fields.Selection(
+        related='request_id.vehicle_capacity_requirement', string='Vehicle Capacity', readonly=True)
+    is_dangerous_goods = fields.Selection(
+        related='request_id.is_dangerous_goods', string='DG Vehicle Req.', readonly=True)
+
     @api.depends('request_id.name')
     def _compute_cargo_source_reference(self):
         for r in self:
