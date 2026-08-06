@@ -3,12 +3,46 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.67
+context_version: 1.0.70
 update_time: 2026-08-06
-adapt_sprint: Sprint50
+adapt_sprint: Sprint50-A
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.70:
+    update_content: |
+      Sprint50-A 开发实施（wd_tlms 1.0.121）：
+      - tlmp.workflow.guard 配置化 + 引擎默认 BLOCK + 13 条种子守卫
+      - 五模型状态动作接入 Event Ledger（ledger.source 字段）
+      - tlmp.transport.plan 抽象层 + transport_plan_id 关联（不物理合并）
+      - RULE-VEHICLE-004 + transition_to_allocated 分配快照
+      - 1.0.121 迁移 dry_run/execute + 存量状态收敛
+      - TestWorkflowEngine 17 项通过，XML-RPC 升级 1.0.121 成功
+    update_type: 架构升级实施（A1）
+    effect_scope: Workflow Convergence + Allocation Validation Foundation
+  1.0.69:
+    update_content: |
+      Sprint50-A 契约 v1.1 评审修订（INT-TMS-SPRINT50A-001）：
+      - P0-1：plan 不物理合并，tlmp.transport.plan 仅作统一抽象层，
+        pickup.plan / container.transport.plan 保留业务子模型 + transport_plan_id
+      - P0-2：拆 A1 Workflow Convergence / A2 Plan Consolidation /
+        A3 Vehicle Allocation 三阶段，本契约实施 A1
+      - P0-3：vehicle_allocation_snapshot 由 transition_to_allocated()
+        业务动作生成，ORDER_ALLOCATED 仅记录事实
+      - P1：guard_policy 默认 BLOCK、Event Ledger event_schema 字段规范、
+        migration dry_run/execute 双模式、RULE-VEHICLE-004 数据源冻结为
+        plan.assignment_context
+    update_type: 意图契约评审修订
+    effect_scope: Sprint50-A 范围收敛 + 校验基础
+  1.0.68:
+    update_content: |
+      Sprint50-A 契约起草 INT-TMS-SPRINT50A-001（CREATED）：
+      - 五模型状态值收敛与 1.0.121 迁移脚本范围
+      - pickup.plan / container.transport.plan 统一为 tlmp.transport.plan
+      - 五模型状态入口接入 Event Ledger + tlmp.workflow.guard 守卫配置化
+      - RULE-VEHICLE-004 ADR 司机校验与 plan/order 分配上下文全链路
+    update_type: 意图契约起草
+    effect_scope: Workflow Engine Convergence + Vehicle Allocation Chain
   1.0.67:
     update_content: |
       Sprint50 Workflow Engine 基础件启动（wd_tlms 1.0.120）：

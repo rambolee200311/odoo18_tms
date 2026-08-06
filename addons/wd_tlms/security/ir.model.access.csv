@@ -223,6 +223,14 @@ access_workflow_ledger_manager,tlmp.workflow.ledger.manager,model_tlmp_transport
 access_workflow_ledger_operator,tlmp.workflow.ledger.operator,model_tlmp_transport_event_ledger,wd_tlms.group_tlm_operator,1,1,1,0
 access_workflow_ledger_all,tlmp.workflow.ledger.all,model_tlmp_transport_event_ledger,base.group_user,1,0,0,0
 
+access_workflow_guard_manager,tlmp.workflow.guard.manager,model_tlmp_workflow_guard,wd_tlms.group_tlm_manager,1,1,1,1
+access_workflow_guard_operator,tlmp.workflow.guard.operator,model_tlmp_workflow_guard,wd_tlms.group_tlm_operator,1,0,0,0
+access_workflow_guard_all,tlmp.workflow.guard.all,model_tlmp_workflow_guard,base.group_user,1,0,0,0
+
+access_transport_plan_abstract_manager,tlmp.transport.plan.abstract.manager,model_tlmp_transport_plan,wd_tlms.group_tlm_manager,1,1,1,1
+access_transport_plan_abstract_operator,tlmp.transport.plan.abstract.operator,model_tlmp_transport_plan,wd_tlms.group_tlm_operator,1,1,1,0
+access_transport_plan_abstract_all,tlmp.transport.plan.abstract.all,model_tlmp_transport_plan,base.group_user,1,0,0,0
+
 access_flow_type_manager,tlmp.flow.type.manager,model_tlmp_transport_flow_type,wd_tlms.group_tlm_manager,1,1,1,1
 access_flow_type_operator,tlmp.flow.type.operator,model_tlmp_transport_flow_type,wd_tlms.group_tlm_operator,1,0,0,0
 access_flow_type_all,tlmp.flow.type.all,model_tlmp_transport_flow_type,base.group_user,1,0,0,0

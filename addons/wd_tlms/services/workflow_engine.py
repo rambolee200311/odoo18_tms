@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 from odoo import models, _
 from odoo.exceptions import UserError
 
@@ -10,7 +12,8 @@ class WorkflowEngine(models.AbstractModel):
     _description = 'TLMS Workflow Engine'
 
     def write_event(self, record, event_type, event_category='state',
-                    from_state=False, to_state=False, payload=None):
+                    from_state=False, to_state=False, payload=None,
+                    source='manual'):
         self.env['tlmp.transport.event.ledger'].create({
             'res_model': record._name,
             'res_id': record.id,
@@ -19,20 +22,76 @@ class WorkflowEngine(models.AbstractModel):
             'from_state': from_state or False,
             'to_state': to_state or False,
             'payload': payload,
+            'source': source,
         })
         return True
 
+    def _get_guard_rule(self, record, to_state):
+        model = record._name
+        from_state = record.state if 'state' in record._fields else False
+        Guard = self.env['tlmp.workflow.guard'].sudo()
+        rule = Guard.search([
+            ('res_model', '=', model),
+            ('from_state', '=', from_state or '*'),
+            ('to_state', '=', to_state),
+            ('active', '=', True),
+        ], limit=1)
+        if not rule:
+            rule = Guard.search([
+                ('res_model', '=', model),
+                ('from_state', '=', '*'),
+                ('to_state', '=', '*'),
+                ('active', '=', True),
+            ], limit=1)
+        return rule
+
+    def _check_guard(self, rule, record):
+        code = rule.guard_code
+        if code == 'general':
+            return None
+        if code == 'validation_state_passed':
+            return (_('Validation state must be passed before processing.')
+                    if record.validation_state != 'passed' else None)
+        if code == 'quote_customer_approval':
+            return (_('Customer acceptance is required for quote confirmation.')
+                    if not record.customer_accept else None)
+        if code in ('pod_received', 'delivery_completed'):
+            event_type = 'POD_RECEIVED' if code == 'pod_received' \
+                else 'DELIVERY_COMPLETED'
+            exists = self.env['tlmp.transport.event.ledger'].sudo().search_count([
+                ('res_model', '=', record._name),
+                ('res_id', '=', record.id),
+                ('event_type', '=', event_type),
+            ])
+            return (_('Required event %s is missing.') % event_type
+                    if not exists else None)
+        if code == 'assignment_context_required':
+            context = getattr(record, 'assignment_context', False)
+            return (_('Assignment context is required before resource reservation.')
+                    if not context else None)
+        return (_('Unknown workflow guard code: %s.') % code)
+
     def transition(self, record, to_state, event_type, event_category='state',
-                   guard=None, payload=None, extra_vals=None):
+                   guard=None, payload=None, extra_vals=None, source='manual'):
         record.ensure_one()
         if guard:
             guard_error = guard(record)
             if guard_error:
                 raise UserError(guard_error)
+        rule = self._get_guard_rule(record, to_state)
+        if not rule:
+            from_state = record.state if 'state' in record._fields else False
+            raise UserError(_(
+                'No workflow guard configured for %s: %s -> %s (default BLOCK).'
+            ) % (record._name, from_state, to_state))
+        guard_error = self._check_guard(rule, record)
+        if guard_error:
+            raise UserError(guard_error)
         from_state = record.state if 'state' in record._fields else False
         self.write_event(
             record, event_type, event_category,
-            from_state=from_state, to_state=to_state, payload=payload)
+            from_state=from_state, to_state=to_state, payload=payload,
+            source=source)
         vals = {'state': to_state}
         if extra_vals:
             vals.update(extra_vals)

@@ -169,6 +169,10 @@ class PickupPlan(models.Model):
     ], string='Reservation Type', default='vehicle')
     vehicle_allocation_snapshot = fields.Text(
         string='Vehicle Allocation Snapshot', copy=False)
+    transport_plan_id = fields.Many2one(
+        'tlmp.transport.plan', string='Transport Plan Abstraction',
+        ondelete='set null')
+    assignment_context = fields.Text(string='Assignment Context')
 
     @api.depends('transport_request_id.state',
                  'transport_request_id.vehicle_requirement_mode',
@@ -215,14 +219,20 @@ class PickupPlan(models.Model):
             raise UserError(_('Only draft plans can be scheduled.'))
         self.env['tlmp.workflow.engine'].transition(
             self, 'scheduled', 'PLAN_SCHEDULED')
+        self._sync_transport_plan()
         return True
 
     def action_reserve(self, reservation_type='vehicle'):
         self.ensure_one()
         if self.state != 'scheduled':
             raise UserError(_('Only scheduled plans can reserve resources.'))
-        snapshot = {}
         req = self.transport_request_id
+        if req and req.is_dangerous_goods == 'adr_dangerous' \
+                and not self.assignment_context:
+            raise UserError(_(
+                'ADR plan reservation requires assignment_context '
+                '(driver_id / driver_adr_valid / expiry_date).'))
+        snapshot = {}
         if req:
             snapshot = {
                 'vehicle_requirement_mode': (
@@ -236,6 +246,9 @@ class PickupPlan(models.Model):
                 'reserved_vehicle_plate': self.vehicle_plate or False,
                 'reserved_driver': self.driver_name or False,
             }
+        if self.assignment_context:
+            snapshot['assignment_context'] = json.loads(
+                self.assignment_context)
         self.env['tlmp.workflow.engine'].transition(
             self, 'reserved', 'PLAN_RESERVED',
             event_category='business',
@@ -245,6 +258,7 @@ class PickupPlan(models.Model):
                     snapshot, ensure_ascii=False),
             },
             payload=json.dumps(snapshot, ensure_ascii=False))
+        self._sync_transport_plan()
         return True
 
     def action_execute(self):
@@ -253,6 +267,7 @@ class PickupPlan(models.Model):
             raise UserError(_('Only reserved plans can start execution.'))
         self.env['tlmp.workflow.engine'].transition(
             self, 'executing', 'PLAN_EXECUTING')
+        self._sync_transport_plan()
         return True
 
     def action_finish(self):
@@ -261,6 +276,7 @@ class PickupPlan(models.Model):
             raise UserError(_('Only executing plans can be finished.'))
         self.env['tlmp.workflow.engine'].transition(
             self, 'finished', 'PLAN_FINISHED')
+        self._sync_transport_plan()
         return True
 
     def action_fail(self):
@@ -269,6 +285,7 @@ class PickupPlan(models.Model):
             raise UserError(_('Plan cannot fail in current state.'))
         self.env['tlmp.workflow.engine'].transition(
             self, 'failed', 'PLAN_FAILED')
+        self._sync_transport_plan()
         return True
 
     def action_cancel_plan(self):
@@ -277,7 +294,18 @@ class PickupPlan(models.Model):
             raise UserError(_('Plan is already in a final state.'))
         self.env['tlmp.workflow.engine'].transition(
             self, 'cancelled', 'PLAN_CANCELLED')
+        self._sync_transport_plan()
         return True
+
+    def _sync_transport_plan(self):
+        for rec in self:
+            if rec.transport_plan_id:
+                rec.transport_plan_id.write({
+                    'state': rec.state,
+                    'reservation_type': rec.reservation_type,
+                    'vehicle_allocation_snapshot':
+                        rec.vehicle_allocation_snapshot,
+                })
 
     # -----------------------------------------------------------
     # Helpers
@@ -582,7 +610,20 @@ class PickupPlan(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'pickup.plan.seq') or _('New')
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for rec in records:
+            if not rec.transport_plan_id:
+                abstract = self.env['tlmp.transport.plan'].create({
+                    'name': rec.name or _('New'),
+                    'plan_type': 'pickup',
+                    'state': rec.state,
+                    'reservation_type': rec.reservation_type,
+                    'transport_request_id':
+                        rec.transport_request_id.id or False,
+                    'pickup_plan_id': rec.id,
+                })
+                rec.write({'transport_plan_id': abstract.id})
+        return records
 
 
 class PickupPlanContainerLine(models.Model):

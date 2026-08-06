@@ -1,6 +1,47 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+import json
+
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+
+
+class TransportPlan(models.Model):
+    """Unified transport plan abstraction (Sprint50-A A1)."""
+
+    _name = 'tlmp.transport.plan'
+    _description = 'Transport Plan Abstraction'
+    _order = 'id desc'
+    _rec_name = 'name'
+
+    name = fields.Char(string='Plan No.', required=True,
+                       default=lambda self: _('New'))
+    plan_type = fields.Selection([
+        ('pickup', 'Pickup Plan'),
+        ('container', 'Container Plan'),
+    ], string='Plan Type', default='pickup')
+    state = fields.Selection([
+        ('draft', 'Draft'),
+        ('scheduled', 'Scheduled'),
+        ('reserved', 'Reserved'),
+        ('executing', 'Executing'),
+        ('finished', 'Finished'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ], string='Status', default='draft')
+    reservation_type = fields.Selection([
+        ('vehicle', 'Vehicle'),
+        ('driver', 'Driver'),
+        ('carrier_capacity', 'Carrier Capacity'),
+    ], string='Reservation Type', default='vehicle')
+    vehicle_allocation_snapshot = fields.Text(
+        string='Vehicle Allocation Snapshot')
+    transport_request_id = fields.Many2one(
+        'tlmp.transport.request', string='Transport Request')
+    pickup_plan_id = fields.Many2one(
+        'pickup.plan', string='Pickup Plan', ondelete='cascade')
+    container_plan_id = fields.Many2one(
+        'container.transport.plan', string='Container Plan',
+        ondelete='cascade')
 
 
 class BlContainer(models.Model):
@@ -65,10 +106,130 @@ class TransportPlan(models.Model):
     remark = fields.Text(string='Remark')
     state = fields.Selection([
         ('draft', 'Draft'),
+        ('scheduled', 'Scheduled'),
+        ('reserved', 'Reserved'),
+        ('executing', 'Executing'),
+        ('finished', 'Finished'),
+        ('failed', 'Failed'),
         ('confirmed', 'Confirmed'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='draft')
+    reservation_type = fields.Selection([
+        ('vehicle', 'Vehicle'),
+        ('driver', 'Driver'),
+        ('carrier_capacity', 'Carrier Capacity'),
+    ], string='Reservation Type', default='vehicle')
+    assignment_context = fields.Text(string='Assignment Context')
+    vehicle_allocation_snapshot = fields.Text(
+        string='Vehicle Allocation Snapshot')
+    transport_plan_id = fields.Many2one(
+        'tlmp.transport.plan', string='Transport Plan Abstraction',
+        ondelete='set null')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if not rec.transport_plan_id:
+                abstract_state = rec.state
+                if abstract_state == 'confirmed':
+                    abstract_state = 'reserved'
+                elif abstract_state == 'completed':
+                    abstract_state = 'finished'
+                elif abstract_state not in (
+                        'draft', 'scheduled', 'reserved', 'executing',
+                        'finished', 'failed', 'cancelled'):
+                    abstract_state = 'draft'
+                abstract = self.env['tlmp.transport.plan'].create({
+                    'name': 'CT-%s' % (rec.container_no or rec.id),
+                    'plan_type': 'container',
+                    'state': abstract_state,
+                    'reservation_type': rec.reservation_type,
+                    'container_plan_id': rec.id,
+                })
+                rec.write({'transport_plan_id': abstract.id})
+        return records
+
+    def _sync_transport_plan(self):
+        for rec in self:
+            if rec.transport_plan_id:
+                rec.transport_plan_id.write({
+                    'state': rec.state,
+                    'reservation_type': rec.reservation_type,
+                    'vehicle_allocation_snapshot':
+                        rec.vehicle_allocation_snapshot,
+                })
+
+    def action_schedule(self):
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft plans can be scheduled.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'scheduled', 'PLAN_SCHEDULED')
+        self._sync_transport_plan()
+        return True
+
+    def action_reserve(self, reservation_type='vehicle'):
+        self.ensure_one()
+        if self.state != 'scheduled':
+            raise UserError(_('Only scheduled plans can reserve resources.'))
+        if not self.assignment_context:
+            raise UserError(_(
+                'Assignment context is required before resource reservation.'))
+        snapshot = {
+            'reserved_carrier_id': (
+                self.container_id.supplier or False),
+            'reserved_vehicle_plate': self.transport_company or False,
+            'assignment_context': self.assignment_context,
+        }
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'reserved', 'PLAN_RESERVED',
+            event_category='business',
+            extra_vals={
+                'reservation_type': reservation_type,
+                'vehicle_allocation_snapshot': json.dumps(
+                    snapshot, ensure_ascii=False),
+            },
+            payload=json.dumps(snapshot, ensure_ascii=False))
+        self._sync_transport_plan()
+        return True
+
+    def action_execute(self):
+        self.ensure_one()
+        if self.state != 'reserved':
+            raise UserError(_('Only reserved plans can start execution.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'executing', 'PLAN_EXECUTING')
+        self._sync_transport_plan()
+        return True
+
+    def action_finish(self):
+        self.ensure_one()
+        if self.state != 'executing':
+            raise UserError(_('Only executing plans can be finished.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'finished', 'PLAN_FINISHED')
+        self._sync_transport_plan()
+        return True
+
+    def action_fail(self):
+        self.ensure_one()
+        if self.state not in ('scheduled', 'reserved', 'executing'):
+            raise UserError(_('Plan cannot fail in current state.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'failed', 'PLAN_FAILED')
+        self._sync_transport_plan()
+        return True
+
+    def action_cancel_plan(self):
+        self.ensure_one()
+        if self.state in ('finished', 'failed', 'cancelled'):
+            raise UserError(_('Plan is already in a final state.'))
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'cancelled', 'PLAN_CANCELLED')
+        self._sync_transport_plan()
+        return True
 
     def create_transport_plan(self, container_id, plan_date):
         container = self.env['bl.container'].browse(container_id)

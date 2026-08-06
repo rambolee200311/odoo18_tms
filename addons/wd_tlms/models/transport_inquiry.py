@@ -134,18 +134,27 @@ class TransportInquiry(models.Model):
             r.total_amount = sum(r.line_ids.mapped('subtotal'))
 
     def action_send(self):
-        self.write({'state': 'sent', 'sent_date': fields.Datetime.now()})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(
+                rec, 'sent', 'INQUIRY_SENT',
+                extra_vals={'sent_date': fields.Datetime.now()})
         return True
 
     def action_respond(self):
-        self.write({'state': 'responded', 'response_date': fields.Datetime.now()})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(
+                rec, 'responded', 'INQUIRY_RESPONDED',
+                extra_vals={'response_date': fields.Datetime.now()})
         return True
 
     def action_accept(self):
         self.ensure_one()
         if self.state != 'responded':
             raise UserError(_('Only responded carrier inquiries can be selected.'))
-        self.write({'state': 'accepted'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'accepted', 'INQUIRY_ACCEPTED')
         return True
 
     def action_close(self, reason='carrier_selected', carrier_id=False):
@@ -223,7 +232,9 @@ class TransportInquiry(models.Model):
         }
 
     def action_reject(self, reason=None):
-        self.write({'state': 'rejected'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(rec, 'rejected', 'INQUIRY_REJECTED')
         return True
 
     def _cron_expire(self):

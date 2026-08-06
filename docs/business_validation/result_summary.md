@@ -90,6 +90,24 @@
 | 新模型 tlmp.transport.event.ledger / tlmp.workflow.engine | 已建表 |
 | 8089 端口 | 已释放 |
 
+## Sprint50-A Workflow Convergence（2026-08-06）
+
+### 验证
+
+| Check | Result |
+|-------|--------|
+| TestWorkflowEngine（17 项） | PASS |
+| tlmp.workflow.guard 种子守卫 | 13 条（6 wildcard + 7 关键） |
+| 五模型状态动作接入 Event Ledger | PASS（ledger.source 已建） |
+| 存量 request confirmed→submitted 迁移 | PASS（遗留 confirmed 0） |
+| tlmp.transport.plan 抽象层 + transport_plan_id | PASS（不物理合并） |
+| RULE-VEHICLE-004 正负用例 | PASS |
+| transition_to_allocated 快照固化 | PASS |
+| 全量 389 项测试中历史脏数据错误 | 148 errors / 8 failures（与本次无关） |
+| XML-RPC button_immediate_upgrade | 18.0.1.0.120 → 18.0.1.0.121 PASS |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| 8089 端口 | 已释放 |
+
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*

@@ -1,0 +1,248 @@
+# ==============================================================
+# Sprint50-A Intent 契约 v1.1（评审修订）
+# — TLMS Workflow Engine Convergence & Allocation Validation Foundation
+# 基线：docs/context/business/workflow_engine.md V1.0
+# 前置依赖：INT-TMS-SPRINT50-001（Workflow Engine v3）
+#          INT-TMS-SPRINT49A-001 / INT-TMS-SPRINT49B-001
+# 起草：2026-08-06
+# 修订：2026-08-06 契约评审（收窄 plan 合并、拆分阶段、
+#       修正 allocation snapshot 时机、补齐 guard/ledger/migration 规范）
+# ==============================================================
+intent_id: INT-TMS-SPRINT50A-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT50-001
+- INT-TMS-SPRINT49A-001
+- INT-TMS-SPRINT49B-001
+intent_work_type: Development
+intent_change_type: Architecture Upgrade
+title: TLMS Workflow Engine Convergence & Allocation Validation Foundation
+
+implementation_phases:
+  A1_workflow_convergence:
+    status: in_scope
+    note: 本契约立即实施范围；不做 plan 物理迁移
+  A2_plan_consolidation:
+    status: deferred
+    note: 后续单独意图；transport.plan 抽象层落地后再做外键切换/兼容层
+  A3_vehicle_allocation_chain:
+    status: deferred
+    note: 后续单独意图；本契约仅落地校验基础与数据源边界
+
+target_scope: >
+  Sprint50-A 只做“收敛”与“校验基础”，不做数据库重构。本契约实施范围 = A1：
+  1. 五模型状态值收敛与存量迁移（A1）：
+     - request：submitted / processing / completed 为正式值，
+       confirmed 仅保留一个版本周期存量兼容别名；
+       存量 confirmed 单据迁移 validation_state=passed，
+       fulfillment_status 与 matrix/vehicle 双快照回填，不覆盖已冻结快照
+     - inquiry：draft → sent → closed / cancelled；
+       accepted→closed、responded→sent、rejected/expired→cancelled 迁移，
+       close_reason / selected_carrier_id / selected_quote_id 回填
+     - quote：draft → issued → approved → confirmed / rejected / expired；
+       sent→issued、accepted→confirmed（confirmation_source=customer）迁移；
+       approved→confirmed 守卫 approval_user + customer_accept 显式生效
+     - order：draft → confirmed → allocated → in_transit →
+       exception → delivered → settlement_pending → settled / cancelled；
+       assigned→allocated、signed→delivered、billed→settlement_pending、
+       closed→settled 迁移；exception_type 字段化 +
+       exception_recovery.allowed_next（in_transit/delivered/cancelled）
+     - plan：统一计划抽象的状态
+       draft → scheduled → reserved → executing → finished / failed / cancelled；
+       reservation_type（vehicle/driver/carrier_capacity）
+  2. Event Ledger 全覆盖 + Guard 配置化（A1）：
+     - 五模型状态动作统一走 tlmp.workflow.engine.transition
+       （guard → ledger → state），同一事务先写账本再更新状态；
+     - 新增 tlmp.workflow.guard 配置模型
+       （res_model / from_state / to_state / guard_code / active）；
+     - guard_policy：缺配置默认 BLOCK；protected_transition =
+       all_forward_transition，禁止新增状态绕过守卫；
+     - 种子守卫：
+       submitted→processing 需 validation_state=passed；
+       quote approved→confirmed 需 approval_user + customer_accept；
+       order in_transit→delivered 需 POD_RECEIVED 事件；
+       order delivered→settlement_pending 需 Delivery Event 完成
+  3. plan 抽象层（A1 仅抽象模型，不物理合并）：
+     - 新增 tlmp.transport.plan 作为统一计划抽象层；
+     - 保留 pickup.plan、container.transport.plan 为业务子模型，
+       通过 transport_plan_id 关联到统一抽象；
+     - 不做表合并、不做 nullable 大杂烩、不删除任一业务子模型；
+     - 49-B 车辆需求投影字段保留在 pickup.plan / 抽象层投影，
+       不强制塞入合并表；
+     - A2（后续）：外键切换、兼容层、是否物理收敛的最终决策
+  4. Vehicle Allocation Validation Foundation（A1）：
+     - vehicle_allocation_snapshot 在 order.transition_to_allocated()
+       业务动作内生成并固化；ORDER_ALLOCATED 事件只记录事实，
+       不定义业务动作；
+     - plan reserved / order allocated 把 assigned_vehicle_capacity /
+       assigned_vehicle_body_type / assigned_vehicle_adr /
+       assigned_driver_adr 传入 BusinessMatrixEngine，
+       执行 RULE-VEHICLE-003 / 005 / 004；
+     - RULE-VEHICLE-004 输入冻结为 plan.assignment_context JSON：
+       {driver_id, driver_adr_valid, expiry_date}；
+       本 Sprint 不建设完整 Driver Master；
+     - 快递豁免场景不生成车辆分配数据；
+     - A3（后续）：完整车辆分配执行链与分配生命周期
+
+migration_mode:
+  dry_run:
+    only_report: true
+    purpose: 测试环境先输出 old→new 映射与受影响记录数，不写库
+  execute:
+    update: true
+    purpose: 生产/验证环境执行迁移，幂等、同事务、可重跑
+
+guard_policy:
+  default_action: BLOCK
+  protected_transition:
+  - all_forward_transition
+
+guard:
+  submitted_to_processing:
+    require:
+      validation_state: passed
+  quote_approved_to_confirmed:
+    require:
+      approval_user: true
+      customer_accept: true
+  order_in_transit_to_delivered:
+    require_event: POD_RECEIVED
+  order_delivered_to_settlement_pending:
+    require_event: DELIVERY_COMPLETED
+
+event_schema:
+  event_code: ORDER_ALLOCATED
+  aggregate:
+    type: transport.order
+    id: <record_id>
+  event_category: state
+  from_state: confirmed
+  to_state: allocated
+  operator: <user_id>
+  source: api / manual / system
+  timestamp: ISO-8601
+  payload: {}
+
+event_category:
+- business
+- state
+- integration
+
+accept_criteria:
+- "五模型状态值收敛完成，旧值仅作兼容别名；迁移脚本 dry_run 报告 + execute 幂等执行，数据无丢失，已冻结快照不覆盖"
+- "tlmp.transport.plan 抽象模型落地；pickup.plan / container.transport.plan 保留业务子模型并通过 transport_plan_id 关联，无物理表合并"
+- "五模型所有状态动作先写 Event Ledger 再更新 state，同一事务；event_schema 含 event_code / aggregate / operator / source / timestamp"
+- "tlmp.workflow.guard 配置化 + guard_policy 默认 BLOCK；4 条种子守卫显式生效，新增状态无法绕过"
+- "vehicle_allocation_snapshot 在 order.transition_to_allocated() 生成并固化；ORDER_ALLOCATED 仅记录事实"
+- "RULE-VEHICLE-004 输入仅来自 plan.assignment_context（driver_id / driver_adr_valid / expiry_date），缺数据源不得静默 PASS"
+- "order 阶段只验证 matrix + vehicle requirement 双快照，不重算全量规则"
+- "自动化测试覆盖状态迁移、守卫、账本顺序、plan 抽象关联、RULE-VEHICLE-004 正负用例"
+- "XML-RPC 常驻升级通过，日志零 ERROR；decision/version/验证文档同步更新"
+
+source:
+  type: regular_audit
+  origin_team: 业务 + 研发 + 架构
+  based_on:
+  - "INT-TMS-SPRINT50-001 v3（Sprint50 基础件验收）"
+  - "Sprint50-A 契约评审（2026-08-06，P0/P1 全部纳入）"
+  - "docs/context/business/state_migration_plan.md"
+  - "docs/context/business/transport_event_dictionary.md"
+
+asset_snapshot_profile: development
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/models/transport_request.py
+  - addons/wd_tlms/models/transport_inquiry.py
+  - addons/wd_tlms/models/transport_quote.py
+  - addons/wd_tlms/models/pickup_plan.py
+  - addons/wd_tlms/models/transport_plan.py
+  - addons/wd_tlms/models/transport_order.py
+  - addons/wd_tlms/models/transport_event_ledger.py
+  - addons/wd_tlms/models/schedule_plan.py
+  - addons/wd_tlms/services/workflow_engine.py
+  - addons/wd_tlms/services/business_matrix_service.py
+  - addons/wd_tlms/business_matrix/rules/vehicle_rules.py
+  - addons/wd_tlms/views/transport_request_views.xml
+  - addons/wd_tlms/views/transport_inquiry_views.xml
+  - addons/wd_tlms/views/transport_quote_views.xml
+  - addons/wd_tlms/views/pickup_plan_views.xml
+  - addons/wd_tlms/views/transport_plan_views.xml
+  - addons/wd_tlms/views/transport_order_views.xml
+  - addons/wd_tlms/security/ir.model.access.csv
+  - addons/wd_tlms/tests/
+  business:
+  - docs/context/business/workflow_engine.md
+  - docs/context/business/vehicle_requirement.md
+  - docs/context/business/state_migration_plan.md
+  - docs/context/business/transport_event_dictionary.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "A1 迁移脚本：五模型 old→new 状态映射 + dry_run/execute 双模式 + 双快照/fulfillment/selected 字段回填"
+- "tlmp.transport.plan 抽象模型 + transport_plan_id 关联（不物理合并业务子模型）"
+- "tlmp.workflow.guard 配置模型 + guard_policy（默认 BLOCK）+ 4 条种子守卫"
+- "五模型全部状态动作接入 Event Ledger；event_schema 字段规范落地"
+- "vehicle_allocation_snapshot 在 transition_to_allocated() 生成与不可变校验"
+- "plan.assignment_context 数据源 + RULE-VEHICLE-004 handler"
+- "state_migration_plan.md / transport_event_dictionary.md 更新为可执行版本"
+- "自动化测试与决策/版本/验证文档更新"
+
+deferred_deliverables:
+  A2:
+  - "pickup.plan / container.transport.plan 外键切换与兼容层"
+  - "是否物理收敛的最终数据决策与迁移"
+  A3:
+  - "完整车辆分配执行链（分配生命周期、司机主数据）"
+  - "allocation 事件与结算/异常联动"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. 状态是计算结果，Event 是唯一事实；状态变更必须先写 Transport Event Ledger
+  3. 旧状态值兼容别名仅保留一个版本周期；迁移脚本必须 dry_run + execute 双模式且幂等
+  4. 49-B request 车辆需求字段与 vehicle_requirement_snapshot 不再新增/修改；
+     分配字段只落在 plan/order 分配侧
+  5. 守卫规则配置化，guard_policy 默认 BLOCK；缺配置默认拦截，禁止状态绕过
+  6. 本 Sprint 不物理合并 pickup.plan / container.transport.plan；
+     不建设 Driver Master，RULE-VEHICLE-004 只读 plan.assignment_context
+  7. vehicle_allocation_snapshot 由业务动作 transition_to_allocated() 生成，
+     事件不承担业务动作语义
+  8. 异常字段化：exception 主状态 + exception_type 区分，不新增独立异常状态
+  9. destination_type deprecated/readonly 兼容期继续保留，不删除
+
+risk_precheck: |
+  - 迁移顺序：dry_run 报告 → execute 幂等执行；先 schema，再 value 映射，
+    最后快照/字段回填；全程同事务、可重跑
+  - plan 抽象层只加 transport_plan_id 关联，不做表合并，避免大迁移 Sprint
+  - Event Ledger 写入与 state 更新必须同一事务，禁止先改状态后补账本
+  - RULE-VEHICLE-004 数据源冻结为 plan.assignment_context；
+    缺失 driver_adr_valid / expiry_date 时不得静默 PASS
+  - vehicle_allocation_snapshot 固化时机以 transition_to_allocated() 为准，
+    confirm 后不可变
+  - 存量 quote accepted→confirmed 迁移后，order 自动建单与 vehicle snapshot
+    校验不得回归

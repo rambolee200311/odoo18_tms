@@ -1890,3 +1890,72 @@ destination_type 标记 deprecated/readonly 保留一个版本周期。
 - pickup.plan 与 container.transport.plan 统一 transport.plan 模型；
 - 五模型全部状态入口接入 Event Ledger 与守卫配置化；
 - RULE-VEHICLE-004 ADR 司机校验与 plan/order 分配上下文全链路。
+
+---
+
+## Sprint50-A 契约起草（2026-08-06）
+
+起草 `INT-TMS-SPRINT50A-001`（CREATED），范围 = Sprint50 Milestone 2：
+- 五模型状态值收敛与 `1.0.121` 存量迁移脚本（request/inquiry/quote/order/plan
+  old→new 映射 + 双快照/fulfillment/selected 字段回填）；
+- `pickup.plan` 与 `container.transport.plan` 统一为 `tlmp.transport.plan`，
+  pickup.plan 保留一个版本周期兼容别名，49-B 车辆投影字段随迁移保留；
+- 五模型全部状态入口接入 Event Ledger，新增 `tlmp.workflow.guard`
+  配置模型与 4 条种子守卫；
+- RULE-VEHICLE-004 ADR 司机资质校验 + plan reserved / order allocated
+  分配上下文全链路与 `vehicle_allocation_snapshot` 固化。
+
+契约文件：`docs/context/intent/intent_sprint50a_workflow_engine_convergence.yaml`
+
+## Sprint50-A 契约评审修订（2026-08-06）
+
+Sprint50-A 契约按架构评审修订为 v1.1，评级通过（建议小幅收敛后执行）：
+- **P0-1**：`tlmp.transport.plan` 仅作统一抽象层，不物理合并
+  `pickup.plan` / `container.transport.plan`；业务子模型通过
+  `transport_plan_id` 关联，避免字段污染与 nullable 大杂烩。
+- **P0-2**：拆分为 A1 Workflow Convergence / A2 Plan Consolidation /
+  A3 Vehicle Allocation 三阶段；本契约实施范围 = A1，
+  A2/A3 列为 deferred_deliverables，避免“大迁移 Sprint”。
+- **P0-3**：`vehicle_allocation_snapshot` 由
+  `order.transition_to_allocated()` 业务动作生成并固化，
+  `ORDER_ALLOCATED` 事件仅记录事实。
+- **P1-1**：`guard_policy.default_action=BLOCK`，
+  `protected_transition=all_forward_transition`。
+- **P1-2**：Event Ledger 增加 `event_code / aggregate_type /
+  aggregate_id / operator / source / timestamp` 规范。
+- **P1-3**：迁移脚本增加 `dry_run（only_report）/ execute（update）`
+  双模式，幂等可重跑。
+- **P1-4**：RULE-VEHICLE-004 数据源冻结为
+  `plan.assignment_context {driver_id, driver_adr_valid, expiry_date}`，
+  不建设完整 Driver Master。
+
+标题同步改为：
+`TLMS Workflow Engine Convergence & Allocation Validation Foundation`。
+
+## Sprint50-A 开发实施（wd_tlms 1.0.121，2026-08-06）
+
+按 Sprint50-A 契约 v1.1 A1 范围完成开发与验证：
+- **Guard 配置化**：新增 `tlmp.workflow.guard` 模型，引擎默认 BLOCK，
+  种子守卫 13 条（6 wildcard + 7 关键守卫），四契约守卫显式生效；
+- **Event Ledger 覆盖**：request/inquiry/quote/order/pickup.plan/
+  container.transport.plan 状态动作统一走 `tlmp.workflow.engine.transition`，
+  ledger 增加 `source` 字段（manual/api/system）；
+- **状态收敛**：五模型旧状态在迁移服务中 old→new 映射，
+  迁移支持 `dry_run / execute` 双模式，1.0.121 post-migrate 自动执行；
+- **plan 抽象层**：新增 `tlmp.transport.plan` 统一抽象，
+  pickup.plan / container.transport.plan 通过 `transport_plan_id` 关联，
+  不做物理表合并；
+- **Vehicle Allocation Foundation**：新增 RULE-VEHICLE-004，
+  `order.transition_to_allocated()` 生成并固化
+  `vehicle_allocation_snapshot`，ADR 分配缺少 `assignment_context`
+  （driver_id / driver_adr_valid / expiry_date）时 BLOCK。
+
+### 验证
+- `TestWorkflowEngine` 新增 6 项（守卫 BLOCK、POD 守卫、迁移 dry-run/
+  execute、plan 抽象、RULE-VEHICLE-004、ADR 分配拦截）全部通过；
+- 全量 389 项中剩余 148 errors / 8 failures 为历史脏库/旧测试问题，
+  与本次改动无关；
+- XML-RPC `button_immediate_upgrade` 18.0.1.0.120 → 18.0.1.0.121 成功，
+  升级日志零 ERROR / CRITICAL / TRACEBACK；
+- Odoo shell 复核：新模型建表、守卫种子 13 条、存量 confirmed request
+  已迁移为 submitted（0 条遗留 confirmed）。

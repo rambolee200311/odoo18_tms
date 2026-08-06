@@ -9,6 +9,8 @@ Sprint49-B canonical rule IDs (INT-TMS-SPRINT49B-001):
   RULE-VEHICLE-005 - vehicle body type matching
 """
 
+from datetime import date
+
 
 CAPACITY_RULES = {
     'below_40t': ('< 40t', lambda capacity: capacity < 40),
@@ -61,6 +63,27 @@ def check_vehicle_rules(ctx):
         if not (ctx.get('dg_adr_class') and ctx.get('dg_un_code')):
             _append(violations, 'RULE-VEHICLE-002',
                     'ADR危险品需求必须填写ADR Class和UN Code', 'block')
+
+    # RULE-VEHICLE-004: ADR driver qualification (Sprint50-A)
+    driver_adr_valid = ctx.get('driver_adr_valid')
+    driver_expiry = ctx.get('driver_adr_expiry_date')
+    driver_id = ctx.get('driver_id')
+    if is_dg == 'adr_dangerous':
+        if driver_adr_valid is not None and not driver_adr_valid:
+            _append(violations, 'RULE-VEHICLE-004',
+                    '分配司机未持有有效ADR从业资质', 'block')
+        if driver_expiry:
+            try:
+                expired = date.fromisoformat(str(driver_expiry)) < date.today()
+            except (TypeError, ValueError):
+                expired = True
+            if expired:
+                _append(violations, 'RULE-VEHICLE-004',
+                        '分配司机ADR从业资质已过期', 'block')
+        if ctx.get('assignment_context_required') and not (
+                driver_adr_valid or driver_expiry or driver_id):
+            _append(violations, 'RULE-VEHICLE-004',
+                    '未提供司机ADR资质上下文（assignment_context）', 'block')
 
     # RULE-VEHICLE-003: vehicle capacity requirement
     if vehicle_cap and vehicle_cap != 'no_limit':

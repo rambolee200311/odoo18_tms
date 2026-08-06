@@ -4,6 +4,8 @@ import json
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
+from ..business_matrix.rule_engine import BusinessMatrixEngine
+
 
 class TransportOrder(models.Model):
     _name = 'tlmp.transport.order'
@@ -392,7 +394,9 @@ class TransportOrder(models.Model):
         return True
 
     def action_assign(self):
-        self.write({'state': 'assigned'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(rec, 'assigned', 'ORDER_ASSIGNED')
         return True
 
     def action_allocate(self):
@@ -401,6 +405,10 @@ class TransportOrder(models.Model):
             raise UserError(_('Only confirmed orders can be allocated.'))
         snapshot = {}
         req = self.request_id
+        assignment = {}
+        plan = self.pickup_plan_id
+        if plan and plan.assignment_context:
+            assignment = json.loads(plan.assignment_context)
         if req:
             snapshot = {
                 'vehicle_requirement_mode': (
@@ -414,12 +422,55 @@ class TransportOrder(models.Model):
                 'assigned_vehicle_plate': self.vehicle_plate or False,
                 'assigned_driver': self.driver_name or False,
             }
+        if assignment:
+            snapshot['assignment_context'] = assignment
+        ctx = {
+            'scene_code': req.scene_id.code if req and req.scene_id else False,
+            'business_driver': req.business_driver if req else 'plan_driven',
+            'cargo_category': req.cargo_category if req else 'container',
+            'carrier_type': req.carrier_type if req else 'truck',
+            't1_attribute': req.t1_attribute if req else 'normal',
+            'dg_attribute': req.dg_attribute if req else 'normal',
+            'carrier_capabilities': set(
+                self.carrier_id.carrier_capability_ids.mapped('code')
+            ) if self.carrier_id else set(),
+            'mixed_roots': False,
+            'vehicle_requirement_mode': (
+                req.vehicle_requirement_mode_snapshot
+                or req.vehicle_requirement_mode) if req else 'required',
+            'vehicle_body_type': (
+                req.vehicle_body_type if req else 'no_requirement'),
+            'vehicle_capacity_requirement': (
+                req.vehicle_capacity_requirement if req else 'no_limit'),
+            'is_dangerous_goods': (
+                req.is_dangerous_goods if req else 'normal'),
+            'has_dangerous_goods': (
+                req.has_dangerous_goods if req else False),
+            'dg_adr_class': req.dg_adr_class if req else False,
+            'dg_un_code': req.dg_un_code if req else False,
+            'assigned_vehicle_capacity': None,
+            'assigned_vehicle_body_type': None,
+            'assigned_vehicle_adr': None,
+            'driver_id': assignment.get('driver_id'),
+            'driver_adr_valid': assignment.get('driver_adr_valid'),
+            'driver_adr_expiry_date': assignment.get('expiry_date'),
+            'assignment_context_required': bool(
+                req and req.is_dangerous_goods == 'adr_dangerous'),
+        }
+        res = BusinessMatrixEngine.validate(self.env, ctx)
+        if res['result'] == 'block':
+            msgs = '; '.join(v.get('message', '') for v in res['violations'])
+            raise UserError(_('Vehicle Allocation BLOCK: %s') % msgs)
         self.env['tlmp.workflow.engine'].transition(
             self, 'allocated', 'ORDER_ALLOCATED',
             extra_vals={'vehicle_allocation_snapshot': json.dumps(
                 snapshot, ensure_ascii=False)},
             payload=json.dumps(snapshot, ensure_ascii=False))
         return True
+
+    def transition_to_allocated(self):
+        """Canonical Sprint50-A allocation action; ORDER_ALLOCATED records fact."""
+        return self.action_allocate()
 
     def action_raise_exception(self, exception_type='delay',
                                recovery='in_transit'):
@@ -465,7 +516,8 @@ class TransportOrder(models.Model):
         return True
 
     def action_confirm_pod(self):
-        self.write({'state': 'signed'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'signed', 'ORDER_POD_CONFIRMED')
         # Update container history: record return date
         HistoryLine = self.env['container.master.history.line']
         for container in self.container_ids:
@@ -487,14 +539,16 @@ class TransportOrder(models.Model):
         lock = self._check_settle_lock()
         if lock['locked']:
             raise UserError(_('Cannot bill: %s') % lock['reason'])
-        self.write({'state': 'billed'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'billed', 'ORDER_BILLED')
         return True
 
     def action_settle(self):
         lock = self._check_settle_lock()
         if lock['locked']:
             raise UserError(_('Cannot settle: %s') % lock['reason'])
-        self.write({'state': 'settled'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'settled', 'ORDER_SETTLED')
         return True
 
     def action_close(self):
@@ -508,7 +562,9 @@ class TransportOrder(models.Model):
                 'Cannot close order: %d exception(s) are not CLOSED. '
                 'All exceptions must be resolved and closed before archiving.'
             ) % len(open_ex))
-        self.write({'state': 'closed', 'tracking_state': 'completed'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'closed', 'ORDER_CLOSED',
+            extra_vals={'tracking_state': 'completed'})
         return True
 
     def action_cancel(self, reason=None):
@@ -523,7 +579,8 @@ class TransportOrder(models.Model):
         self.ensure_one()
         if self.state != 'confirmed':
             raise UserError(_('Only confirmed orders can be rejected to draft.'))
-        self.write({'state': 'draft'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'draft', 'ORDER_REOPENED')
         return True
 
     def action_archive(self):
@@ -537,7 +594,9 @@ class TransportOrder(models.Model):
 
     def action_void(self, reason=None):
         self.ensure_one()
-        self.write({'state': 'cancelled'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'cancelled', 'ORDER_CANCELLED',
+            payload=reason or False)
         return True
 
     # ---- Settlement Lock ----

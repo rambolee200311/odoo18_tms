@@ -163,12 +163,15 @@ class TransportQuote(models.Model):
         self.ensure_one()
         if self.state != 'sent':
             raise UserError(_('Only sent quotes can be accepted.'))
-        self.write({'state': 'accepted'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'accepted', 'QUOTE_ACCEPTED')
         self._auto_create_order()
         return True
 
     def action_send(self):
-        self.write({'state': 'sent'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(rec, 'sent', 'QUOTE_SENT')
         return True
 
     def action_issue(self):
@@ -205,21 +208,29 @@ class TransportQuote(models.Model):
         if self.state != 'sent':
             raise UserError(_('Quote is not in sent state.'))
         if self.validity_date and self.validity_date < fields.Date.today():
-            self.write({'state': 'expired'})
+            self.env['tlmp.workflow.engine'].transition(
+                self, 'expired', 'QUOTE_EXPIRED')
             raise UserError(_('Quote has expired. Please request a new quote.'))
-        self.write({'state': 'accepted'})
+        self.env['tlmp.workflow.engine'].transition(
+            self, 'accepted', 'QUOTE_ACCEPTED')
         self._auto_create_order()
         return True
 
     def action_cancel(self, reason=None):
-        self.write({'state': 'cancelled'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(rec, 'cancelled', 'QUOTE_CANCELLED')
         return True
 
     def action_reject(self, reason=None):
-        self.write({'state': 'rejected'})
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.transition(rec, 'rejected', 'QUOTE_REJECTED')
         # Return inquiry to 'sent' state for re-quoting
         if self.inquiry_id and self.inquiry_id.state == 'accepted':
-            self.inquiry_id.write({'state': 'sent', 'response_date': False})
+            self.inquiry_id.env['tlmp.workflow.engine'].transition(
+                self.inquiry_id, 'sent', 'INQUIRY_REOPENED',
+                extra_vals={'response_date': False})
         return True
 
     def _auto_create_order(self):

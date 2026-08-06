@@ -134,6 +134,9 @@
                             <group>
                                 <field name="state" widget="badge" readonly="1"/>
                                 <field name="reservation_type"/>
+                                <field name="assignment_context"/>
+                                <field name="transport_plan_id" readonly="1"
+                                       options="{'no_create': True, 'no_open': False}"/>
                                 <field name="vehicle_allocation_snapshot" readonly="1"/>
                             </group>
                             <group string="Vehicle Requirement"

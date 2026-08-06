@@ -25,6 +25,11 @@ class TransportEventLedger(models.Model):
         'res.users', string='Operator', readonly=True,
         default=lambda self: self.env.user)
     create_date = fields.Datetime(string='Recorded At', readonly=True)
+    source = fields.Selection([
+        ('manual', 'Manual'),
+        ('api', 'API'),
+        ('system', 'System'),
+    ], string='Source', default='manual')
     display_name = fields.Char(
         string='Display Name', compute='_compute_display_name')
 
