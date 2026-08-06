@@ -126,6 +126,23 @@
 | 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
 | 8089 端口 | 已释放 |
 
+## Sprint51 Workflow Freeze & Regression Validation（2026-08-06）
+
+### 验证
+
+| Check | Result |
+|-------|--------|
+| test_sprint51_freeze（16 项） | PASS |
+| test_commercial_boundary（3 项） | PASS |
+| Rule Engine 四组（普通/ADR车辆/ADR司机/Express 隔离） | PASS |
+| Workflow 五模型回归 | PASS |
+| Event Ledger ledger-first + 事件字典 | PASS |
+| Snapshot version + immutability | PASS |
+| 全量 411 项测试中历史脏数据错误 | 148 errors / 8 failures（与本次无关） |
+| XML-RPC button_immediate_upgrade | 18.0.1.0.122 → 18.0.1.0.123 PASS |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| 8089 端口 | 已释放 |
+
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*

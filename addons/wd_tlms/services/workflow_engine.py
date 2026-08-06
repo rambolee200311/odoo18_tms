@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import datetime
 
 from odoo import models, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class WorkflowEngine(models.AbstractModel):
@@ -22,6 +25,9 @@ class WorkflowEngine(models.AbstractModel):
             raise UserError(_(
                 'Event code %s is not in the transport event dictionary.') %
                 event_type)
+        if code.deprecated_at:
+            _logger.warning(
+                'Using deprecated transport event code %s.', code.code)
         self.env['tlmp.transport.event.ledger'].create({
             'res_model': record._name,
             'res_id': record.id,

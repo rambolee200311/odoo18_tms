@@ -59,3 +59,5 @@ from . import test_sprint48_business_scenarios
 from . import test_business_matrix
 from . import test_vehicle_requirement
 from . import test_workflow_engine
+from . import test_sprint51_freeze
+from . import test_commercial_boundary

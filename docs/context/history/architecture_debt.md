@@ -649,3 +649,54 @@ Request 与 Order 都补齐以下参数，并在创建 Order 时从 Request 快�
 - [x] Pickup Plan 校验已放宽
 - [x] Quote→Order carrier 已修正
 - [ ] 测试已更新
+
+---
+
+## BD-TLMS-001: Customer Order Domain Missing
+
+**debt_id**: BD-TLMS-001
+**风险等级**: medium
+**计划清理**: Sprint52
+**状态**: deferred
+
+### 问题描述
+
+当前 `transport.order` 仅承载承运商执行维度订单，客户商务订单实体缺失。
+系统内只有 `transport.request → transport.order` 两层，
+缺少面向客户的合同与履约进度管控实体。
+
+### 数据模型对比
+
+现有模型：
+
+```
+transport.request → transport.order
+```
+
+目标模型：
+
+```
+transport.request → customer.order → carrier.order
+```
+
+改造后业务请求、客户商务订单、承运商执行订单三层权责清晰隔离。
+
+### 业务影响清单
+
+1. 缺失客户合同全生命周期管控能力
+2. 无法实现面向客户维度的履约进度跟踪
+3. 经纪业务收入确认的数据链路不完整
+
+### 归档备注（仅台账，不植入业务需求文档正文）
+
+1. 本条目存放技术债台账，不写入业务需求文档正文；
+2. Sprint52 排期信息仅用于项目管理台账，交付客户的业务文档不出现迭代编号；
+3. 后续改造的新旧字段对照、调整记录统一放置在对应设计文档附录区域。
+
+### 状态
+
+- [ ] Intent 契约已创建
+- [ ] 设计文档附录已更新
+- [ ] customer.order 模型已落地
+- [ ] 履约链路已切换
+- [ ] 测试已更新

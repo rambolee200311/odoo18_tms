@@ -1978,6 +1978,85 @@ Carrier Settlement、OCR。
 契约文件：
 `docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`
 
+## Sprint51 意图契约起草（2026-08-06）
+
+起草 `INT-TMS-SPRINT51-001`（CREATED），定位：
+`TLMS Workflow Freeze & Regression Validation`。
+- 冻结 Sprint49-50 Freeze Baseline：业务规则 / 五模型状态 / 事件字典 /
+  三类快照，禁止新增；
+- 单元测试补全：Rule Engine 四组、Workflow 三组、Event Ledger
+  ledger-first 顺序；
+- 数据一致性：submitted request 双快照存在、allocated order
+  allocation snapshot 存在；
+- Sprint51 只做测试与冻结文档，不新增业务能力、不做架构重构。
+
+契约文件：
+`docs/context/intent/intent_sprint51_workflow_freeze_regression.yaml`
+
+## Sprint51 开发实施（wd_tlms 1.0.123，2026-08-06）
+
+按 Sprint51 契约 v1.2 完成冻结与回归验证：
+- **冻结清单**：新增
+  `docs/context/business/sprint49_50_freeze_checklist.md`；
+- **Event Dictionary 生命周期**：engine 对 deprecated event code 输出
+  warning（仍允许写入），unknown code 继续 BLOCK；
+- **Inquiry 关闭守卫**：`action_close` 强制 close_reason；
+- **回归测试**：新增 `test_sprint51_freeze.py`（16 项）与
+  `test_commercial_boundary.py`（3 项），覆盖 Rule Engine 四组、
+  Workflow 五模型、Event Ledger ledger-first/事件字典、
+  snapshot version + immutability、Commercial Boundary；
+- 不新增状态、事件编码、快照字段，不修改 Request/Order 商务边界。
+
+### 验证
+- Sprint51 新增 19 项测试全部通过；
+- 全量 411 项中剩余 148 errors / 8 failures 为历史脏库/旧测试问题；
+- XML-RPC `button_immediate_upgrade` 18.0.1.0.122 → 18.0.1.0.123 成功，
+  升级日志零 ERROR / CRITICAL / TRACEBACK；
+- Odoo shell 复核：版本 1.0.123，事件字典 41 条，冻结模型未变。
+
+## Sprint51 契约 v1.2 最终增强（2026-08-06）
+
+Sprint51 契约按最终评审升级为 v1.2，仅做四项增强：
+1. **BUSINESS-DEBT-001 severity**：level=HIGH，
+   impact=commercial_traceability / customer_commitment_management /
+   billing_boundary；
+2. **commercial_boundary 关系方向**：customer_request creates
+   customer_order（future）；customer_order creates transport_order；
+   transport_order executes transport_plan；
+3. **snapshot version validation**：matrix / vehicle_requirement /
+   vehicle_allocation 三类快照 version_required=1.0，
+   规则升级不影响历史订单；
+4. **Commercial Boundary Regression**：新增
+   `test_commercial_boundary.py`（Case 1 Request 禁止 customer_order_id、
+   Case 2 Order 仅 supplier execution、Case 3 request_count != order_count）。
+
+契约文件：
+`docs/context/intent/intent_sprint51_workflow_freeze_regression.yaml`
+
+## Sprint51 契约 v1.1 评审修订（2026-08-06）
+
+Sprint51 契约按评审升级为 v1.1，7 项修改全部纳入：
+1. `intent_change_type` 调整为 `Architecture Freeze Validation`；
+2. target_scope 增加 Business Debt Registration（BUSINESS-DEBT-001，
+   Customer Order 缺失，纳入 Sprint52，不修改 Request/Order 关系）；
+3. freeze 增加 `current commercial boundary`，
+   commercial_boundary 明确 demand_input / supplier_execution_order /
+   customer_order(missing, Sprint52)；
+4. Express D3 用例补充隔离断言：车辆校验不执行、allocation snapshot
+   不生成、RULE-VEHICLE-003/004/005 不调用；
+5. Workflow 测试补全 Inquiry（sent→closed + close_reason）与
+   Plan（draft→scheduled→reserved + reservation_type/candidate）；
+6. Event Ledger 增加事件字典用例：unknown BLOCK /
+   deprecated warning / legacy preserved；
+7. Snapshot 测试拆分为存在性 + 三项 immutability 断言。
+
+新增交付物：`business_debt_register.md`、
+`commercial_boundary_definition.md`、Sprint49-50 architecture freeze
+checklist；affected_assets 同步补充。
+
+契约文件：
+`docs/context/intent/intent_sprint51_workflow_freeze_regression.yaml`
+
 ## Sprint50-B 开发实施（wd_tlms 1.0.122，2026-08-06）
 
 按 Sprint50-B 契约 v1.2 完成开发与验证：

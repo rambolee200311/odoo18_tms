@@ -3,12 +3,60 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.74
+context_version: 1.0.79
 update_time: 2026-08-06
 adapt_sprint: Sprint50-A
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.79:
+    update_content: |
+      Sprint51 开发实施（wd_tlms 1.0.123）：
+      - Sprint49-50 freeze checklist
+      - Event Dictionary 生命周期（deprecated warning / unknown BLOCK）
+      - Inquiry close_reason 强制
+      - test_sprint51_freeze 16 项 + test_commercial_boundary 3 项通过
+      - 全量 411 项，148 errors / 8 failures 为历史脏库问题
+      - XML-RPC 升级 1.0.123 成功
+    update_type: 冻结与回归验证（Sprint51）
+    effect_scope: Sprint49-50 Freeze Baseline
+  1.0.78:
+    update_content: |
+      Sprint51 契约 v1.2 最终增强（INT-TMS-SPRINT51-001）：
+      - BUSINESS-DEBT-001 severity=HIGH + 三项 impact
+      - commercial_boundary relationship 方向
+      - snapshot version validation（三类快照 version_required=1.0）
+      - Commercial Boundary Regression（test_commercial_boundary.py）
+    update_type: 意图契约评审增强
+    effect_scope: Sprint49-50 Freeze Baseline
+  1.0.77:
+    update_content: |
+      Sprint51 契约 v1.1 评审修订（INT-TMS-SPRINT51-001）：
+      - Architecture Freeze Validation
+      - Business Debt Registration（BUSINESS-DEBT-001，Sprint52）
+      - commercial boundary 冻结（demand/supplier/customer order）
+      - Express 隔离断言 + Workflow 五模型测试补全
+      - Event Dictionary 用例 + Snapshot immutability 用例
+      - 新增 business_debt_register.md / commercial_boundary_definition.md
+    update_type: 意图契约评审修订
+    effect_scope: Sprint49-50 Freeze Baseline
+  1.0.76:
+    update_content: |
+      Sprint51 意图契约起草 INT-TMS-SPRINT51-001（CREATED）：
+      - TLMS Workflow Freeze & Regression Validation
+      - 冻结业务规则/五模型状态/事件字典/三类快照
+      - Rule Engine / Workflow / Event Ledger / 数据一致性测试补全
+      - 只做测试与冻结文档，不新增业务能力
+    update_type: 意图契约起草
+    effect_scope: Sprint49-50 Freeze Baseline
+  1.0.75:
+    update_content: |
+      技术债登记 BD-TLMS-001（Customer Order Domain Missing）：
+      - 风险 medium，计划 Sprint52，状态 deferred
+      - 目标模型 transport.request → customer.order → carrier.order
+      - 归档备注仅入台账，不植入业务需求文档正文
+    update_type: 技术债台账登记
+    effect_scope: architecture_debt.md
   1.0.74:
     update_content: |
       Sprint50-B 开发实施（wd_tlms 1.0.122）：

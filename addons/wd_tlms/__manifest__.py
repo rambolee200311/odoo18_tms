@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.122',
+    'version': '1.0.123',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''

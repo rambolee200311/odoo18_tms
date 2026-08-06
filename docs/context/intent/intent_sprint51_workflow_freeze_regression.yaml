@@ -1,0 +1,228 @@
+# ==============================================================
+# Sprint51 Intent 契约 v1.2（最终评审增强）
+# — TLMS Workflow Freeze & Regression Validation
+# 基线：Sprint49 ~ Sprint50 冻结基线
+# 前置依赖：INT-TMS-SPRINT49-001 / 49A-001 / 49B-001
+#          INT-TMS-SPRINT50-001 / 50A-001 / 50B-001
+# 起草：2026-08-06
+# 修订：2026-08-06 v1.1（7 项修改）；v1.2（债务 severity /
+#       商业关系方向 / 快照版本校验 / Commercial Boundary 回归测试）
+# ==============================================================
+intent_id: INT-TMS-SPRINT51-001
+status: CREATED
+depends_on:
+- INT-TMS-SPRINT49-001
+- INT-TMS-SPRINT49A-001
+- INT-TMS-SPRINT49B-001
+- INT-TMS-SPRINT50-001
+- INT-TMS-SPRINT50A-001
+- INT-TMS-SPRINT50B-001
+intent_work_type: Maintenance
+intent_change_type: Architecture Freeze Validation
+title: TLMS Workflow Freeze & Regression Validation
+
+target_scope: >
+  冻结 Sprint49 ~ Sprint50 所形成的业务规则、状态机、事件模型与车辆链路，
+  通过系统化测试完成 Architecture Baseline Stabilization，
+  为 Sprint52 业务人工校验提供可信基线。本 Sprint 只做冻结、测试与一致性验证：
+  0. Business Debt Registration：
+     - 记录当前 Customer Order 缺失问题（BUSINESS-DEBT-001）；
+     - 当前 Request 仅作为客户需求入口（demand_input），
+       不定义为 Customer Order；
+     - Supplier Order（transport.order）继续作为供应商执行订单；
+     - Customer Order 模型暂不实现，纳入 Sprint52 Business Validation；
+     - Sprint51 不修改 Request / Order 关系
+  1. 冻结 Sprint49-50 Freeze Baseline：
+     - Business Rule / Business Matrix Rules / RULE-VEHICLE-000~005：Frozen；
+     - Workflow 五模型状态（Request / Inquiry / Quote / Plan / Order）：
+       禁止新增状态；
+     - Event：transport_event_code 事件字典，禁止新增自由事件；
+     - Snapshot：Business Matrix Snapshot / vehicle_requirement_snapshot /
+       vehicle_allocation_snapshot，禁止修改字段；
+     - current commercial boundary 一并冻结（见 freeze_policy）
+  2. 单元测试补全：
+     A. Rule Engine：
+        - 普通陆运 D1 + normal cargo + normal vehicle → PASS；
+        - ADR cargo + no ADR vehicle → BLOCK；
+        - ADR cargo + ADR vehicle + no ADR driver → BLOCK；
+        - Express D3 → PASS，且必须断言：
+          vehicle_requirement validation NOT executed、
+          vehicle_allocation_snapshot NOT generated、
+          RULE-VEHICLE-003/004/005 NOT called
+     B. Workflow：
+        - Request：draft → submitted → processing → completed，
+          验证 guard / ledger / state；
+        - Inquiry：sent → closed，close_reason required；
+        - Quote：approved 无 customer_accept → BLOCK；
+        - Plan：draft → scheduled → reserved，
+          reservation_type validation、allocation_candidate validation；
+        - Order：allocated 无 vehicle_allocation_snapshot → BLOCK
+     C. Event Ledger：
+        - 状态变更必须 ledger first；
+        - 先 update state 再 write ledger 的路径必须失败；
+        - Event Dictionary：unknown event_code BLOCK、
+          deprecated event_code allowed with warning、
+          legacy event preserved
+  3. 数据一致性测试：
+     - Request submitted：matrix_snapshot + vehicle_requirement_snapshot
+       必须存在；
+     - Order allocated：vehicle_allocation_snapshot 必须存在；
+     - Snapshot immutability：
+       1) policy change after request submit → snapshot unchanged；
+       2) vehicle rule change after order allocated →
+          allocation snapshot unchanged；
+       3) historical order replay → 使用 snapshot，不重算当前规则
+  4. Snapshot version validation：
+     - matrix_snapshot.version_required = 1.0；
+     - vehicle_requirement_snapshot.version_required = 1.0；
+     - vehicle_allocation_snapshot.version_required = 1.0；
+     - 未来规则升级（如 RULE-VEHICLE-006）不得影响历史订单，
+       历史判定依赖 snapshot version 而非当前规则版本
+  5. Commercial Boundary Regression（test_commercial_boundary.py）：
+     - Case 1：Request 允许 customer_request 语义，禁止
+       customer_order_id 字段；
+     - Case 2：Transport Order 必须关联 supplier/carrier execution，
+       不代表 customer commitment；
+     - Case 3：报告 request_count != order_count，避免继续误解
+
+commercial_boundary:
+  customer_request:
+    role: demand_input
+  transport_order:
+    role: supplier_execution_order
+  customer_order:
+    status: missing
+    planned_sprint: Sprint52
+  relationship:
+    customer_request:
+      creates:
+      - customer_order (future)
+    customer_order:
+      creates:
+      - transport_order
+    transport_order:
+      executes:
+      - transport_plan
+
+snapshot_version_validation:
+  matrix_snapshot:
+    version_required: "1.0"
+  vehicle_requirement_snapshot:
+    version_required: "1.0"
+  vehicle_allocation_snapshot:
+    version_required: "1.0"
+
+freeze_policy:
+  baseline: Sprint49-50 Freeze Baseline
+  freeze:
+  - business rules / matrix rules / RULE-VEHICLE-000~005
+  - workflow states（Request/Inquiry/Quote/Plan/Order）
+  - transport_event_code（禁止新增自由事件）
+  - snapshots（matrix / vehicle_requirement / vehicle_allocation）
+  - current commercial boundary
+  versions:
+    workflow_version: "1.0"
+    event_dictionary_version: "1.0"
+    vehicle_rule_version: "1.0"
+    snapshot_version: "1.0"
+  change_requires:
+  - business_owner_approval
+  - architect_approval
+
+accept_criteria:
+- "冻结基线清单正式输出（含 commercial boundary），供 Sprint52 业务人工校验引用"
+- "Rule Engine 四组用例全部通过，Express 隔离断言（校验不执行/快照不生成/规则不调用）通过"
+- "Workflow 用例覆盖五模型：request 全链路、inquiry close_reason、quote 审批、plan reservation、order allocation"
+- "Event Ledger 顺序用例与事件字典用例通过（unknown BLOCK / deprecated warning / legacy preserved）"
+- "数据一致性用例通过：双快照存在 + 三项 snapshot immutability 断言"
+- "snapshot version validation 通过：三类快照 version_required=1.0，规则升级不影响历史订单"
+- "Commercial Boundary Regression 通过：Request 无 customer_order_id、Order 为 supplier execution、request_count != order_count"
+- "Sprint51 期间未新增状态、未新增事件编码、未修改三类快照字段、未修改 Request/Order 关系"
+- "BUSINESS-DEBT-001 已登记且不进入本 Sprint 开发"
+- "XML-RPC 常驻升级通过，日志零 ERROR；决策/版本/验证文档同步更新"
+
+source:
+  type: regular_audit
+  origin_team: 业务 + 研发 + 架构
+  based_on:
+  - "Sprint51 定位建议（2026-08-06）"
+  - "Sprint51 Intent 契约评审（2026-08-06，7 项修改）"
+  - "INT-TMS-SPRINT50B-001 v1.2（test_baseline）"
+  - "docs/context/business/transport_event_dictionary.md"
+
+asset_snapshot_profile: maintenance
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 5
+  retry_scope:
+    mode: "affected_asset_only"
+  escalation:
+    after_failed_iteration: 3
+    require_human: true
+  stop_condition:
+  - all_validation_pass
+  - human_accept
+  - risk_block
+
+affected_assets:
+  architecture:
+  - addons/wd_tlms/tests/test_workflow_engine.py
+  - addons/wd_tlms/tests/test_vehicle_requirement.py
+  - addons/wd_tlms/tests/test_business_matrix.py
+  - addons/wd_tlms/tests/test_snapshot_chain.py
+  - addons/wd_tlms/tests/test_commercial_boundary.py
+  - addons/wd_tlms/services/workflow_engine.py
+  - addons/wd_tlms/services/business_matrix_service.py
+  - addons/wd_tlms/business_matrix/rules/vehicle_rules.py
+  - addons/wd_tlms/models/transport_event_ledger.py
+  - addons/wd_tlms/models/transport_event_code.py
+  - addons/wd_tlms/models/transport_plan.py
+  business:
+  - docs/context/business/commercial_model.md
+  - docs/context/business/business_debt_register.md
+  - docs/context/business/transport_event_dictionary.md
+  - docs/context/business/state_migration_plan.md
+  - docs/business_validation/result_summary.md
+  governance:
+  - docs/context/history/decision_note.md
+  - docs/context/context_version.yaml
+
+validation_strategy:
+  layers:
+  - static_check
+  - build_verify
+  - auto_test
+  - runtime_validate
+  - business_review
+  required_pass: all
+
+deliverables:
+- "Sprint49-50 Freeze Baseline 清单（含版本号）"
+- "business_debt_register.md（BUSINESS-DEBT-001）"
+- "commercial_boundary_definition.md（Request/transport.order/customer.order 边界）"
+- "Sprint49-50 architecture freeze checklist"
+- "Rule Engine 四组回归用例（含 Express 隔离断言）"
+- "Workflow 五模型回归用例（request/inquiry/quote/plan/order）"
+- "Event Ledger ledger-first + 事件字典用例"
+- "数据一致性 + snapshot immutability 用例"
+- "snapshot version validation 用例（三类快照 version_required=1.0）"
+- "Commercial Boundary Regression 用例（test_commercial_boundary.py）"
+- "Sprint51 回归报告与决策/版本/验证文档更新"
+
+limit_constraints: |
+  1. 不修改 odoo/ 官方代码与原生 stock/account 模块
+  2. 不新增状态、不新增事件编码、不修改三类快照字段、不新增业务场景
+  3. 不建设 Carrier Settlement / OCR / 新规则维度
+  4. 冻结基线修改需业务 + 架构双审批
+  5. 本 Sprint 只允许测试、修复测试缺口与冻结文档，不允许架构重构
+  6. 不修复 Customer Order 缺失问题；Sprint51 仅登记业务债务，
+     不改变 Request / Order 模型关系
+
+risk_precheck: |
+  - 冻结基线需与 Sprint50-B test_baseline 一致，避免版本漂移
+  - 回归测试若发现缺陷，只修测试/缺陷，不扩展冻结范围
+  - ledger-first 顺序用例需在事务内构造失败路径，验证状态回滚
+  - snapshot 存在性用例需覆盖存量数据迁移后的回填状态
+  - Express 隔离断言需防止空 JSON snapshot 被误判为有效分配
+  - Customer Order 债务仅登记，禁止在 Sprint51 植入 customer_order 模型

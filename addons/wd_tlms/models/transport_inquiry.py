@@ -157,10 +157,12 @@ class TransportInquiry(models.Model):
             self, 'accepted', 'INQUIRY_ACCEPTED')
         return True
 
-    def action_close(self, reason='carrier_selected', carrier_id=False):
+    def action_close(self, reason=False, carrier_id=False):
         self.ensure_one()
         if self.state not in ('sent', 'responded', 'accepted'):
             raise UserError(_('Only open inquiries can be closed.'))
+        if not reason:
+            raise UserError(_('Close reason is required to close an inquiry.'))
         vals = {'close_reason': reason}
         if carrier_id:
             vals['selected_carrier_id'] = carrier_id
