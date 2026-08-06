@@ -1,5 +1,7 @@
 """Sprint49-B: Vehicle Requirement Rule Tests."""
 
+import json
+
 from odoo.tests import TransactionCase
 
 
@@ -180,3 +182,34 @@ class TestVehicleRequirement(TransactionCase):
             'carrier_cost': 50.0,
         })
         self.assertEqual(quote.vehicle_requirement_mode, 'exempted')
+
+    def test_17_confirmed_request_snapshot_propagates_to_order(self):
+        """Confirming a request should freeze vehicle snapshot and propagate it to orders."""
+        req = self._create_request(
+            carrier_type='truck',
+            vehicle_body_type='reefer_refrigerated',
+            vehicle_capacity_requirement='below_40t',
+        )
+        req.action_confirm()
+        req.write({'matrix_code': 'S1-B1-C1-D2-E2-F2', 'matrix_validation_result': 'pass'})
+
+        inquiry = self.env['tlmp.transport.inquiry'].create({
+            'request_id': req.id,
+            'cargo_summary': 'Test cargo',
+        })
+        quote = self.env['tlmp.transport.quote'].create({
+            'request_id': req.id,
+            'inquiry_id': inquiry.id,
+            'carrier_cost': 100.0,
+        })
+        quote.action_send()
+        quote.action_accept()
+
+        order = quote.transport_order_id
+        self.assertTrue(order)
+        self.assertTrue(order.vehicle_requirement_snapshot)
+        snapshot = json.loads(order.vehicle_requirement_snapshot)
+        self.assertEqual(snapshot['vehicle_requirement_mode'], 'required')
+        self.assertEqual(snapshot['vehicle_requirement_mode_snapshot'], 'required')
+        self.assertEqual(snapshot['vehicle_body_type'], 'reefer_refrigerated')
+        self.assertEqual(snapshot['vehicle_capacity_requirement'], 'below_40t')

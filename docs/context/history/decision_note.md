@@ -316,6 +316,22 @@ v3 —— verify.py 8项静态 + test_runtime_validation.py 运行时双检（Sp
 **测试执行**:
 ```
 odoo-bin -c odoo.conf -u wd_tlms --test-enable --stop-after-init
+
+---
+
+## Sprint49-B: vehicle requirement request-order snapshot
+
+**时间**: 2026-08-06
+
+### 决策：请求确认后冻结车辆需求快照，并在 quote 生成 order 时向下游透传
+
+**背景**: Sprint49-B 要求在 transport.request 层记录车辆约束、确认时冻结快照，并把快照保留在下游 transport.order，避免后续策略变更污染已确认的业务结论。
+
+**结论**:
+- 车辆需求模式由 carrier_type 策略衍生，request 层按 required/exempted 记录。
+- request 确认时会冻结 vehicle_requirement_mode_snapshot 和 vehicle_requirement_snapshot。
+- quote.accept 创建 order 时，会把冻结的快照写入 order.vehicle_requirement_snapshot。
+- 已通过 Odoo XML-RPC 升级路径和 Odoo shell 目标场景验证。
 ```
 
 **测试结果**: 1 failure, 0 errors of 4 tests
