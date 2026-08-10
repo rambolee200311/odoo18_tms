@@ -1638,7 +1638,7 @@ wd_tlms 18.0.1.0.112）；业务场景回归 TestBusinessScenarios 3 项全部�
 
 ## Sprint49 起草：六维业务矩阵规则引擎（2026-08-05）
 
-已阅读开发冻结基线 `docs/context/business/bussiness_matrix.md` V1.0，并对照现有代码：
+已阅读开发冻结基线 `docs/context/business/business_matrix.md` V1.0，并对照现有代码：
 
 **已具备**：Scene（8）、request_type（B1/B2 近似）、cargo_type C1/C2/C3、
 carrier_type / fleet_operation_mode（D1/D2/D3 近似）、T1/DG 部分字段、
@@ -1977,6 +1977,27 @@ Carrier Settlement、OCR。
 
 契约文件：
 `docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`
+
+## Sprint52-B Fix2：Quote/Order 双向费用（wd_tlms 1.0.125，2026-08-10）
+
+**决策**：商务链 quote 创建时同时生成 `customer_charge`（应收）与
+`carrier_cost`（应付）两条 fee line；客户价加 margin 后只更新
+customer_charge，carrier_cost 保持承运商报价；order 从 quote 复制双向
+fee line，确保 order 可直接核对应收与应付。
+
+**依据**：
+- 组合 1-8 首轮验证发现 order 只有 customer_charge 480，缺少
+  carrier_cost 380 应付行（SD52-B-002）；
+- 该问题属于商务链费用行生成缺口，修复落点为
+  `transport_inquiry.action_create_quote()`，不涉及 allocation /
+  状态机 / Event Code / Snapshot 结构，也不新增模型字段。
+
+**验证**：wd_tlms 1.0.124 → 1.0.125 模块升级通过，升级日志零 ERROR；
+组合 1-8 重新跑完整商务链，quote 与 order 均为
+customer_charge 480 + carrier_cost 380，8/8 通过，数据已提交。
+
+契约文件：
+`docs/context/intent/intent_sprint52fix2_quote_carrier_cost.yaml`
 
 ## Sprint51 意图契约起草（2026-08-06）
 

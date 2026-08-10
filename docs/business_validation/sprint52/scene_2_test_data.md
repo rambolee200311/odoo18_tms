@@ -1,0 +1,61 @@
+# Sprint52-B Scene 2 Test Data
+
+> 契约：`INT-TMS-SPRINT52B-001`
+> 原则：复用 Master Data，只创建 1 套 Transaction Data。
+
+## Master Data（复用/待确认）
+
+| 对象 | 名称 | 说明 |
+| :--- | :--- | :--- |
+| Terminal | Terminal1 | 起点 terminal |
+| Customer | 待选定 | 终点客户，可复用现有 partner 或使用自由地址 |
+| Carrier | 待选定 | 外部/自有车队，T1/危品资质按组合确认 |
+
+## Transaction Data（计划创建）
+
+| 对象 | 数量 | 说明 |
+| :--- | :--- | :--- |
+| transport.request | 1 | scene=terminal_to_customer, request_type=commercial |
+| transport.inquiry | 1 | 从 request 派生 |
+| transport.quote | 1 | 从 inquiry 派生，含 Margin |
+| transport.order | 1 | quote accepted 后自动创建 |
+| event.ledger | N | 状态流转对应事件编码 |
+
+## 组合矩阵（待确认）
+
+建议与 Sprint52-A 保持一致，8 个代表组合：
+
+| # | 货型 | 车队 | T1 | 危品 |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 柜 | 外部 | T1 | 普通 |
+| 2 | 柜 | 自有 | 普通 | 普通 |
+| 3 | 托 | 外部 | 普通 | 普通 |
+| 4 | 托 | 自有 | T1 | 普通 |
+| 5 | 件 | 外部 | 普通 | 普通 |
+| 6 | 件 | 自有 | 普通 | 普通 |
+| 7 | 柜 | 外部 | 普通 | 危品 |
+| 8 | 托 | 自有 | T1 | 危品 |
+
+覆盖口径：3 货型 × 2 车队 × 2 T1 × 2 危品，全量 24 组合中选取代表 8 组合。
+
+## 执行后填写
+
+| 对象 | ID / Name | 状态 |
+| :--- | :--- | :--- |
+| Request | 8 条已写入（见下表） | draft |
+| Inquiry | 未创建 | 等待验证指令 |
+| Quote | 未创建 | 等待验证指令 |
+| Order | 未创建 | 等待验证指令 |
+
+### 已写入 Request
+
+| # | 组合 | Request ID | Request Name | Matrix Code | Matrix / Vehicle Result | 状态 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | 柜+外部+T1+普通 | 3781 | TLM-REQ-2026-08-4774 | S2-B2-C1-D2-E1-F2 | pass / pass | draft |
+| 2 | 柜+自有+普通+普通 | 3782 | TLM-REQ-2026-08-4775 | S2-B2-C1-D1-E2-F2 | pass / pass | draft |
+| 3 | 托+外部+普通+普通 | 3783 | TLM-REQ-2026-08-4776 | S2-B2-C2-D2-E2-F2 | pass / pass | draft |
+| 4 | 托+自有+T1+普通 | 3784 | TLM-REQ-2026-08-4777 | S2-B2-C2-D1-E1-F2 | pass / pass | draft |
+| 5 | 件+外部+普通+普通 | 3785 | TLM-REQ-2026-08-4778 | S2-B2-C3-D2-E2-F2 | pass / pass | draft |
+| 6 | 件+自有+普通+普通 | 3786 | TLM-REQ-2026-08-4779 | S2-B2-C3-D1-E2-F2 | pass / pass | draft |
+| 7 | 柜+外部+普通+危品 | 3787 | TLM-REQ-2026-08-4780 | S2-B2-C1-D2-E2-F1 | pass / pass | draft |
+| 8 | 托+自有+T1+危品 | 3788 | TLM-REQ-2026-08-4781 | S2-B2-C2-D1-E1-F1 | pass / pass | draft |

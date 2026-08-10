@@ -417,24 +417,28 @@ class TransportOrder(models.Model):
                     == 'block':
                 raise UserError(_(
                     'Vehicle requirement snapshot is missing or invalid.'))
-            if not abstract or not abstract.allocation_candidate_valid \
-                    or not abstract.allocation_candidate:
-                raise UserError(_(
-                    'Allocation candidate is missing; '
-                    'plan.reserve must be completed first.'))
-            candidate = json.loads(abstract.allocation_candidate)
-            if self.carrier_id and candidate.get('reserved_carrier_id') \
-                    and candidate['reserved_carrier_id'] != self.carrier_id.id:
-                raise UserError(_(
-                    'Assigned carrier changed since plan reservation.'))
-            if self.vehicle_plate and candidate.get('reserved_vehicle_plate') \
-                    and candidate['reserved_vehicle_plate'] != self.vehicle_plate:
-                raise UserError(_(
-                    'Assigned vehicle changed since plan reservation.'))
-            if self.driver_name and candidate.get('reserved_driver') \
-                    and candidate['reserved_driver'] != self.driver_name:
-                raise UserError(_(
-                    'Assigned driver changed since plan reservation.'))
+            candidate = {}
+            if abstract:
+                if not abstract.allocation_candidate_valid \
+                        or not abstract.allocation_candidate:
+                    raise UserError(_(
+                        'Allocation candidate is missing; '
+                        'plan.reserve must be completed first.'))
+                candidate = json.loads(abstract.allocation_candidate)
+                if self.carrier_id and candidate.get('reserved_carrier_id') \
+                        and candidate['reserved_carrier_id'] != self.carrier_id.id:
+                    raise UserError(_(
+                        'Assigned carrier changed since plan reservation.'))
+                if self.vehicle_plate and candidate.get('reserved_vehicle_plate') \
+                        and candidate['reserved_vehicle_plate'] != self.vehicle_plate:
+                    raise UserError(_(
+                        'Assigned vehicle changed since plan reservation.'))
+                if self.driver_name and candidate.get('reserved_driver') \
+                        and candidate['reserved_driver'] != self.driver_name:
+                    raise UserError(_(
+                        'Assigned driver changed since plan reservation.'))
+            # INT-TMS-SPRINT52FIX-001: 商务链无 transport.plan 时，
+            # 直接校验 request 快照并生成 allocation snapshot。
             snapshot = {
                 'valid': True,
                 'vehicle_requirement_mode': req.vehicle_requirement_mode_snapshot,

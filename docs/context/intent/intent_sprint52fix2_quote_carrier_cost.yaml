@@ -1,0 +1,52 @@
+# ==============================================================
+# INT-TMS-SPRINT52FIX-002
+# Sprint52-B 商务链 Quote 双向费用修复（SD52-B-002）
+# 方案 A：quote 创建时同时生成 customer_charge + carrier_cost。
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT52FIX-002
+intent_work_type: Maintenance
+intent_change_type: Functional Bug Fix
+title: 商务链 Quote/Order 双向费用修复（SD52-B-002）
+
+target_scope:
+  - addons/wd_tlms/models/transport_inquiry.py（action_create_quote）
+  - addons/wd_tlms/__manifest__.py（版本 bump）
+  - docs/business_validation/sprint52/scene_2_issue_register.md
+
+accept_criteria:
+  - quote 创建时同时生成 customer_charge 与 carrier_cost 两条 fee line
+  - quote 客户价加 margin 后，customer_charge 更新、carrier_cost 保持承运商报价
+  - order 从 quote 复制 fee line 后同时包含应收与应付
+  - 组合 1-8 验证 order fee line = customer_charge 480 + carrier_cost 380
+  - 模块升级验证通过，日志零 ERROR
+
+source:
+  type: business_validation
+  origin_team: TLM
+
+affected_assets:
+  business:
+    - docs/business_validation/sprint52/scene_2_result.md
+    - docs/business_validation/sprint52/scene_2_issue_register.md
+  architecture: []
+  governance:
+    - docs/context/history/decision_note.md
+
+validation_strategy:
+  layers:
+    - static_check
+    - module_upgrade
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - 本契约文件
+  - transport_inquiry.py 修复
+  - manifest 版本升级
+  - 模块升级验证记录
+
+limit_constraints:
+  - 仅修复 SD52-B-002，不改 allocation / 状态机 / Event Code / Snapshot 结构
+  - 不新增模型字段

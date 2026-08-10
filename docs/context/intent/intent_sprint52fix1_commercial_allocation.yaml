@@ -1,0 +1,52 @@
+# ==============================================================
+# INT-TMS-SPRINT52FIX-001
+# Sprint52-B 商务链 Allocation 修复（SD52-B-001）
+# 仅修复商务链 order.allocate 无 plan 时的快照生成路径。
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT52FIX-001
+intent_work_type: Maintenance
+intent_change_type: Functional Bug Fix
+title: 商务链 Order Allocation 修复（无 plan 时直接校验 request 快照）
+
+target_scope:
+  - addons/wd_tlms/models/transport_order.py（action_allocate）
+  - addons/wd_tlms/__manifest__.py（版本 bump）
+  - docs/business_validation/sprint52/scene_2_issue_register.md
+
+accept_criteria:
+  - 商务链 quote 创建的 order 无 transport.plan 时，order.action_allocate() 可正常执行
+  - order 生成 vehicle_allocation_snapshot，事件 ORDER_ALLOCATED 写入 ledger
+  - plan-driven 链路行为不变，仍要求 plan.reserve 生成 allocation_candidate
+  - request 快照缺失或 BLOCK 时继续拦截
+  - 模块升级验证通过，日志零 ERROR
+
+source:
+  type: business_validation
+  origin_team: TLM
+
+affected_assets:
+  business:
+    - docs/business_validation/sprint52/scene_2_result.md
+    - docs/business_validation/sprint52/scene_2_issue_register.md
+  architecture: []
+  governance:
+    - docs/context/history/decision_note.md
+
+validation_strategy:
+  layers:
+    - static_check
+    - module_upgrade
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - 本契约文件
+  - transport_order.py 修复
+  - manifest 版本升级
+  - 模块升级验证记录
+
+limit_constraints:
+  - 仅修复 SD52-B-001，不改 fee line / 状态机 / Event Code / Snapshot 结构
+  - 不新增模型字段

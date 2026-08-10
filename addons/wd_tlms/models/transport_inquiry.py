@@ -216,14 +216,27 @@ class TransportInquiry(models.Model):
             'partner_id': self.request_id.partner_id.id if self.request_id and self.request_id.partner_id else False,
             'carrier_cost': self.total_amount,
             'line_ids': line_ids,
-            'fee_line_ids': [(0, 0, {
-                'fee_type_id': charge_item.id if charge_item else False,
-                'party_type': 'customer_charge',
-                'source_type': 'commercial',
-                'unit_amount': self.total_amount,
-                'quantity': 1.0,
-                'description': 'Transportation Fee',
-            })] if charge_item else [],
+            'fee_line_ids': ([
+                (0, 0, {
+                    'fee_type_id': charge_item.id if charge_item else False,
+                    'party_type': 'customer_charge',
+                    'partner_id': self.request_id.partner_id.id
+                    if self.request_id and self.request_id.partner_id else False,
+                    'source_type': 'commercial',
+                    'unit_amount': self.total_amount,
+                    'quantity': 1.0,
+                    'description': 'Transportation Fee',
+                }),
+                (0, 0, {
+                    'fee_type_id': charge_item.id if charge_item else False,
+                    'party_type': 'carrier_cost',
+                    'partner_id': self.partner_id.id if self.partner_id else False,
+                    'source_type': 'commercial',
+                    'unit_amount': self.total_amount,
+                    'quantity': 1.0,
+                    'description': 'Transportation Fee (carrier)',
+                }),
+            ]) if charge_item else [],
         })
         return {
             'type': 'ir.actions.act_window',

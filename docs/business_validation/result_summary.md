@@ -146,3 +146,53 @@
 ---
 
 *执行说明：每个场景在 docs/business_validation/scene_N_*.md 的"地址架构验证"章节逐项勾选，缺陷记录到该场景 Issues Found，汇总到上表。*
+
+## Sprint52 Business Scenario Validation（2026-08-07）
+
+> Sprint52 为业务真实性验证阶段，不做功能开发；执行顺序按
+> common_pre_check → A → C → B → G → H → E → F → D。
+
+### 子意图进度
+
+| 子意图 | 场景 | 状态 |
+| :--- | :--- | :--- |
+| Sprint52-A | S1 Terminal → Warehouse | ✅ PASS（人工验证通过） |
+| Sprint52-C | S3 Warehouse → Customer | ⏳ pending |
+| Sprint52-B | S2 Terminal → Customer | ✅ PASS（组合 1-8 全链路 + SD52-B-001/002 fixed） |
+| Sprint52-G | S7 Container Swap | ⏳ pending |
+| Sprint52-H | S8 Empty Depot | ⏳ pending |
+| Sprint52-E | S5 Warehouse Transfer | ⏳ pending |
+| Sprint52-F | S6 Customer Return | ⏳ pending |
+| Sprint52-D | S4 Customer A → B | ⏳ pending |
+
+### Sprint52-A 验证记录
+
+| Check | Result |
+| :--- | :--- |
+| 8 个代表组合 | ✅ PASS（柜/托/件 × 自有/外部 × T1/普通 × 危品/普通） |
+| Request 状态 | completed（8/8） |
+| Order 状态 | closed（8/8） |
+| Event Ledger | 每条 12 条，全部命中事件字典 |
+| Request 双 Snapshot | frozen（8/8） |
+| Order vehicle_allocation_snapshot | 存在（8/8） |
+| 阻塞问题 | 0 |
+| 开放观察项 | SD52-A-001（Plan 名称双连字符）、SD52-A-002（计划驱动 carrier_cost 0.00 占位） |
+
+### Sprint52-B 验证记录
+
+| Check | Result |
+| :--- | :--- |
+| 8 个代表组合 | ✅ PASS（柜/托/件 × 自有/外部 × T1/普通 × 危品/普通） |
+| Commercial Flow | ✅ PASS（request → inquiry → quote → order → allocate → in_transit → delivered → closed） |
+| Request 状态 | completed（8/8） |
+| Order 状态 | closed（8/8） |
+| Event Ledger | 15 条/组合，全部命中事件字典 |
+| Request 双 Snapshot | frozen（8/8） |
+| Order vehicle_allocation_snapshot | 存在（8/8） |
+| Quote 双向 fee line | PASS（customer_charge + carrier_cost） |
+| Order 双向 fee line | PASS（customer_charge 480 + carrier_cost 380，8/8） |
+| 阻塞问题 | 0 |
+| 修复记录 | SD52-B-001（1.0.124）、SD52-B-002（1.0.125）均验证通过 |
+| 8089 端口 | 已释放 |
+
+下一子意图：Sprint52-C。
