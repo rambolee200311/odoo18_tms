@@ -2,6 +2,9 @@
 
 > 定位：在 Sprint49-50 Freeze Baseline 上做业务真实性验证，发现业务模型缺口，
 > 不开发新功能，不修改冻结基线。
+> 2026-08-10：Sprint52-Fix3 已按双审批更新 inquiry/quote 商务链基线
+> （selected inquiry / accepted quote / communication_status），
+> 后续子意图沿用该收敛状态机。
 
 ## 执行顺序
 
@@ -32,11 +35,14 @@ common_pre_check → A → C → B → G → H → E → F → D
 ## 数据限制
 
 - Master Data：复用现有 carrier / warehouse / customer / terminal / vehicle / driver。
-- Transaction Data：每场景只允许 1 Request、1 Inquiry（商务链）、1 Quote（商务链）、1 Plan、1 Order、N Event Ledger。
+- Transaction Data：每场景只允许 1 Request、1 selected Inquiry（商务链）、
+  1 Quote（商务链）、1 Plan、1 Order、N Event Ledger。
 - 不创建随机数据，不污染冻结基线。
 
 ## 阶段约束
 
 1. Sprint52 是业务验证，不是 Development Sprint。
-2. 不修改 Workflow 状态机、不新增 Event Code、不修改 Snapshot 结构、不扩展规则维度。
+2. inquiry/quote 状态机与事件码修改已按 INT-TMS-SPRINT52FIX-003
+   freeze exception 双审批执行；后续验证不再新增状态或 Event Code，
+   不修改 Snapshot 结构、不扩展规则维度。
 3. 发现的业务缺口统一登记为 business debt，修复必须另起新 intent。

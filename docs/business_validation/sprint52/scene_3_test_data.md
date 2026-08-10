@@ -1,6 +1,8 @@
 # Sprint52-C Scene 3 Test Data
 
 > 契约：`INT-TMS-SPRINT52C-001`
+> 2026-08-10：按 `INT-TMS-SPRINT52FIX-003` 重新 mock，
+> 商务链使用 Create Carrier Inquiry / Create Customer Quote wizard。
 > 原则：复用 Master Data，只创建 1 套 Transaction Data。
 
 ## Master Data（复用/待确认）
@@ -16,9 +18,9 @@
 | 对象 | 数量 | 说明 |
 | :--- | :--- | :--- |
 | transport.request | 8 | scene=warehouse_to_customer, request_type=commercial |
-| transport.inquiry | 0 | 等待验证指令后从 request 派生 |
-| transport.quote | 0 | 等待验证指令后从 inquiry 派生 |
-| transport.order | 0 | quote accepted 后自动创建 |
+| transport.inquiry | 8 | Create Carrier Inquiry wizard 创建并记录响应 |
+| transport.quote | 8 | Create Customer Quote wizard 从 selected inquiry 创建 |
+| transport.order | 8 | quote accepted 后自动创建，回填 carrier/inquiry/quote |
 | event.ledger | N | 状态流转对应事件编码 |
 
 ## 组合矩阵
@@ -43,9 +45,18 @@
 | 对象 | ID / Name | 状态 |
 | :--- | :--- | :--- |
 | Request | 8 条已写入（见下表） | completed |
-| Inquiry | 1087-1094 | accepted |
+| Inquiry | 1087-1094 | selected（FIX-003 迁移后） |
 | Quote | 830-837 | accepted |
 | Order | 2654-2661 | closed |
+
+### 执行链路（FIX-003）
+
+request → `Create Carrier Inquiry` wizard（carrier + cost + response_date）
+→ inquiry responded → `action_select`（INQUIRY_SELECTED）
+→ `Create Customer Quote` wizard（margin + service_fee）
+→ quote `action_send`（communication_status=sent）
+→ quote `action_accept`（accepted_by/accepted_date，ORDER_CREATED）
+→ order 状态流转至 closed。
 
 ### 已写入 Request
 
