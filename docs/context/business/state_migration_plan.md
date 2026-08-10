@@ -19,17 +19,21 @@ Sprint50 Workflow Engine 存量状态值迁移映射。迁移只做 value 映射
 ## transport.inquiry
 | 旧值 | 新值 | 迁移规则 |
 |------|------|----------|
-| accepted | closed | accepted 视为已关闭询价，回填 selected_carrier_id |
-| responded | sent | 已回价但未选定的保持 sent，response_count 保留 |
-| rejected/expired | cancelled | 作废场景统一 cancelled，close_reason 回填 |
+| accepted | selected | 语义修正为“选定获胜承运商”，回填 selected_carrier_id=partner_id |
+| draft / sent / responded / rejected / closed | 同名保留 | 不迁移 |
+| expired | closed（close_reason=expired） | 过期不再作为状态，按关闭询价处理 |
 
 ## transport.quote
 | 旧值 | 新值 | 迁移规则 |
 |------|------|----------|
-| sent | issued | sent 视为已出具报价 |
-| accepted | confirmed | accepted 视为客户确认，confirmation_source 回填 customer |
-| rejected | rejected | 不变 |
-| cancelled/expired | cancelled/expired | 不变 |
+| sent / issued | draft + communication_status=sent | 发送/出具仅审计沟通，不驱动 state |
+| approved / confirmed | accepted | 内部审批/客户确认统一收敛为 accepted |
+| draft / accepted / rejected / closed | 同名保留 | 不迁移 |
+| cancelled / expired | 保留旧值 | 历史终态保留；当前库无存量，仅作兼容说明 |
+
+补充：1.0.126 迁移对 accepted quote 按 ledger
+`QUOTE_ACCEPTED` / `QUOTE_CONFIRMED` 时间回填 `accepted_by / accepted_date`，
+并回填 order 的 `carrier_id / inquiry_id` 与 quote 的 `transport_order_id` 追溯链。
 
 ## transport.plan（pickup.plan / container.transport.plan）
 | 旧值 | 新值 | 迁移规则 |

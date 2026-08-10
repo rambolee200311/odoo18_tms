@@ -188,22 +188,37 @@ class TestWorkflowEngine(TransactionCase):
     # -----------------------------------------------------------
     def test_08_quote_confirmation_flow(self):
         req = self._request()
+        req.action_confirm()
+        customer = self.env['res.partner'].create(
+            {'name': 'WF Customer'})
+        carrier = self.env['res.partner'].create({
+            'name': 'WF Carrier', 'is_carrier': True})
+        inquiry = self.env['tlmp.transport.inquiry'].create({
+            'request_id': req.id,
+            'partner_id': carrier.id,
+            'cargo_summary': 'Test cargo',
+        })
+        inquiry.action_send()
+        inquiry.action_respond()
+        inquiry.action_select()
+        self.assertEqual(inquiry.state, 'selected')
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': req.id,
+            'inquiry_id': inquiry.id,
+            'partner_id': customer.id,
             'carrier_cost': 100.0,
         })
-        quote.action_issue()
-        self.assertEqual(quote.state, 'issued')
-        quote.action_approve()
-        self.assertEqual(quote.state, 'approved')
-        quote.customer_accept = True
-        quote.action_confirm_customer()
-        self.assertEqual(quote.state, 'confirmed')
-        self.assertEqual(quote.confirmation_source, 'customer')
+        quote.action_send()
+        self.assertEqual(quote.state, 'draft')
+        self.assertEqual(quote.communication_status, 'sent')
+        quote.action_accept()
+        self.assertEqual(quote.state, 'accepted')
+        self.assertTrue(quote.accepted_by)
+        self.assertTrue(quote.accepted_date)
         self.assertTrue(self.env['tlmp.transport.event.ledger'].search([
             ('res_model', '=', 'tlmp.transport.quote'),
             ('res_id', '=', quote.id),
-            ('event_type', '=', 'QUOTE_CONFIRMED'),
+            ('event_type', '=', 'QUOTE_ACCEPTED'),
         ], limit=1))
 
     def test_09_inquiry_close(self):
@@ -311,8 +326,9 @@ class TestWorkflowEngine(TransactionCase):
         migration.run(dry_run=False)
         self.assertEqual(req.state, 'submitted')
         self.assertEqual(req.validation_state, 'passed')
-        self.assertEqual(inquiry.state, 'closed')
-        self.assertEqual(quote.state, 'issued')
+        self.assertEqual(inquiry.state, 'selected')
+        self.assertEqual(quote.state, 'draft')
+        self.assertEqual(quote.communication_status, 'sent')
         self.assertEqual(order.state, 'allocated')
         self.assertEqual(plan.state, 'reserved')
 

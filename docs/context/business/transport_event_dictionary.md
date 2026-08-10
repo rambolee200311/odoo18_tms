@@ -23,17 +23,27 @@ TLMS Workflow Engine 事件编码字典。所有状态变更事件必须使用�
 | code | category | from_state | to_state | 说明 |
 |------|----------|------------|----------|------|
 | INQUIRY_SENT | state | draft | sent | 下发承运商 |
-| INQUIRY_CLOSED | state | sent/responded | closed | 关闭询价并选定承运商 |
-| INQUIRY_CANCELLED | state | draft/sent | cancelled | 客户终止 |
+| INQUIRY_RESPONDED | business | sent | responded | 承运商响应（成本/日期/资质） |
+| INQUIRY_SELECTED | state | responded | selected | 选定获胜承运商 |
+| INQUIRY_REJECTED | state | responded | rejected | 未选中承运商 |
+| INQUIRY_CLOSED | state | sent/responded/selected | closed | 关闭询价（含过期 close_reason=expired） |
+| INQUIRY_ACCEPTED | business | responded | accepted | deprecated（1.0.126 起；历史 ledger 不重写） |
 
 ## transport.quote
 | code | category | from_state | to_state | 说明 |
 |------|----------|------------|----------|------|
-| QUOTE_ISSUED | state | draft | issued | 正式出具报价 |
-| QUOTE_APPROVED | state | issued | approved | 内部审批通过 |
-| QUOTE_CONFIRMED | state | approved | confirmed | 客户接受，写入 Order 结算基准 |
-| QUOTE_REJECTED | state | issued/approved | rejected | 报价驳回 |
-| QUOTE_EXPIRED | state | issued/approved | expired | 超期失效 |
+| QUOTE_SENT | business | draft | draft | 发送客户（communication_status=sent，不驱动 state） |
+| QUOTE_ISSUED | business | draft | draft | 出具记录（仅审计，不驱动 state） |
+| QUOTE_APPROVED | business | draft | draft | 内部审批记录（仅审计，不驱动 state） |
+| QUOTE_ACCEPTED | business | draft | accepted | 客户接受，回填 accepted_by/accepted_date |
+| QUOTE_REJECTED | state | draft | rejected | 报价驳回 |
+| QUOTE_CLOSED | state | draft/accepted | closed | 报价关闭（含过期） |
+| QUOTE_CONFIRMED | state | approved | confirmed | 历史事件，1.0.126 后不再产生 |
+| QUOTE_CANCELLED / QUOTE_EXPIRED | state | - | cancelled/expired | 历史事件，1.0.126 后不再产生 |
+
+> Sprint52FIX-003：quote 状态收敛为 draft / accepted / rejected / closed；
+> communication_status（not_sent/sent/viewed/responded）只记录客户沟通，
+> 不驱动 workflow。
 
 ## transport.plan（pickup.plan / container.transport.plan）
 | code | category | from_state | to_state | 说明 |
@@ -50,6 +60,7 @@ TLMS Workflow Engine 事件编码字典。所有状态变更事件必须使用�
 ## transport.order
 | code | category | from_state | to_state | 说明 |
 |------|----------|------------|----------|------|
+| ORDER_CREATED | state | - | draft | 供应商执行订单创建（商务链） |
 | ORDER_CONFIRMED | state | draft | confirmed | 订单锁定 |
 | ORDER_ALLOCATED | state | confirmed | allocated | 绑定 Plan 预留资源 |
 | ORDER_IN_TRANSIT | state | allocated | in_transit | 在途 |
@@ -64,6 +75,6 @@ TLMS Workflow Engine 事件编码字典。所有状态变更事件必须使用�
 
 ## 守卫规则引用
 - `REQUEST_SUBMITTED → REQUEST_PROCESSING`：validation_state=passed
-- `QUOTE_APPROVED → QUOTE_CONFIRMED`：approval_user + customer_accept
+- `QUOTE_ACCEPTED → ORDER_CREATED`：quote.inquiry_id.state=selected 且 carrier 存在
 - `ORDER_IN_TRANSIT → ORDER_DELIVERED`：存在 POD_RECEIVED
 - `ORDER_DELIVERED → ORDER_SETTLEMENT_PENDING`：Delivery Event 完成

@@ -587,7 +587,7 @@ class PickupPlan(models.Model):
                 order_vals['pickup_location_id'] = self.terminal_id.id
 
         # Source amounts from inquiry/quote if available, otherwise manual
-        if self.inquiry_id and self.inquiry_id.state == 'accepted':
+        if self.inquiry_id and self.inquiry_id.state == 'selected':
             order_vals['total_carrier_cost'] = self.inquiry_id.total_amount
             order_vals['source_amount_carrier'] = self.inquiry_id.total_amount
             order_vals['price_source'] = 'inquiry'

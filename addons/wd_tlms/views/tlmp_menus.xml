@@ -23,9 +23,9 @@
 
 
     <menuitem id="menu_tlmp_quote_group" name="Quotation Process" parent="menu_tlmp_operations" sequence="20"/>
-    <menuitem id="menu_tlmp_inquiries" name="Inquiries" parent="menu_tlmp_quote_group"
+    <menuitem id="menu_tlmp_inquiries" name="Carrier Inquiries" parent="menu_tlmp_quote_group"
               action="action_tlmp_inquiry" sequence="20"/>
-    <menuitem id="menu_tlmp_quotes" name="Quotes" parent="menu_tlmp_quote_group"
+    <menuitem id="menu_tlmp_quotes" name="Customer Quotes" parent="menu_tlmp_quote_group"
               action="action_tlmp_quote" sequence="30"/>
 
     <!-- Group 3: Transport Execution -->

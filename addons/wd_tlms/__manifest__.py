@@ -1,6 +1,6 @@
 {
     'name': 'Transport Logistics Management',
-    'version': '1.0.125',
+    'version': '1.0.126',
     'category': 'Transport',
     'summary': '3PL Transport Management System',
     'description': '''
@@ -74,6 +74,8 @@
         'views/transport_carrier_invoice_template_views.xml',
         'views/transport_carrier_invoice_import_views.xml',
         'views/transport_settlement_exception_views.xml',
+        'wizards/create_carrier_inquiry_wizard_views.xml',
+        'wizards/create_customer_quote_wizard_views.xml',
         'views/settlement_export_wizard.xml',
         'views/transport_match_rule_views.xml',
         'views/transport_scene_views.xml',

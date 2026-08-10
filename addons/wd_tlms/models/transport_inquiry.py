@@ -50,10 +50,9 @@ class TransportInquiry(models.Model):
         ('draft', 'Draft'),
         ('sent', 'Sent'),
         ('responded', 'Responded'),
-        ('accepted', 'Accepted'),
+        ('selected', 'Selected'),
         ('closed', 'Closed'),
         ('rejected', 'Rejected'),
-        ('expired', 'Expired'),
     ], string='Status', default='draft', tracking=True)
     close_reason = fields.Selection([
         ('carrier_selected', 'Carrier Selected'),
@@ -74,6 +73,13 @@ class TransportInquiry(models.Model):
     vehicle_requirement_display = fields.Char(
         string='Vehicle Requirement', readonly=True,
         compute='_compute_vehicle_requirement_projection')
+    vehicle_qualification_result = fields.Selection([
+        ('pass', 'PASS'),
+        ('warning', 'WARNING'),
+        ('block', 'BLOCK'),
+    ], string='Vehicle Qualification', readonly=True,
+       compute='_compute_vehicle_qualification_result', store=True,
+       help='Vehicle qualification result projected from the source request.')
     vehicle_body_type = fields.Selection(
         related='request_id.vehicle_body_type', string='Vehicle Body Type', readonly=True)
     vehicle_capacity_requirement = fields.Selection(
@@ -128,6 +134,13 @@ class TransportInquiry(models.Model):
                         req.vehicle_capacity_requirement),
                     dg_labels.get(req.is_dangerous_goods, req.is_dangerous_goods))
 
+    @api.depends('request_id.vehicle_requirement_validation_result')
+    def _compute_vehicle_qualification_result(self):
+        for r in self:
+            r.vehicle_qualification_result = (
+                r.request_id.vehicle_requirement_validation_result
+                if r.request_id else False)
+
     @api.depends('line_ids.subtotal')
     def _compute_total(self):
         for r in self:
@@ -141,25 +154,32 @@ class TransportInquiry(models.Model):
                 extra_vals={'sent_date': fields.Datetime.now()})
         return True
 
-    def action_respond(self):
+    def action_respond(self, response_date=None):
         engine = self.env['tlmp.workflow.engine']
         for rec in self:
             engine.transition(
                 rec, 'responded', 'INQUIRY_RESPONDED',
-                extra_vals={'response_date': fields.Datetime.now()})
+                extra_vals={'response_date':
+                            response_date or fields.Datetime.now()})
         return True
 
-    def action_accept(self):
+    def action_select(self):
         self.ensure_one()
         if self.state != 'responded':
             raise UserError(_('Only responded carrier inquiries can be selected.'))
         self.env['tlmp.workflow.engine'].transition(
-            self, 'accepted', 'INQUIRY_ACCEPTED')
+            self, 'selected', 'INQUIRY_SELECTED',
+            extra_vals={'selected_carrier_id': self.partner_id.id
+                        if self.partner_id else False})
         return True
+
+    def action_accept(self):
+        """Backward-compatible alias for action_select."""
+        return self.action_select()
 
     def action_close(self, reason=False, carrier_id=False):
         self.ensure_one()
-        if self.state not in ('sent', 'responded', 'accepted'):
+        if self.state not in ('sent', 'responded', 'selected'):
             raise UserError(_('Only open inquiries can be closed.'))
         if not reason:
             raise UserError(_('Close reason is required to close an inquiry.'))
@@ -170,10 +190,10 @@ class TransportInquiry(models.Model):
             self, 'closed', 'INQUIRY_CLOSED', extra_vals=vals)
         return True
 
-    def action_create_quote(self):
+    def action_create_quote(self, margin_rate=None, service_fee=0.0):
         self.ensure_one()
-        if self.state != 'accepted':
-            raise UserError(_('Select a carrier first (Inquiry state = Accepted/Selected).'))
+        if self.state != 'selected':
+            raise UserError(_('Select a winning carrier first (Inquiry state = Selected).'))
         existing = self.env['tlmp.transport.quote'].search(
             [('inquiry_id', '=', self.id)], limit=1)
         if existing:
@@ -184,6 +204,11 @@ class TransportInquiry(models.Model):
                 'res_id': existing.id,
                 'target': 'current',
             }
+        if margin_rate is None:
+            margin_rate = float(self.env['ir.config_parameter'].sudo().get_param(
+                'tlmp.service_margin_rate', default=0.15)) * 100
+        customer_amount = (self.total_amount or 0.0) * (
+            1 + (margin_rate or 0.0) / 100.0) + (service_fee or 0.0)
         charge_item = self.env['world.depot.charge.item'].search(
             [('item_name', '=', 'Transportation Fee')], limit=1) or \
             self.env['world.depot.charge.item'].search([], limit=1)
@@ -223,7 +248,7 @@ class TransportInquiry(models.Model):
                     'partner_id': self.request_id.partner_id.id
                     if self.request_id and self.request_id.partner_id else False,
                     'source_type': 'commercial',
-                    'unit_amount': self.total_amount,
+                    'unit_amount': customer_amount,
                     'quantity': 1.0,
                     'description': 'Transportation Fee',
                 }),
@@ -238,6 +263,7 @@ class TransportInquiry(models.Model):
                 }),
             ]) if charge_item else [],
         })
+        self.write({'selected_quote_id': quote.id})
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'tlmp.transport.quote',
@@ -255,7 +281,8 @@ class TransportInquiry(models.Model):
     def _cron_expire(self):
         expired = self.search([('state', '=', 'sent'),
                                ('validity_date', '<', date.today())])
-        expired.write({'state': 'expired'})
+        for rec in expired:
+            rec.action_close(reason='expired')
         return True
 
 

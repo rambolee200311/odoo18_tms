@@ -14,26 +14,19 @@ class WorkflowMigration(models.AbstractModel):
              self.env['tlmp.transport.request'].sudo().search([
                  ('state', '=', 'confirmed')]),
              {'state': 'submitted', 'validation_state': 'passed'}),
-            ('inquiry accepted -> closed',
+            ('inquiry accepted -> selected',
              self.env['tlmp.transport.inquiry'].sudo().search([
                  ('state', '=', 'accepted')]),
-             {'state': 'closed', 'close_reason': 'carrier_selected'}),
-            ('inquiry responded -> sent',
-             self.env['tlmp.transport.inquiry'].sudo().search([
-                 ('state', '=', 'responded')]),
-             {'state': 'sent'}),
-            ('inquiry rejected/expired -> cancelled',
-             self.env['tlmp.transport.inquiry'].sudo().search([
-                 ('state', 'in', ('rejected', 'expired'))]),
-             {'state': 'cancelled', 'close_reason': 'customer_cancelled'}),
-            ('quote sent -> issued',
+             {'state': 'selected'}),
+            ('quote sent/issued -> draft + communication_status=sent',
              self.env['tlmp.transport.quote'].sudo().search([
-                 ('state', '=', 'sent')]),
-             {'state': 'issued'}),
-            ('quote accepted -> confirmed',
+                 ('state', 'in', ('sent', 'issued'))]),
+             {'state': 'draft', 'communication_status': 'sent'}),
+            ('quote approved/confirmed -> accepted',
              self.env['tlmp.transport.quote'].sudo().search([
-                 ('state', '=', 'accepted')]),
-             {'state': 'confirmed', 'confirmation_source': 'customer'}),
+                 ('state', 'in', ('approved', 'confirmed'))]),
+             {'state': 'accepted', 'customer_accept': True,
+              'confirmation_source': 'customer'}),
             ('order assigned -> allocated',
              self.env['tlmp.transport.order'].sudo().search([
                  ('state', '=', 'assigned')]),

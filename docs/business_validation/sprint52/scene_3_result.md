@@ -20,7 +20,7 @@
 | 对象 | ID / Name | 状态 |
 | :--- | :--- | :--- |
 | Request | 3797 / TLM-REQ-2026-08-4790 | completed |
-| Inquiry | 1087 | accepted |
+| Inquiry | 1087 | selected（FIX-003 迁移） |
 | Quote | 830 / 380 + margin 100 = 480 | accepted |
 | Order | 2654 / TLM-ORD-2026-08-5986 | closed |
 | Event Ledger | 15 条 | 全部命中字典 |
@@ -59,4 +59,17 @@
 | Executor | Codex |
 | Date | 2026-08-10 |
 | Environment | Odoo 18 dev |
-| Module Version | 1.0.125 |
+| Module Version | 1.0.125 → 1.0.126 |
+
+## Sprint52-Fix3 状态语义迁移（wd_tlms 1.0.126，2026-08-10）
+
+按 `INT-TMS-SPRINT52FIX-003`：
+- inquiry `accepted` 统一迁移为 `selected`，
+  `INQUIRY_ACCEPTED` deprecated，选中事件改用 `INQUIRY_SELECTED`；
+- quote 状态收敛为 draft / accepted / rejected / closed，
+  `communication_status` 只记录客户沟通，accepted 回填
+  `accepted_by / accepted_date`；
+- 新增 Create Carrier Inquiry / Create Customer Quote wizard，
+  order 创建回填 carrier/inquiry/quote 追溯链并写 `ORDER_CREATED`；
+- 验证：XML-RPC 升级 1.0.126 PASS，日志零 ERROR，
+  S3 新链回归 PASS（quote/order fee 480/380，order closed）。

@@ -212,4 +212,17 @@
 | 开放观察项 | 无 |
 | 8089 端口 | 已释放 |
 
+### Sprint52-Fix3 验证记录（wd_tlms 1.0.126，2026-08-10）
+
+| Check | Result |
+| :--- | :--- |
+| XML-RPC button_immediate_upgrade | PASS（18.0.1.0.125 → 18.0.1.0.126） |
+| 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
+| inquiry 状态分布 | draft 2 / sent 1 / selected 24 |
+| quote 状态分布 | accepted 25 |
+| order 追溯链回填 | 25/25 无缺失 |
+| S2/S3 新链回归 | PASS（wizard → selected inquiry → accepted quote → order → closed） |
+| Quote/Order fee line | 480 / 380（8/8 既有链 + 新链一致） |
+| 8089 端口 | 已释放 |
+
 下一子意图：Sprint52-G。

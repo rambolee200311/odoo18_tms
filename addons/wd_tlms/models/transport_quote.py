@@ -2,7 +2,7 @@
 import json
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from datetime import date
 
 
@@ -28,15 +28,21 @@ class TransportQuote(models.Model):
     validity_date = fields.Date(string='Valid Until')
     state = fields.Selection([
         ('draft', 'Draft'),
-        ('sent', 'Sent'),
-        ('issued', 'Issued'),
-        ('approved', 'Approved'),
-        ('confirmed', 'Confirmed'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
-        ('cancelled', 'Cancelled'),
-        ('expired', 'Expired'),
+        ('closed', 'Closed'),
     ], string='Status', default='draft', tracking=True)
+    communication_status = fields.Selection([
+        ('not_sent', 'Not Sent'),
+        ('sent', 'Sent'),
+        ('viewed', 'Viewed'),
+        ('responded', 'Responded'),
+    ], string='Communication Status', default='not_sent', tracking=True,
+       help='Customer communication tracking; does not drive quote state.')
+    accepted_by = fields.Many2one(
+        'res.users', string='Accepted By', readonly=True, copy=False)
+    accepted_date = fields.Datetime(
+        string='Accepted Date', readonly=True, copy=False)
     confirmation_source = fields.Selection([
         ('customer', 'Customer'),
         ('internal', 'Internal'),
@@ -159,82 +165,126 @@ class TransportQuote(models.Model):
             price = r.total_amount or 0.0
             r.margin_rate = (r.margin_amount / price) if price else 0.0
 
+    def _write_audit_event(self, event_type):
+        engine = self.env['tlmp.workflow.engine']
+        for rec in self:
+            engine.write_event(
+                rec, event_type, 'business',
+                from_state=rec.state, to_state=rec.state,
+                payload=json.dumps({'communication': True}))
+
     def action_accept(self):
         self.ensure_one()
-        if self.state != 'sent':
-            raise UserError(_('Only sent quotes can be accepted.'))
+        if self.state != 'draft':
+            raise UserError(_('Only draft quotes can be accepted.'))
+        if not self.inquiry_id or self.inquiry_id.state != 'selected':
+            raise UserError(
+                _('Quote source inquiry must be selected before acceptance.'))
         self.env['tlmp.workflow.engine'].transition(
-            self, 'accepted', 'QUOTE_ACCEPTED')
+            self, 'accepted', 'QUOTE_ACCEPTED',
+            extra_vals={
+                'accepted_by': self.env.uid,
+                'accepted_date': fields.Datetime.now(),
+                'customer_accept': True,
+                'confirmation_source': 'customer',
+                'communication_status': 'responded',
+            })
         self._auto_create_order()
         return True
 
     def action_send(self):
-        engine = self.env['tlmp.workflow.engine']
-        for rec in self:
-            engine.transition(rec, 'sent', 'QUOTE_SENT')
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_('Only draft quotes can be sent.'))
+        self._write_audit_event('QUOTE_SENT')
+        self.write({'communication_status': 'sent'})
         return True
 
     def action_issue(self):
+        """Audit-only event; quote state stays draft (Sprint52FIX-003)."""
         self.ensure_one()
         if self.state != 'draft':
-            raise UserError(_('Only draft quotes can be issued.'))
-        self.env['tlmp.workflow.engine'].transition(
-            self, 'issued', 'QUOTE_ISSUED')
+            raise UserError(_('Only draft quotes can record an issue event.'))
+        self._write_audit_event('QUOTE_ISSUED')
         return True
 
     def action_approve(self):
+        """Audit-only event; quote state stays draft (Sprint52FIX-003)."""
         self.ensure_one()
-        if self.state != 'issued':
-            raise UserError(_('Only issued quotes can be approved.'))
-        self.env['tlmp.workflow.engine'].transition(
-            self, 'approved', 'QUOTE_APPROVED')
+        if self.state != 'draft':
+            raise UserError(_('Only draft quotes can record an approval event.'))
+        self._write_audit_event('QUOTE_APPROVED')
         return True
 
     def action_confirm_customer(self, source='customer'):
-        self.ensure_one()
-        if self.state != 'approved':
-            raise UserError(_('Only approved quotes can be confirmed.'))
-        if not self.customer_accept:
-            raise UserError(
-                _('Customer acceptance is required before confirmation.'))
-        self.env['tlmp.workflow.engine'].transition(
-            self, 'confirmed', 'QUOTE_CONFIRMED',
-            extra_vals={'confirmation_source': source})
-        self._auto_create_order()
-        return True
+        return self.action_accept()
 
     def action_accept_from_portal(self):
         self.ensure_one()
-        if self.state != 'sent':
-            raise UserError(_('Quote is not in sent state.'))
+        if self.state != 'draft':
+            raise UserError(_('Quote is not open for acceptance.'))
         if self.validity_date and self.validity_date < fields.Date.today():
-            self.env['tlmp.workflow.engine'].transition(
-                self, 'expired', 'QUOTE_EXPIRED')
+            self.action_close(reason='expired')
             raise UserError(_('Quote has expired. Please request a new quote.'))
+        return self.action_accept()
+
+    def action_close(self, reason=None):
+        self.ensure_one()
+        if self.state not in ('draft', 'accepted'):
+            raise UserError(_('Only open quotes can be closed.'))
+        vals = {'communication_status': 'not_sent'}
+        if reason:
+            vals['notes'] = (self.notes or '') + (
+                '\n' if self.notes else '') + _('Closed: %s') % reason
         self.env['tlmp.workflow.engine'].transition(
-            self, 'accepted', 'QUOTE_ACCEPTED')
-        self._auto_create_order()
+            self, 'closed', 'QUOTE_CLOSED', extra_vals=vals)
         return True
 
     def action_cancel(self, reason=None):
-        engine = self.env['tlmp.workflow.engine']
-        for rec in self:
-            engine.transition(rec, 'cancelled', 'QUOTE_CANCELLED')
-        return True
+        return self.action_close(reason=reason)
 
     def action_reject(self, reason=None):
         engine = self.env['tlmp.workflow.engine']
         for rec in self:
-            engine.transition(rec, 'rejected', 'QUOTE_REJECTED')
-        # Return inquiry to 'sent' state for re-quoting
-        if self.inquiry_id and self.inquiry_id.state == 'accepted':
-            self.inquiry_id.env['tlmp.workflow.engine'].transition(
-                self.inquiry_id, 'sent', 'INQUIRY_REOPENED',
-                extra_vals={'response_date': False})
+            if rec.state != 'draft':
+                raise UserError(_('Only draft quotes can be rejected.'))
+            engine.transition(
+                rec, 'rejected', 'QUOTE_REJECTED',
+                extra_vals={'communication_status': 'responded'})
         return True
+
+    @api.constrains('inquiry_id', 'state')
+    def _check_source_inquiry_selected(self):
+        if self.env.context.get('skip_quote_source_inquiry_check'):
+            return
+        for rec in self:
+            if rec.state == 'accepted' and (
+                    not rec.inquiry_id
+                    or rec.inquiry_id.state != 'selected'):
+                raise ValidationError(_(
+                    'Accepted quote must reference a selected carrier inquiry.'))
 
     def _auto_create_order(self):
         self.ensure_one()
+        if self.state != 'accepted':
+            raise UserError(
+                _('Only accepted quotes can create a supplier order.'))
+        if not self.inquiry_id or self.inquiry_id.state != 'selected':
+            raise UserError(
+                _('Quote source inquiry must be selected before creating '
+                  'the supplier order.'))
+        if not self.inquiry_id.partner_id:
+            raise UserError(
+                _('Selected carrier is required before creating '
+                  'the supplier order.'))
+        if self.transport_order_id:
+            return self.transport_order_id
+        existing_order = self.env['tlmp.transport.order'].search([
+            ('quote_id', '=', self.id),
+        ], limit=1)
+        if existing_order:
+            self.write({'transport_order_id': existing_order.id})
+            return existing_order
         request = self.request_id
         if request and request.cargo_line_ids:
             pallet_count, package_count, weight, volume = \
@@ -277,6 +327,8 @@ class TransportQuote(models.Model):
                            self.env.company.partner_id.id),
             'transport_type_id': self.request_id.transport_type_id.id if self.request_id and self.request_id.transport_type_id else False,
             'fleet_operation_mode': 'subcontracted',
+            'total_carrier_cost': self.carrier_cost or 0.0,
+            'source_amount_carrier': self.carrier_cost or 0.0,
             'total_customer_charge': self.total_amount,
             'source_amount_customer': self.total_amount,
             'cargo_description': request.cargo_description or '',
@@ -312,6 +364,16 @@ class TransportQuote(models.Model):
             }, ensure_ascii=False),
         })
         self.write({'transport_order_id': order.id})
+        self.env['tlmp.workflow.engine'].write_event(
+            order, 'ORDER_CREATED', 'state',
+            from_state=False, to_state='draft',
+            payload=json.dumps({
+                'quote_id': self.id,
+                'inquiry_id': self.inquiry_id.id,
+                'carrier_id': order.carrier_id.id if order.carrier_id else False,
+            }, ensure_ascii=False))
+        if self.inquiry_id and not self.inquiry_id.selected_quote_id:
+            self.inquiry_id.write({'selected_quote_id': self.id})
         # Copy request cargo nodes as order snapshot, preserving hierarchy.
         CargoLine = self.env['tlmp.transport.cargo.line']
         old_to_new = {}
@@ -380,9 +442,10 @@ class TransportQuote(models.Model):
         return order
 
     def _cron_expire(self):
-        expired = self.search([('state', '=', 'sent'),
+        expired = self.search([('state', '=', 'draft'),
                                ('validity_date', '<', fields.Date.today())])
-        expired.write({'state': 'expired'})
+        for rec in expired:
+            rec.action_close(reason='expired')
         return True
 
 

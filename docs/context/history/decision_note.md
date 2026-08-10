@@ -1978,6 +1978,28 @@ Carrier Settlement、OCR。
 契约文件：
 `docs/context/intent/intent_sprint50b_operational_workflow_completion.yaml`
 
+## Sprint52-B Fix3：Request 驱动 Inquiry → Customer Quote → Supplier Order（wd_tlms 1.0.126，2026-08-10）
+
+**决策**：按 INT-TMS-SPRINT52FIX-003 修正 3PL 中介领域模型：
+- Request 仅为客户需求入口，不再承担 customer order 语义；
+- Carrier Inquiry 状态机收敛为 draft/sent/responded/selected/rejected/closed，
+  选中获胜承运商使用新增 `INQUIRY_SELECTED`，`INQUIRY_ACCEPTED` 标记 deprecated；
+- Customer Quote state 收敛为 draft/accepted/rejected/closed，
+  `communication_status`（not_sent/sent/viewed/responded）只记录客户沟通，
+  不驱动 workflow；accepted 回填 `accepted_by / accepted_date`；
+- Supplier Transport Order 仅在 accepted quote + selected inquiry + carrier
+  同时存在时创建，回填 `carrier_id / quote_id / inquiry_id`，禁止同一 quote 重复建单；
+- 新增 `QUOTE_CLOSED / ORDER_CREATED` 事件码，明确不存在 Supplier Quote 中间模型；
+- 存量 24 条 accepted inquiry → selected，quote approved/confirmed → accepted，
+  历史 ledger 不重写；BUSINESS-DEBT-001 v2 / BUSINESS-DEBT-002 登记。
+
+**验证**：wd_tlms 1.0.126 XML-RPC 升级 PASS，升级日志零 ERROR；
+inquiry 2 draft / 1 sent / 24 selected，quote 25 accepted；
+S2/S3 新链回归 PASS（order closed、fee 480/380、ORDER_CREATED ledger 存在）。
+
+契约文件：
+`docs/context/intent/intent_sprint52fix3_request_inquiry_quote.yaml`
+
 ## Sprint52-B Fix2：Quote/Order 双向费用（wd_tlms 1.0.125，2026-08-10）
 
 **决策**：商务链 quote 创建时同时生成 `customer_charge`（应收）与

@@ -27,7 +27,7 @@ class TestBusinessScenarios(TransactionCase):
             'request_id': self.request.id,
             'partner_id': self.carrier.id,
         })
-        inquiry.write({'state': 'accepted'})
+        inquiry.write({'state': 'selected'})
         quote = self.env['tlmp.transport.quote'].browse(
             inquiry.action_create_quote()['res_id'])
         quote.action_send()
@@ -70,7 +70,7 @@ class TestBusinessScenarios(TransactionCase):
             'request_id': self.request.id,
             'partner_id': self.carrier.id,
         })
-        inquiry2.write({'state': 'accepted'})
+        inquiry2.write({'state': 'selected'})
         quote2 = self.env['tlmp.transport.quote'].browse(
             inquiry2.action_create_quote()['res_id'])
         quote2.action_send()

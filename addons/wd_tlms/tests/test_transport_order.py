@@ -114,6 +114,7 @@ class TestTransportOrder(TransactionCase):
         })
         inquiry.action_send()
         inquiry.action_respond()
+        inquiry.action_select()
         quote = self.env['tlmp.transport.quote'].create({
             'inquiry_id': inquiry.id, 'partner_id': self.carrier.id,
         })

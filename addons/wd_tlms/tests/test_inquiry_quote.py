@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """inquiry + quote — 商务报价链路 单元测试
-inquiry: draft → sent → responded → accepted → rejected → expired
-quote:   draft → sent → accepted → rejected → cancelled → expired
+inquiry: draft → sent → responded → selected → rejected / closed
+quote:   draft + communication → accepted → rejected / closed
 """
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
@@ -71,6 +71,7 @@ class TestInquiryQuote(TransactionCase):
         })
         inquiry.action_send()
         inquiry.action_respond()
+        inquiry.action_select()
         quote = self.env['tlmp.transport.quote'].create({
             'inquiry_id': inquiry.id,
             'request_id': req.id,
@@ -122,6 +123,7 @@ class TestInquiryQuote(TransactionCase):
         })
         inquiry.action_send()
         inquiry.action_respond()
+        inquiry.action_select()
         q1 = self.env['tlmp.transport.quote'].create({
             'inquiry_id': inquiry.id,
             'partner_id': self.carrier.id,

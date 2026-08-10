@@ -25,6 +25,10 @@
     </record>
     <record id="event_code_inquiry_accepted" model="tlmp.transport.event.code">
         <field name="code">INQUIRY_ACCEPTED</field><field name="name">Inquiry Accepted</field><field name="category">business</field>
+        <field name="deprecated_at">2026-08-10 00:00:00</field>
+    </record>
+    <record id="event_code_inquiry_selected" model="tlmp.transport.event.code">
+        <field name="code">INQUIRY_SELECTED</field><field name="name">Inquiry Selected</field><field name="category">state</field>
     </record>
     <record id="event_code_inquiry_closed" model="tlmp.transport.event.code">
         <field name="code">INQUIRY_CLOSED</field><field name="name">Inquiry Closed</field><field name="category">state</field>
@@ -60,7 +64,13 @@
     <record id="event_code_quote_expired" model="tlmp.transport.event.code">
         <field name="code">QUOTE_EXPIRED</field><field name="name">Quote Expired</field><field name="category">state</field>
     </record>
+    <record id="event_code_quote_closed" model="tlmp.transport.event.code">
+        <field name="code">QUOTE_CLOSED</field><field name="name">Quote Closed</field><field name="category">state</field>
+    </record>
     <!-- Order -->
+    <record id="event_code_order_created" model="tlmp.transport.event.code">
+        <field name="code">ORDER_CREATED</field><field name="name">Order Created</field><field name="category">state</field>
+    </record>
     <record id="event_code_order_confirmed" model="tlmp.transport.event.code">
         <field name="code">ORDER_CONFIRMED</field><field name="name">Order Confirmed</field><field name="category">state</field>
     </record>

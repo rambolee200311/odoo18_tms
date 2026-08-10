@@ -614,7 +614,7 @@ class TransportOrder(models.Model):
             self.price_source = 'quote'
             return True
         # Priority 2: Inherit from inquiry
-        if self.inquiry_id and self.inquiry_id.state == 'accepted':
+        if self.inquiry_id and self.inquiry_id.state == 'selected':
             self.total_carrier_cost = self.inquiry_id.total_amount
             self.source_amount_carrier = self.inquiry_id.total_amount
             margin = float(self.env['ir.config_parameter'].sudo().get_param(

@@ -232,11 +232,21 @@ class TransportRequest(models.Model):
     has_accepted_quote = fields.Boolean(
         string='Has Accepted Quote', compute='_compute_has_accepted_quote', store=True,
         help='Whether the commercial flow already has an accepted quote.')
+    has_selected_inquiry = fields.Boolean(
+        string='Has Selected Inquiry',
+        compute='_compute_has_selected_inquiry', store=True,
+        help='Whether the commercial flow has a selected carrier inquiry.')
 
     @api.depends('quote_ids.state')
     def _compute_has_accepted_quote(self):
         for r in self:
             r.has_accepted_quote = any(q.state == 'accepted' for q in r.quote_ids)
+
+    @api.depends('inquiry_ids.state')
+    def _compute_has_selected_inquiry(self):
+        for r in self:
+            r.has_selected_inquiry = any(
+                i.state == 'selected' for i in r.inquiry_ids)
 
     # ---- Sprint50: validation state + partial fulfillment ----
     validation_state = fields.Selection([
@@ -773,6 +783,32 @@ class TransportRequest(models.Model):
            'res_model': 'tlmp.transport.inquiry', 'view_mode': 'form',
            'res_id': inquiry.id, 'target': 'current',
        }
+
+    def action_create_carrier_inquiry(self):
+        self.ensure_one()
+        if self.request_type != 'commercial':
+            raise UserError(
+                _('Carrier inquiries are only available for commercial requests.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'tlmp.create.carrier.inquiry.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_request_id': self.id},
+        }
+
+    def action_create_customer_quote(self):
+        self.ensure_one()
+        if self.request_type != 'commercial':
+            raise UserError(
+                _('Customer quotes are only available for commercial requests.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'tlmp.create.customer.quote.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_request_id': self.id},
+        }
 
     # -----------------------------------------------------------
 

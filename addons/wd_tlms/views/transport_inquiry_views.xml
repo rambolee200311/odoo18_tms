@@ -26,12 +26,12 @@
                             invisible="state != 'draft'" class="btn-primary"/>
                     <button name="action_respond" type="object" string="Record Response"
                             invisible="state != 'sent'"/>
-                    <button name="action_accept" type="object" string="Select Carrier"
+                    <button name="action_select" type="object" string="Select Carrier"
                             invisible="state != 'responded'" class="btn-primary"/>
                     <button name="action_create_quote" type="object" string="Create Customer Quote"
-                            invisible="state != 'accepted'" class="btn-primary"/>
+                            invisible="state != 'selected'" class="btn-primary"/>
                     <button name="action_close" type="object" string="Close Inquiry"
-                            invisible="state not in ('sent', 'responded', 'accepted')"/>
+                            invisible="state not in ('sent', 'responded', 'selected')"/>
                     <button name="action_reject" type="object" string="Reject Quote"
                             invisible="state != 'responded'"/>
                     <field name="state" widget="statusbar"/>
@@ -84,6 +84,7 @@
                         <group>
                             <field name="vehicle_requirement_display" readonly="1"/>
                             <field name="vehicle_requirement_mode" readonly="1"/>
+                            <field name="vehicle_qualification_result" readonly="1"/>
                         </group>
                         <group invisible="vehicle_requirement_mode == 'exempted'">
                             <field name="vehicle_body_type" readonly="1"/>
@@ -128,7 +129,7 @@
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Sent" name="sent" domain="[('state', '=', 'sent')]"/>
                 <filter string="Responded" name="responded" domain="[('state', '=', 'responded')]"/>
-                <filter string="Accepted" name="accepted" domain="[('state', '=', 'accepted')]"/>
+                <filter string="Selected" name="selected" domain="[('state', '=', 'selected')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>

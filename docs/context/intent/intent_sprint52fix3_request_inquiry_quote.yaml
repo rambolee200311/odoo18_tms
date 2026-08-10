@@ -1,0 +1,192 @@
+# ==============================================================
+# INT-TMS-SPRINT52FIX-003 v1.3
+# Request 驱动 Inquiry → Customer Quote → Supplier Order 流程修正
+#
+# TLMS 3PL 中介领域模型：
+#   Customer → Request（客户需求）
+#     → Inquiry（我方 → 承运商询价，Request 1:N）
+#     → Carrier Cost（承运商响应成本）
+#     → Selected Inquiry（我方选定获胜承运商）
+#     → Quote（我方 → 客户销售报价 = 成本 + margin + 服务费）
+#     → Customer Accept
+#     → Order（我方 → 承运商执行订单 = Supplier Transport Order）
+#   Customer Order 为未来债务（BUSINESS-DEBT-001），Sprint52 不实现。
+#   不存在 Supplier Quote 中间模型。
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT52FIX-003
+intent_version: 1.3
+intent_work_type: Maintenance
+intent_change_type: Functional Process Change
+title: Request 驱动 Inquiry → Customer Quote → Supplier Order 流程修正
+
+domain_model:
+  request: transport.request（客户需求入口；客户 → 我方；不是订单）
+  inquiry: transport.inquiry（承运商询价；我方 → 承运商；Request 1:N；
+    记录 carrier_id / cost / response_date 等承运商响应）
+  carrier_cost: inquiry 行单价/合计（承运商报价成本）
+  selected_inquiry: inquiry 状态 selected（我方选定获胜承运商）
+  quote: transport.quote（客户销售报价；我方 → 客户；
+    来源 = selected inquiry cost + margin + service fee；
+    source_inquiry_id 必填且只引用一条 selected inquiry）
+  order: transport.order（供应商执行订单；我方 → 承运商；
+    quote accepted 后创建，回填 carrier_id / quote_id / inquiry_id 追溯链）
+  customer_order: 未来债务（BUSINESS-DEBT-001 v2：Customer Contract Order Layer）
+
+business_rules:
+  BR-COMMERCIAL-001: Request is customer demand only. Request cannot represent customer order.
+  BR-COMMERCIAL-002: Inquiry is supplier cost acquisition. Multiple inquiries allowed per request.
+  BR-COMMERCIAL-003: Quote is customer selling price. Quote source must be selected inquiry.
+  BR-COMMERCIAL-004: Order is supplier execution commitment. Order requires accepted customer quote
+    and selected inquiry and carrier; order keeps source_quote / source_inquiry traceability.
+
+target_scope:
+  - addons/wd_tlms/models/transport_request.py（Request 页面建询价/报价动作）
+  - addons/wd_tlms/models/transport_inquiry.py
+    （Carrier Inquiry 语义；状态机 draft/sent/responded/selected/rejected/closed；
+    成本响应字段对齐；selected 使用 INQUIRY_SELECTED 事件）
+  - addons/wd_tlms/models/transport_quote.py
+    （Customer Quote 语义；state 收敛 + communication_status +
+    accepted_by / accepted_date + source_inquiry_id 强绑定）
+  - addons/wd_tlms/models/transport_order.py
+    （Supplier Transport Order 语义；carrier_id / quote_id / inquiry_id 追溯链回填）
+  - addons/wd_tlms/wizard/（transient wizard：Create Carrier Inquiry / Create Customer Quote）
+  - addons/wd_tlms/views/transport_request_views.xml（Inquiry & Quote 页操作）
+  - addons/wd_tlms/views/transport_inquiry_views.xml
+  - addons/wd_tlms/views/transport_quote_views.xml
+  - addons/wd_tlms/data/transport_event_code_data.xml
+    （新增 INQUIRY_SELECTED / QUOTE_CLOSED / ORDER_CREATED；INQUIRY_ACCEPTED deprecated）
+  - addons/wd_tlms/migrations/（存量 inquiry / quote 状态值迁移与追溯回填）
+  - addons/wd_tlms/__manifest__.py（版本 bump 1.0.125 → 1.0.126）
+
+accept_criteria:
+  - one request → N carrier inquiries：
+    request 表单 Inquiry & Quote 页可创建多个承运商询价
+    （wizard 选承运商 + 录入承运成本），创建后留在 request 页面
+  - inquiry 记录承运商响应：carrier_id、cost（行单价/合计）、
+    response_date、车辆资质结果；response 后 inquiry 状态进入 responded
+  - inquiry 状态机：draft → sent → responded → selected / rejected / closed；
+    sent / responded 是供应商沟通的真实业务状态
+  - 用户选择一条获胜询价（state=selected；事件使用新增 INQUIRY_SELECTED，
+    不复用 INQUIRY_ACCEPTED），其余询价标记 rejected 或 closed
+  - selected inquiry 生成 customer quote：
+    客户价 = carrier cost + margin + service fee（复用 margin 配置，允许人工覆盖）；
+    quote.source_inquiry_id 必填，只引用一条 selected inquiry
+  - customer quote state 收敛为 draft / accepted / rejected / closed；
+    communication_status 记录 not_sent / sent / viewed / responded，不驱动 workflow；
+    accepted 时记录 accepted_by / accepted_date
+  - 创建 supplier order 的条件：customer quote accepted AND selected inquiry exists
+    AND carrier exists；one accepted quote = one supplier order source，禁止重复建单
+  - transport.order 创建时回填 carrier_id / quote_id / inquiry_id，
+    保证 Supplier Order → Customer Quote → Selected Carrier Inquiry → Customer Request
+    全链可反查
+  - 明确不存在 Supplier Quote 模型（不新增采购侧报价中间层）
+  - 事件：inquiry 的 INQUIRY_SENT / INQUIRY_RESPONDED / INQUIRY_SELECTED 驱动状态；
+    quote 的 QUOTE_SENT / QUOTE_ISSUED / QUOTE_APPROVED 仅审计/沟通，不驱动 state；
+    新增 INQUIRY_SELECTED / QUOTE_CLOSED / ORDER_CREATED；
+    INQUIRY_ACCEPTED 标记 deprecated（历史 ledger 不重写）
+  - 存量迁移：
+    inquiry accepted → selected（24 条）；sent / responded / draft 保持；
+    quote sent / issued → draft + communication_status=sent；
+    quote approved / confirmed → accepted；其余保持；
+    存量 accepted quote 按 ledger QUOTE_ACCEPTED 时间回填 accepted_by / accepted_date；
+    历史 ledger 不变
+  - 存量分布核对：inquiry 27 条（draft 2 / sent 1 / accepted 24 → selected 24）；
+    quote 25 条（confirmed 1 / accepted 24 → accepted 25，含 accepted 元数据回填）
+  - 模块升级验证通过，日志零 ERROR；S2/S3 商务链回归通过
+
+source:
+  type: business_validation
+  origin_team: TLM
+
+freeze_exception:
+  baseline: Sprint49-50 Freeze Checklist（workflow 1.0 / event_dictionary 1.0）
+  scope:
+    - inquiry 状态枚举：accepted → selected（语义修正为“选定获胜承运商”）
+    - customer quote 生命周期状态枚举收敛
+      （state 只保留 draft / accepted / rejected / closed）
+    - 新增 workflow metadata 字段：
+      quote.communication_status / accepted_by / accepted_date；
+      inquiry 成本与响应字段对齐
+    - 新增事件码 INQUIRY_SELECTED / QUOTE_CLOSED / ORDER_CREATED；
+      INQUIRY_ACCEPTED 标记 deprecated；既有沟通事件码保留为审计事件
+  approvals_required:
+    - business_owner_approval: approved
+    - architect_approval: approved
+  approval_note: 用户于 2026-08-10 指令启动 Sprint52-Fix3 开发，视为双审批通过；
+    审批记录以 execution_record 为准。
+
+business_debt:
+  - debt_id: BUSINESS-DEBT-001
+    version: v2
+    name: Customer Contract Order Layer Missing
+    current: customer request → customer quote accepted → supplier order
+    target: customer request → customer quote → customer order → supplier order
+    impact:
+      - customer contract fulfillment missing
+      - revenue recognition boundary unclear
+      - customer settlement cannot attach
+      - customer SLA tracking impossible
+    plan: Sprint52 仅登记；未来 Customer Order Domain / Customer Settlement Domain
+  - debt_id: BUSINESS-DEBT-002
+    version: v1
+    name: Inquiry Communication Lifecycle Separation
+    current: inquiry state 使用 responded 表示承运商回复
+    target: inquiry lifecycle（draft/sent/selected/rejected/closed）
+      + communication（not_sent/sent/responded）分离，支持改价后再次 responded
+    plan: Sprint52FIX-003 暂不实施；未来登记后另行处理
+
+affected_assets:
+  business:
+    - docs/business_validation/sprint52/scene_2_result.md
+    - docs/business_validation/sprint52/scene_3_result.md
+    - docs/business_validation/result_summary.md
+    - docs/context/business/business_debt_register.md（BUSINESS-DEBT-001 v2 / 002 登记）
+  architecture:
+    - addons/wd_tlms/models/transport_request.py
+    - addons/wd_tlms/models/transport_inquiry.py
+    - addons/wd_tlms/models/transport_quote.py
+    - addons/wd_tlms/models/transport_order.py
+  governance:
+    - docs/context/business/sprint49_50_freeze_checklist.md
+    - docs/context/business/state_migration_plan.md（inquiry/quote 映射修订）
+    - docs/context/business/transport_event_dictionary.md
+    - docs/context/history/decision_note.md
+
+validation_strategy:
+  layers:
+    - static_check
+    - module_upgrade
+    - data_migration
+    - runtime_validate
+    - business_review
+  required_pass: all
+
+deliverables:
+  - 本契约文件（v1.3）
+  - Request 页面 Create Carrier Inquiry / Create Customer Quote（transient wizard）
+  - carrier inquiry 语义与状态机对齐
+    （draft / sent / responded / selected / rejected / closed）
+  - customer quote state 收敛 + communication_status + accepted_by / accepted_date
+    + source_inquiry_id 强绑定
+  - order 追溯字段回填（carrier_id / quote_id / inquiry_id）
+  - 事件码 INQUIRY_SELECTED / QUOTE_CLOSED / ORDER_CREATED；
+    INQUIRY_ACCEPTED deprecated；沟通事件审计保留
+  - BUSINESS-DEBT-001 v2 / BUSINESS-DEBT-002 登记
+  - 存量 inquiry / quote 状态迁移与 quote 元数据回填
+  - manifest 版本升级
+  - 模块升级验证记录
+
+limit_constraints:
+  - 不引入 Supplier Quote 模型，不新增采购侧报价中间层
+  - 保留 ORM 模型名 transport.inquiry / transport.quote / transport.order；
+    领域语义与 UI 对齐（Carrier Inquiry / Customer Quote / Supplier Order）；
+    ORM 重命名登记为后续债务
+  - 不改 Request / Order / Plan 状态机与 Event Ledger 结构
+  - 事件码不删除；新增仅限 INQUIRY_SELECTED / QUOTE_CLOSED / ORDER_CREATED；
+    INQUIRY_ACCEPTED 标记 deprecated
+  - 允许新增 workflow metadata 字段
+    （quote.communication_status / accepted_by / accepted_date；
+    inquiry 成本/响应字段对齐），不扩展客户商务层
+  - 不修改 matrix / vehicle_requirement / vehicle_allocation 快照结构
+  - 冻结基线修改需 business_owner + architect 双审批

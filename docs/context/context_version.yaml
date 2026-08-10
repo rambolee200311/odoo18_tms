@@ -3,12 +3,26 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.79
-update_time: 2026-08-06
-adapt_sprint: Sprint50-A
+context_version: 1.0.80
+update_time: 2026-08-10
+adapt_sprint: Sprint52-Fix3
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.80:
+    update_content: |
+      Sprint52-Fix3 开发实施（wd_tlms 1.0.126）：
+      - Request 驱动 Inquiry → Customer Quote → Supplier Order 流程修正
+      - Carrier Inquiry 状态机 accepted→selected + INQUIRY_SELECTED
+      - Customer Quote state 收敛 + communication_status + accepted_by/date
+      - Create Carrier Inquiry / Create Customer Quote transient wizards
+      - ORDER_CREATED / QUOTE_CLOSED 事件码 + 1.0.126 存量迁移回填
+      - BUSINESS-DEBT-001 v2 / BUSINESS-DEBT-002 登记
+      - 验证：XML-RPC 升级 1.0.126 PASS、日志零 ERROR、
+        inquiry 2 draft / 1 sent / 24 selected、quote 25 accepted、
+        S2/S3 新链回归 PASS
+    update_type: 功能流程修正（Sprint52-Fix3）
+    effect_scope: commercial boundary / inquiry/quote state machine
   1.0.79:
     update_content: |
       Sprint51 开发实施（wd_tlms 1.0.123）：

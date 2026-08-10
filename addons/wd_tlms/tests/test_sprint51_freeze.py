@@ -182,19 +182,35 @@ class TestSprint51Freeze(TransactionCase):
         inquiry.action_close(reason='carrier_selected')
         self.assertEqual(inquiry.close_reason, 'carrier_selected')
 
-    def test_07_quote_approval_requires_customer_accept(self):
+    def test_07_quote_accept_requires_selected_inquiry(self):
         req = self._request()
+        req.action_confirm()
+        customer = self.env['res.partner'].create(
+            {'name': 'Freeze Customer'})
+        carrier = self.env['res.partner'].create({
+            'name': 'Freeze Carrier', 'is_carrier': True})
+        inquiry = self.env['tlmp.transport.inquiry'].create({
+            'request_id': req.id,
+            'partner_id': carrier.id,
+            'cargo_summary': 'Test',
+        })
+        inquiry.action_send()
+        inquiry.action_respond()
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': req.id,
+            'inquiry_id': inquiry.id,
+            'partner_id': customer.id,
             'carrier_cost': 100.0,
         })
-        quote.action_issue()
-        quote.action_approve()
+        quote.action_send()
         with self.assertRaises(UserError):
-            quote.action_confirm_customer()
-        quote.customer_accept = True
-        quote.action_confirm_customer()
-        self.assertEqual(quote.state, 'confirmed')
+            quote.action_accept()
+        inquiry.action_select()
+        self.assertEqual(inquiry.state, 'selected')
+        quote.action_accept()
+        self.assertEqual(quote.state, 'accepted')
+        self.assertTrue(quote.accepted_by)
+        self.assertTrue(quote.accepted_date)
 
     def test_08_plan_reservation_validation(self):
         req = self._request()

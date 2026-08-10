@@ -25,18 +25,13 @@
                 <header>
                     <button name="action_send" type="object" string="Send to Customer"
                             invisible="state != 'draft'" class="btn-primary"/>
-                    <button name="action_issue" type="object" string="Issue"
-                            invisible="state != 'draft'"/>
-                    <button name="action_approve" type="object" string="Approve"
-                            invisible="state != 'issued'"/>
-                    <button name="action_confirm_customer" type="object" string="Confirm Customer"
-                            invisible="state != 'approved'" class="btn-success"/>
                     <button name="action_accept" type="object" string="Accept Quote"
-                            invisible="state != 'sent'" class="btn-success"/>
+                            invisible="state != 'draft' or communication_status == 'not_sent'"
+                            class="btn-success"/>
                     <button name="action_reject" type="object" string="Reject"
-                            invisible="state != 'sent'"/>
-                    <button name="action_cancel" type="object" string="Cancel"
-                            invisible="state not in ('draft', 'sent')"/>
+                            invisible="state != 'draft'"/>
+                    <button name="action_close" type="object" string="Close"
+                            invisible="state != 'draft'"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
@@ -44,13 +39,17 @@
                         <group string="Quote Info">
                             <field name="name" readonly="1"/>
                             <field name="request_id" options="{'no_open': True, 'no_create': True}"/>
-                            <field name="inquiry_id" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="inquiry_id" string="Source Inquiry"
+                                   options="{'no_open': True, 'no_create': True}"/>
                             <field name="transport_order_id" readonly="1" options="{'no_create': True}"/>
                             <field name="partner_id" options="{'no_create': True}"/>
                             <field name="transport_mode"/>
                             <field name="validity_date"/>
                             <field name="confirmation_source"/>
                             <field name="customer_accept"/>
+                            <field name="communication_status"/>
+                            <field name="accepted_by" readonly="1"/>
+                            <field name="accepted_date" readonly="1"/>
                         </group>
                         <group string="Pricing">
                             <field name="carrier_cost" widget="monetary"/>
@@ -121,9 +120,11 @@
                 <field name="inquiry_id"/>
                 <separator/>
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
-                <filter string="Sent" name="sent" domain="[('state', '=', 'sent')]"/>
                 <filter string="Accepted" name="accepted" domain="[('state', '=', 'accepted')]"/>
                 <filter string="Rejected" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                <filter string="Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <filter string="Communication Sent" name="comm_sent"
+                        domain="[('communication_status', '=', 'sent')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>

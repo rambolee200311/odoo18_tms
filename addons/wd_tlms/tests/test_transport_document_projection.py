@@ -28,7 +28,7 @@ class TestDocumentProjection(TransactionCase):
             'partner_id': self.carrier.id,
             'cargo_summary': '50 pallets Vitamin C',
         })
-        self.inquiry.write({'state': 'accepted'})
+        self.inquiry.write({'state': 'selected'})
         self.quote = self.env['tlmp.transport.quote'].browse(
             self.inquiry.action_create_quote()['res_id'])
 

@@ -262,8 +262,12 @@ class TestVehicleRequirement(TransactionCase):
         req = self._create_request(carrier_type='courier', cargo_type='piece')
         inquiry = self.env['tlmp.transport.inquiry'].create({
             'request_id': req.id,
+            'partner_id': self.carrier_full.id,
             'cargo_summary': 'Test cargo',
         })
+        inquiry.action_send()
+        inquiry.action_respond()
+        inquiry.action_select()
         quote = self.env['tlmp.transport.quote'].create({
             'request_id': req.id,
             'inquiry_id': inquiry.id,
