@@ -208,6 +208,7 @@
 | Order vehicle_allocation_snapshot | 存在（8/8） |
 | Quote 双向 fee line | PASS（customer_charge + carrier_cost） |
 | Order 双向 fee line | PASS（customer_charge 480 + carrier_cost 380，8/8） |
+| Fix3 重跑（1.0.126） | PASS（8/8，request 3808-3815，ledger 18/组合） |
 | 阻塞问题 | 0 |
 | 开放观察项 | 无 |
 | 8089 端口 | 已释放 |
@@ -218,10 +219,11 @@
 | :--- | :--- |
 | XML-RPC button_immediate_upgrade | PASS（18.0.1.0.125 → 18.0.1.0.126） |
 | 升级日志 ERROR / CRITICAL / TRACEBACK | 0 |
-| inquiry 状态分布 | draft 2 / sent 1 / selected 24 |
-| quote 状态分布 | accepted 25 |
-| order 追溯链回填 | 25/25 无缺失 |
+| inquiry 状态分布 | draft 2 / sent 1 / selected 33 |
+| quote 状态分布 | accepted 34 |
+| order 追溯链回填 | 33/33 无缺失 |
 | S2/S3 新链回归 | PASS（wizard → selected inquiry → accepted quote → order → closed） |
+| Sprint52-C Fix3 重跑 | PASS（8/8，request 3808-3815，ledger 18/组合） |
 | Quote/Order fee line | 480 / 380（8/8 既有链 + 新链一致） |
 | 8089 端口 | 已释放 |
 

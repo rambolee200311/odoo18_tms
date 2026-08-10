@@ -44,10 +44,10 @@
 
 | 对象 | ID / Name | 状态 |
 | :--- | :--- | :--- |
-| Request | 8 条已写入（见下表） | completed |
-| Inquiry | 1087-1094 | selected（FIX-003 迁移后） |
-| Quote | 830-837 | accepted |
-| Order | 2654-2661 | closed |
+| Request | 8 条已写入（见下表，Fix3 重跑 3808-3815） | completed |
+| Inquiry | 1098-1105 | selected |
+| Quote | 841-848 | accepted |
+| Order | 2664-2671 | closed |
 
 ### 执行链路（FIX-003）
 
@@ -62,11 +62,11 @@ request → `Create Carrier Inquiry` wizard（carrier + cost + response_date）
 
 | # | 组合 | Request ID | Matrix Code | Matrix / Vehicle Result | 状态 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | 柜+外部+T1+普通 | 3797 | S3-B2-C1-D2-E1-F2 | pass / pass | completed |
-| 2 | 柜+自有+普通+普通 | 3798 | S3-B2-C1-D1-E2-F2 | pass / pass | completed |
-| 3 | 托+外部+普通+普通 | 3799 | S3-B2-C2-D2-E2-F2 | pass / pass | completed |
-| 4 | 托+自有+T1+普通 | 3800 | S3-B2-C2-D1-E1-F2 | pass / pass | completed |
-| 5 | 件+外部+普通+普通 | 3801 | S3-B2-C3-D2-E2-F2 | pass / pass | completed |
-| 6 | 件+自有+普通+普通 | 3802 | S3-B2-C3-D1-E2-F2 | pass / pass | completed |
-| 7 | 柜+外部+普通+危品 | 3803 | S3-B2-C1-D2-E2-F1 | pass / pass | completed |
-| 8 | 托+自有+T1+危品 | 3804 | S3-B2-C2-D1-E1-F1 | pass / pass | completed |
+| 1 | 柜+外部+T1+普通 | 3808 | S3-B2-C1-D2-E1-F2 | pass / pass | completed |
+| 2 | 柜+自有+普通+普通 | 3809 | S3-B2-C1-D1-E2-F2 | pass / pass | completed |
+| 3 | 托+外部+普通+普通 | 3810 | S3-B2-C2-D2-E2-F2 | pass / pass | completed |
+| 4 | 托+自有+T1+普通 | 3811 | S3-B2-C2-D1-E1-F2 | pass / pass | completed |
+| 5 | 件+外部+普通+普通 | 3812 | S3-B2-C3-D2-E2-F2 | pass / pass | completed |
+| 6 | 件+自有+普通+普通 | 3813 | S3-B2-C3-D1-E2-F2 | pass / pass | completed |
+| 7 | 柜+外部+普通+危品 | 3814 | S3-B2-C1-D2-E2-F1 | pass / pass | completed |
+| 8 | 托+自有+T1+危品 | 3815 | S3-B2-C2-D1-E1-F1 | pass / pass | completed |
