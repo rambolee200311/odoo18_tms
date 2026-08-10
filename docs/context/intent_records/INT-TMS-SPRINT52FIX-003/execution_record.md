@@ -81,3 +81,39 @@ draft，迁移不重算历史结论、不篡改 ledger。若后续尝试为该 q
 - BUSINESS-DEBT-001 v2 / BUSINESS-DEBT-002 已登记；
 - quote 646 为历史边界记录，后续建单需按新流程重新询价/选商；
 - 下一子意图：Sprint52-G。
+
+## INT-TMS-SPRINT52FIX-003 Contract Compliance Evidence
+
+1. **Request → N Inquiry**
+   - 数据库核对：request 3780 关联 2 条 carrier inquiry
+     （1069 sent / 1070 draft），`request_id` 关联正确；
+   - 新链回归 request 3807 关联 inquiry 1097（selected），
+     wizard 创建后仍停留在 request 页面且关联保持。
+2. **Inquiry 成本/响应字段**
+   - inquiry 1097：`carrier_id=24627`、`total_amount=380.0`、
+     `response_date=2026-08-10 02:58:40`、
+     `vehicle_qualification_result=pass`；
+   - 状态流：wizard 创建后 responded → `action_select()` 后 selected。
+3. **Selected Inquiry → Quote source 强绑定**
+   - quote 840 的 `inquiry_id=1097` 且 `inquiry.state=selected`；
+   - 对 draft inquiry 调用 `action_create_quote()` 被拦截：
+     `UserError('Select a winning carrier first (Inquiry state = Selected).')`。
+4. **Quote → Order 唯一建单**
+   - quote 840 关联 order 数量为 1；
+   - 重复调用 `quote._auto_create_order()` 返回同一 order 2663，
+     未产生第二条 supplier order。
+5. **Historical ledger 保留**
+   - 迁移脚本未写入/修改 `tlmp_transport_event_ledger`；
+   - 历史 quote 646 ledger 记录数为 0（原无 QUOTE_ACCEPTED/CONFIRMED
+     ledger，迁移不补造事件，仅回填 metadata）；
+   - 新链 ledger 顺序为 ORDER_CREATED → ORDER_CONFIRMED →
+     ORDER_ALLOCATED → ORDER_IN_TRANSIT → POD_RECEIVED →
+     ORDER_DELIVERED → ORDER_POD_CONFIRMED → DELIVERY_COMPLETED →
+     ORDER_SETTLEMENT_PENDING → ORDER_CLOSED，共 10 条。
+6. **Freeze exception 合规**
+   - `INT-TMS-SPRINT52FIX-003` v1.3 已记录 freeze_exception 范围：
+     inquiry/quote 状态枚举、quote metadata 字段、新事件码；
+   - `business_owner_approval / architect_approval` 已按用户
+     2026-08-10 指令标记 approved；
+   - 冻结清单其余对象（matrix / vehicle / allocation snapshot、
+     Request/Order 状态机）未修改。
