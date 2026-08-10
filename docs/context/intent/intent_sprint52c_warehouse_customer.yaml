@@ -1,0 +1,82 @@
+# ==============================================================
+# Sprint52-C Warehouse → Customer 人工验证子意图
+# 所属阶段：Sprint52 Business Scenario Validation Phase
+# 本意图仅做业务验证与数据模拟，禁止修改冻结基线。
+# ==============================================================
+
+intent_id: INT-TMS-SPRINT52C-001
+intent_work_type: Maintenance
+intent_change_type: Business Validation
+title: Sprint52-C Warehouse → Customer 人工验证
+
+target_scope:
+  - 场景：S3 Warehouse → Customer（warehouse_to_customer）
+  - 链路：request → inquiry → quote → transport.order → delivery
+  - 数据：复用现有 master data，新增 1 套 transaction data（商务报价链）
+
+accept_criteria:
+  - request 以 warehouse_to_customer 创建，scene_id/起终点/地址正确，
+    source_warehouse_id 自动填充 origin 地址
+  - request 提交后冻结 matrix_snapshot 与 vehicle_requirement_snapshot
+  - inquiry 从 request 派生，承运商响应后可选定承运商
+  - quote 从 inquiry 派生，Customer Price = Carrier Cost + Margin
+  - 客户接受 quote 后自动创建 transport.order，carrier/partner 正确
+  - order 状态流转与 Event Ledger 符合 Sprint51 冻结基线
+  - fee.line 应收/应付金额与 quote/inquiry 一致
+  - 发现的业务缺口只登记 business debt，不直接修复
+
+source:
+  type: business_validation
+  origin_team: TLM
+
+asset_snapshot_profile: business_validation
+asset_snapshot_mode: human
+
+loop_policy:
+  max_iteration: 3
+  retry_scope:
+    mode: affected_asset_only
+  escalation:
+    after_failed_iteration: 2
+    require_human: true
+
+affected_assets:
+  business:
+    - docs/business_validation/sprint52/scene_3_warehouse_customer.md
+    - docs/business_validation/sprint52/scene_3_test_data.md
+    - docs/business_validation/sprint52/scene_3_result.md
+    - docs/business_validation/sprint52/scene_3_issue_register.md
+  architecture: []
+  governance:
+    - docs/context/business/business_debt_register.md
+
+validation_strategy:
+  layers:
+    - data_precheck
+    - business_flow
+    - state_transition
+    - event_ledger
+    - snapshot_check
+    - fee_line_check
+    - business_review
+  required_pass: all
+
+deliverables:
+  - 本契约文件
+  - scene_3_warehouse_customer.md（验证步骤）
+  - scene_3_test_data.md（模拟数据清单）
+  - scene_3_result.md（验证结果）
+  - scene_3_issue_register.md（业务缺口/债务登记）
+  - docs/context/intent_records/INT-TMS-SPRINT52C-001/execution_record.md
+
+limit_constraints:
+  - Sprint52 仅做业务真实性验证，不新增业务能力
+  - 不修改 Workflow 状态机、不新增 Event Code
+  - 不修改 Snapshot 结构、不扩展规则维度
+  - 发现缺口登记为 business debt，修复需新 intent
+  - 每场景只允许 1 Request / 1 Inquiry / 1 Quote / 1 Order + N Event Ledger
+
+risk_precheck:
+  - common_pre_check.md 全部可执行项通过
+  - Sprint49-50 Freeze Baseline 保持不变
+  - wd_tlms >= 1.0.125（含 SD52-B-002 商务链双向费用修复）

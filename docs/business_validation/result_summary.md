@@ -157,7 +157,7 @@
 | 子意图 | 场景 | 状态 |
 | :--- | :--- | :--- |
 | Sprint52-A | S1 Terminal → Warehouse | ✅ PASS（人工验证通过） |
-| Sprint52-C | S3 Warehouse → Customer | ⏳ pending |
+| Sprint52-C | S3 Warehouse → Customer | ✅ PASS（组合 1-8 全链路通过） |
 | Sprint52-B | S2 Terminal → Customer | ✅ PASS（组合 1-8 全链路 + SD52-B-001/002 fixed） |
 | Sprint52-G | S7 Container Swap | ⏳ pending |
 | Sprint52-H | S8 Empty Depot | ⏳ pending |
@@ -195,4 +195,21 @@
 | 修复记录 | SD52-B-001（1.0.124）、SD52-B-002（1.0.125）均验证通过 |
 | 8089 端口 | 已释放 |
 
-下一子意图：Sprint52-C。
+### Sprint52-C 验证记录
+
+| Check | Result |
+| :--- | :--- |
+| 8 个代表组合 | ✅ PASS（柜/托/件 × 自有/外部 × T1/普通 × 危品/普通） |
+| Commercial Flow | ✅ PASS（request → inquiry → quote → order → allocate → in_transit → delivered → closed） |
+| Request 状态 | completed（8/8） |
+| Order 状态 | closed（8/8） |
+| Event Ledger | 15 条/组合，全部命中事件字典 |
+| Request 双 Snapshot | frozen（8/8） |
+| Order vehicle_allocation_snapshot | 存在（8/8） |
+| Quote 双向 fee line | PASS（customer_charge + carrier_cost） |
+| Order 双向 fee line | PASS（customer_charge 480 + carrier_cost 380，8/8） |
+| 阻塞问题 | 0 |
+| 开放观察项 | 无 |
+| 8089 端口 | 已释放 |
+
+下一子意图：Sprint52-G。
