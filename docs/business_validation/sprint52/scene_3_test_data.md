@@ -2,7 +2,8 @@
 
 > 契约：`INT-TMS-SPRINT52C-001`
 > 2026-08-10：按 `INT-TMS-SPRINT52FIX-003` 重新 mock，
-> 商务链使用 Create Carrier Inquiry / Create Customer Quote wizard。
+> 商务链使用 Create Carrier Inquiry / Create Customer Quote wizard；
+> Round 2 新增 8 条（3816-3823）。
 > 原则：复用 Master Data，只创建 1 套 Transaction Data。
 
 ## Master Data（复用/待确认）
@@ -40,14 +41,14 @@
 
 覆盖口径：3 货型 × 2 车队 × 2 T1 × 2 危品，全量 24 组合中选取代表 8 组合。
 
-## 执行后填写
+## 执行后填写（Round 2）
 
 | 对象 | ID / Name | 状态 |
 | :--- | :--- | :--- |
-| Request | 8 条已写入（见下表，Fix3 重跑 3808-3815） | completed |
-| Inquiry | 1098-1105 | selected |
-| Quote | 841-848 | accepted |
-| Order | 2664-2671 | closed |
+| Request | 8 条已写入（见下表，3816-3823） | completed |
+| Inquiry | 1106-1113 | selected |
+| Quote | 849-856 | accepted |
+| Order | 2672-2679 | closed |
 
 ### 执行链路（FIX-003）
 
@@ -58,15 +59,21 @@ request → `Create Carrier Inquiry` wizard（carrier + cost + response_date）
 → quote `action_accept`（accepted_by/accepted_date，ORDER_CREATED）
 → order 状态流转至 closed。
 
-### 已写入 Request
+### 已写入 Request（Round 2）
 
 | # | 组合 | Request ID | Matrix Code | Matrix / Vehicle Result | 状态 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | 柜+外部+T1+普通 | 3808 | S3-B2-C1-D2-E1-F2 | pass / pass | completed |
-| 2 | 柜+自有+普通+普通 | 3809 | S3-B2-C1-D1-E2-F2 | pass / pass | completed |
-| 3 | 托+外部+普通+普通 | 3810 | S3-B2-C2-D2-E2-F2 | pass / pass | completed |
-| 4 | 托+自有+T1+普通 | 3811 | S3-B2-C2-D1-E1-F2 | pass / pass | completed |
-| 5 | 件+外部+普通+普通 | 3812 | S3-B2-C3-D2-E2-F2 | pass / pass | completed |
-| 6 | 件+自有+普通+普通 | 3813 | S3-B2-C3-D1-E2-F2 | pass / pass | completed |
-| 7 | 柜+外部+普通+危品 | 3814 | S3-B2-C1-D2-E2-F1 | pass / pass | completed |
-| 8 | 托+自有+T1+危品 | 3815 | S3-B2-C2-D1-E1-F1 | pass / pass | completed |
+| 1 | 柜+外部+T1+普通 | 3816 | S3-B2-C1-D2-E1-F2 | pass / pass | completed |
+| 2 | 柜+自有+普通+普通 | 3817 | S3-B2-C1-D1-E2-F2 | pass / pass | completed |
+| 3 | 托+外部+普通+普通 | 3818 | S3-B2-C2-D2-E2-F2 | pass / pass | completed |
+| 4 | 托+自有+T1+普通 | 3819 | S3-B2-C2-D1-E1-F2 | pass / pass | completed |
+| 5 | 件+外部+普通+普通 | 3820 | S3-B2-C3-D2-E2-F2 | pass / pass | completed |
+| 6 | 件+自有+普通+普通 | 3821 | S3-B2-C3-D1-E2-F2 | pass / pass | completed |
+| 7 | 柜+外部+普通+危品 | 3822 | S3-B2-C1-D2-E2-F1 | pass / pass | completed |
+| 8 | 托+自有+T1+危品 | 3823 | S3-B2-C2-D1-E1-F1 | pass / pass | completed |
+
+### Round 1 历史数据
+
+Round 1 于同日执行：request 3808-3815 / inquiry 1098-1105 /
+quote 841-848 / order 2664-2671，详细结果见
+`scene_3_result.md` 与 `docs/context/intent_records/INT-TMS-SPRINT52C-001/execution_record.md`。

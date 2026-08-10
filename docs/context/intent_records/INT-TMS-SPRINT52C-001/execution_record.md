@@ -70,8 +70,36 @@ Create Customer Quote wizard → accepted quote → order → closed。
 | 新会话二次核验 | PASS（8/8） |
 | 业务缺口 | 0 |
 
+## Sprint52-Fix3 重跑 Round 2（wd_tlms 1.0.126，2026-08-10）
+
+再次新建 8 条 mock 数据并按 Fix3 新商务链完整跑通。
+
+| 组合 | Request | Inquiry | Quote | Order |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 柜+外部+T1+普通 | 3816 | 1106 | 849 | 2672 |
+| 2 柜+自有+普通+普通 | 3817 | 1107 | 850 | 2673 |
+| 3 托+外部+普通+普通 | 3818 | 1108 | 851 | 2674 |
+| 4 托+自有+T1+普通 | 3819 | 1109 | 852 | 2675 |
+| 5 件+外部+普通+普通 | 3820 | 1110 | 853 | 2676 |
+| 6 件+自有+普通+普通 | 3821 | 1111 | 854 | 2677 |
+| 7 柜+外部+普通+危品 | 3822 | 1112 | 855 | 2678 |
+| 8 托+自有+T1+危品 | 3823 | 1113 | 856 | 2679 |
+
+| Check | Result |
+| :--- | :--- |
+| 8/8 组合全链路 | PASS（order closed，request completed） |
+| Inquiry 状态 | selected（8/8，INQUIRY_SELECTED） |
+| Quote 状态 / communication | accepted / responded（8/8） |
+| Quote/Order fee line | customer_charge 480 + carrier_cost 380（8/8） |
+| Order 追溯链 | carrier_id/quote_id/inquiry_id 回填（8/8） |
+| Event Ledger | 18 条/组合，全部命中字典 |
+| vehicle_allocation_snapshot | 存在（8/8） |
+| 新会话二次核验 | PASS（8/8） |
+| 业务缺口 | 0 |
+
 ## 遗留
 
 - Sprint52-C 阻塞问题为 0，未登记业务缺口。
 - Sprint52-C Fix3 重跑 8/8 PASS（wd_tlms 1.0.126）。
+- Sprint52-C Fix3 重跑 Round 2 8/8 PASS（wd_tlms 1.0.126）。
 - 下一子意图：Sprint52-G。

@@ -1,7 +1,7 @@
 # Sprint52-C Scene 3 Result
 
 > 契约：`INT-TMS-SPRINT52C-001`
-> 状态：组合 1-8 全部验证完成（含 Fix3 重跑）
+> 状态：组合 1-8 全部验证完成（含 Fix3 重跑 Round 1/2）
 
 ## 组合 1：柜 + 外部车队 + T1 + 普通
 
@@ -90,6 +90,35 @@ Create Customer Quote wizard → accepted quote → order → closed。
 | 6 件+自有+普通+普通 | 3813 | 1103 | 846 | 2669 | 18 | completed | closed | True |
 | 7 柜+外部+普通+危品 | 3814 | 1104 | 847 | 2670 | 18 | completed | closed | True |
 | 8 托+自有+T1+危品 | 3815 | 1105 | 848 | 2671 | 18 | completed | closed | True |
+
+| Check | Result |
+| :--- | :--- |
+| 8/8 组合全链路 | PASS（order closed，request completed） |
+| Inquiry 状态 | selected（8/8，INQUIRY_SELECTED） |
+| Quote 状态 / communication | accepted / responded（8/8） |
+| Quote/Order fee line | customer_charge 480 + carrier_cost 380（8/8） |
+| Order 追溯链 | carrier_id/quote_id/inquiry_id 回填（8/8） |
+| Event Ledger | 18 条/组合，全部命中字典 |
+| vehicle_allocation_snapshot | 存在（8/8） |
+| 新会话二次核验 | PASS（8/8） |
+| 阻塞问题 | 0 |
+
+## Sprint52-C Fix3 重跑 Round 2（wd_tlms 1.0.126，2026-08-10）
+
+再次新建 8 条 mock 数据并按 Fix3 新商务链完整跑通：
+request → Create Carrier Inquiry wizard → selected inquiry →
+Create Customer Quote wizard → accepted quote → order → closed。
+
+| 组合 | Request | Inquiry | Quote | Order | Ledger | Request State | Order State | Allocation Snapshot |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 柜+外部+T1+普通 | 3816 | 1106 | 849 | 2672 | 18 | completed | closed | True |
+| 2 柜+自有+普通+普通 | 3817 | 1107 | 850 | 2673 | 18 | completed | closed | True |
+| 3 托+外部+普通+普通 | 3818 | 1108 | 851 | 2674 | 18 | completed | closed | True |
+| 4 托+自有+T1+普通 | 3819 | 1109 | 852 | 2675 | 18 | completed | closed | True |
+| 5 件+外部+普通+普通 | 3820 | 1110 | 853 | 2676 | 18 | completed | closed | True |
+| 6 件+自有+普通+普通 | 3821 | 1111 | 854 | 2677 | 18 | completed | closed | True |
+| 7 柜+外部+普通+危品 | 3822 | 1112 | 855 | 2678 | 18 | completed | closed | True |
+| 8 托+自有+T1+危品 | 3823 | 1113 | 856 | 2679 | 18 | completed | closed | True |
 
 | Check | Result |
 | :--- | :--- |
