@@ -272,6 +272,20 @@ class TransportInquiry(models.Model):
             'target': 'current',
         }
 
+    def action_open_customer_quote_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'tlmp.create.customer.quote.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_request_id': (
+                    self.request_id.id if self.request_id else False),
+                'default_inquiry_id': self.id,
+            },
+        }
+
     def action_reject(self, reason=None):
         engine = self.env['tlmp.workflow.engine']
         for rec in self:

@@ -3,12 +3,23 @@
 # 适配：Odoo18 TMS 物流项目
 # ==============================================
 
-context_version: 1.0.80
+context_version: 1.0.81
 update_time: 2026-08-10
 adapt_sprint: Sprint52-Fix3
 update_author: AI-Engineering-Team
 
 version_log:
+  1.0.81:
+    update_content: |
+      Sprint52-Fix3 UI 补充修复（wd_tlms 1.0.128）：
+      - request Inquiry & Quote 页新增 Actions 按钮栏
+        Start Inquiry / Start Quote
+      - inquiry 列表行内新增 Select Carrier（responded）与
+        Start Quote（selected）按钮
+      - Start Quote wizard 自动带默认 inquiry
+      - 升级 1.0.127 → 1.0.128 PASS，视图与方法核验通过
+    update_type: UI 交互补充（Sprint52-Fix3）
+    effect_scope: transport.request / transport.inquiry views
   1.0.80:
     update_content: |
       Sprint52-Fix3 开发实施（wd_tlms 1.0.126）：

@@ -238,20 +238,28 @@
                                 <button name="action_create_customer_quote" type="object"
                                         string="Start Quote"
                                         class="btn-primary"/>
-                            </group>
-                            <group string="Inquiries">
-                                 <field name="inquiry_ids" readonly="1">
+                             </group>
+                             <group string="Inquiries">
+                                 <field name="inquiry_ids">
                                      <list>
                                          <field name="name"/>
                                          <field name="partner_id"/>
                                          <field name="state"/>
                                          <field name="response_date" optional="show"/>
                                          <field name="total_amount" sum="Total"/>
+                                         <button name="action_select" type="object"
+                                                 string="Select Carrier"
+                                                 class="btn-primary"
+                                                 invisible="state != 'responded'"/>
+                                         <button name="action_open_customer_quote_wizard"
+                                                 type="object"
+                                                 string="Start Quote"
+                                                 invisible="state != 'selected'"/>
                                      </list>
                                  </field>
                              </group>
                              <group string="Quotes">
-                                 <field name="quote_ids" readonly="1">
+                                 <field name="quote_ids">
                                      <list>
                                          <field name="name"/>
                                          <field name="partner_id"/>

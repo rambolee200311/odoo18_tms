@@ -82,7 +82,7 @@ draft，迁移不重算历史结论、不篡改 ledger。若后续尝试为该 q
 - quote 646 为历史边界记录，后续建单需按新流程重新询价/选商；
 - 下一子意图：Sprint52-G。
 
-## 补充修复（wd_tlms 1.0.127，2026-08-10）
+## 补充修复（wd_tlms 1.0.127/1.0.128，2026-08-10）
 
 - request 表单 Inquiry & Quote 页新增 Actions 按钮栏：
   `Start Inquiry`（action_create_carrier_inquiry）与
@@ -90,7 +90,9 @@ draft，迁移不重算历史结论、不篡改 ledger。若后续尝试为该 q
 - 页面按钮不再因 `has_accepted_quote / has_selected_inquiry` 隐藏，
   业务校验仍由 wizard 与模型方法强制；
 - 表单 header 文案同步为 Start Inquiry / Start Quote；
-- 升级 1.0.126 → 1.0.127 PASS，已加载视图确认按钮栏存在。
+- inquiry 列表每行增加 `Select Carrier`（responded 时）与
+  `Start Quote`（selected 时）按钮，Start Quote 自动带默认 inquiry；
+- 升级 1.0.126 → 1.0.127 → 1.0.128 PASS，已加载视图确认按钮栏存在。
 
 ## INT-TMS-SPRINT52FIX-003 Contract Compliance Evidence
 

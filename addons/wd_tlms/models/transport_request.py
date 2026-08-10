@@ -802,12 +802,14 @@ class TransportRequest(models.Model):
         if self.request_type != 'commercial':
             raise UserError(
                 _('Customer quotes are only available for commercial requests.'))
+        context = dict(self.env.context)
+        context['default_request_id'] = self.id
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'tlmp.create.customer.quote.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_request_id': self.id},
+            'context': context,
         }
 
     # -----------------------------------------------------------
