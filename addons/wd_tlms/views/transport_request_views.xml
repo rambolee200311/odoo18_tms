@@ -32,10 +32,10 @@
                              invisible="request_type != 'plan_driven'"/>
                     <button name="action_create_transport_order" type="object" string="Create Transport Order"
                             invisible="request_type != 'plan_driven'"/>
-                    <button name="action_create_carrier_inquiry" type="object" string="Create Carrier Inquiry"
+                    <button name="action_create_carrier_inquiry" type="object" string="Start Inquiry"
                             class="btn-primary"
                             invisible="request_type != 'commercial' or has_accepted_quote"/>
-                    <button name="action_create_customer_quote" type="object" string="Create Customer Quote"
+                    <button name="action_create_customer_quote" type="object" string="Start Quote"
                             invisible="request_type != 'commercial' or not has_selected_inquiry or has_accepted_quote"/>
                     <button name="action_create_orders_from_quotes" type="object" string="Create Order"
                             class="btn-primary"
@@ -231,11 +231,15 @@
                              </group>
                         </page>
                         <page string="Inquiry &amp; Quote" invisible="request_type != 'commercial'" name="inquiry_page">
+                            <group string="Actions">
+                                <button name="action_create_carrier_inquiry" type="object"
+                                        string="Start Inquiry"
+                                        class="btn-primary"/>
+                                <button name="action_create_customer_quote" type="object"
+                                        string="Start Quote"
+                                        class="btn-primary"/>
+                            </group>
                             <group string="Inquiries">
-                                 <button name="action_create_carrier_inquiry" type="object"
-                                         string="Create Carrier Inquiry"
-                                         class="btn-primary"
-                                         invisible="has_accepted_quote"/>
                                  <field name="inquiry_ids" readonly="1">
                                      <list>
                                          <field name="name"/>
@@ -247,10 +251,6 @@
                                  </field>
                              </group>
                              <group string="Quotes">
-                                 <button name="action_create_customer_quote" type="object"
-                                         string="Create Customer Quote"
-                                         class="btn-primary"
-                                         invisible="not has_selected_inquiry or has_accepted_quote"/>
                                  <field name="quote_ids" readonly="1">
                                      <list>
                                          <field name="name"/>
